@@ -1,0 +1,41 @@
+# Save / Config / Replay Binary Format Notes
+
+## replay/LD_replay22.dat
+
+- Size: 110992 bytes
+- SHA256: `a78bcc080b953cc444cb294a7adc6b16d53b30eaf436e5191d75560f9c44c7b5`
+- First 64 bytes: `c8 00 00 00 df 34 00 00 48 54 20 00 00 00 00 00 c1 47 4c 66 00 00 00 00 00 00 00 00 00 00 00 00 04 00 00 00 01 00 00 00 00 00 00 00 02 00 00 00 01 00 00 00 00 00 00 00 01 00 00 00 03 00 00 00`
+- Entropy first 4096 bytes: 1.6416
+- Entropy full file: 3.7476
+
+## replay/LD_replay23.dat
+
+- Size: 282560 bytes
+- SHA256: `847359f65f9a740bcfdaac4543eb5425836afd7190fcc02f41ce118a7ec7eb30`
+- First 64 bytes: `c8 00 00 00 a5 88 00 00 48 54 20 00 00 00 00 00 ef f4 81 67 00 00 00 00 00 00 00 00 00 00 00 00 04 00 00 00 01 00 00 00 00 00 00 00 02 00 00 00 01 00 00 00 00 00 00 00 01 00 00 00 03 00 00 00`
+- Entropy first 4096 bytes: 1.5369
+- Entropy full file: 3.8516
+
+## replay/LD_replay24.dat
+
+- Size: 163392 bytes
+- SHA256: `83b87ed4195475f5f971d94dcab7840a23e0da5b5c0c6ed7fc071984911a3ffe`
+- First 64 bytes: `c8 00 00 00 75 4e 00 00 48 54 20 00 00 00 00 00 f6 1c 81 67 00 00 00 00 00 00 00 00 00 00 00 00 04 00 00 00 01 00 00 00 00 00 00 00 02 00 00 00 01 00 00 00 00 00 00 00 01 00 00 00 03 00 00 00`
+- Entropy first 4096 bytes: 1.6301
+- Entropy full file: 3.8346
+
+## save/config.dat
+
+- Size: 28 bytes
+- SHA256: `e6b10ff8681fb7461557e6227d036617c7ecfc6e31a35412f8a5f72c217f318b`
+- First 64 bytes: `01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00`
+- Entropy first 4096 bytes: 0.3712
+- Entropy full file: 0.3712
+
+## save/save.dat
+
+- Size: 10032 bytes
+- SHA256: `3bbde7413ca83ca63b54c07b2da2ecd5f804f33e7712d91c641c27b872543407`
+- First 64 bytes: `c8 00 00 00 01 00 00 00 01 00 00 00 01 00 00 00 01 00 00 00 02 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 03 00 00 00 01 00 00 00 01 00 00 00`
+- Entropy first 4096 bytes: 1.1408
+- Entropy full file: 1.2340

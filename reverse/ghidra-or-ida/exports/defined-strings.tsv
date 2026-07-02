@@ -1,0 +1,2860 @@
+address	value
+1404a7488	File
+1404a7498	1YWe\n
+1404a74a8	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxFile.cpp
+1404a74e0	Handle:0x%08x Type:Normal    FileSize:%lld CurrentPos:%lld
+1404a7560	Handle:0x%08x Type:FullyLoad FileSize:%lld CurrentPos:%lld
+1404a7670	Image File Load Error : %s
+1404a7768	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxGraphics.cpp
+1404a77a0	Graph
+1404a77b0	Shader
+1404a77c0	ShaderConstantBuffer
+1404a77f0	VertexBuffer
+1404a7810	IndexBuffer
+1404a7828	ShadowMap
+1404a7978	None
+1404a7990	Handle:0x%08x Size:%dx%d UsePos:%d,%d File:%s
+1404a7a50	Image File Load Error : %s \n
+1404a7a90	Graph Handle Setup Error : %s
+1404a7cc8	 in CreateDivGraphFromGraphImage\n
+1404a7d30	 in CreateDivGraphFromGraphImage\n
+1404a7f60	.txt
+1404a7f70	Log.txt
+1404a7f80	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxLog.cpp
+1404a7ff0	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxFont.cpp
+1404a8020	Font
+1404a8120	 in CreateFontToHandle
+1404a81f8	DX_FONTTYPE_NORMAL
+1404a8220	DX_FONTTYPE_EDGE
+1404a8248	DX_FONTTYPE_ANTIALIASING
+1404a8280	DX_FONTTYPE_ANTIALIASING_4X4
+1404a82c0	DX_FONTTYPE_ANTIALIASING_8X8
+1404a8300	DX_FONTTYPE_ANTIALIASING_16X16
+1404a8340	DX_FONTTYPE_ANTIALIASING_EDGE
+1404a8380	DX_FONTTYPE_ANTIALIASING_EDGE_4X4
+1404a83d0	DX_FONTTYPE_ANTIALIASING_EDGE_8X8
+1404a8420	DX_FONTTYPE_ANTIALIASING_EDGE_16X16
+1404a8468	Null
+1404a8480	Handle:0x%08x IsFontFile:true  FontName:%s FontType:%s Size:%d Thickness:%d Height:%d
+1404a8530	Handle:0x%08x IsFontFile:false FontName:%s FontType:%s Size:%d Thickness:%d Height:%d
+1404a86b8	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxBaseImage.cpp
+1404a88ba	 in CreateDIBGraph \n
+1404a8930	Sound
+1404a8940	SoftSound
+1404a8958	Music
+1404a8990	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxSound.cpp
+1404a89c0	Handle:0x%08x Type:Stream SamplePerSec:%d BitsPerSample:%d Channels:%d
+1404a8a50	Handle:0x%08x Type:Normal SamplePerSec:%d BitsPerSample:%d Channels:%d Samples:%d
+1404a8ba8	 in AddSreamSound\n
+1404a8d00	Sound File Open Error : %s
+1404a8d38	Sound File Setup Error : %s
+1404a8e78	LOOPSTART
+1404a8e90	LOOPEND
+1404a8ea0	LOOPLENGTH
+1404a8eb8	Sound File Load Error 2 : %s
+1404a8ef8	Sound File Setup Error %d : %s
+1404a8f38	Sound File Load Error : %s
+1404a8fc0	LoadSoundMemByMemImageBase Error 1
+1404a9010	LoadSoundMemByMemImageBase Error %d
+1404a929c	 in AddSoftSoundData
+1404a93a8	File Open Error : %s
+1404a93e0	File Load : Memory Alloc Error : %s
+1404a9bf8	ASIOSTInt16MSB
+1404a9c18	ASIOSTInt24MSB
+1404a9c38	ASIOSTInt32MSB
+1404a9c58	ASIOSTFloat32MSB
+1404a9c80	ASIOSTFloat64MSB
+1404a9ca8	ASIOSTInt32MSB16
+1404a9cd0	ASIOSTInt32MSB18
+1404a9cf8	ASIOSTInt32MSB20
+1404a9d20	ASIOSTInt32MSB24
+1404a9d48	ASIOSTInt16LSB
+1404a9d68	ASIOSTInt24LSB
+1404a9d88	ASIOSTInt32LSB
+1404a9da8	ASIOSTFloat32LSB
+1404a9dd0	ASIOSTFloat64LSB
+1404a9df8	ASIOSTInt32LSB16
+1404a9e20	ASIOSTInt32LSB18
+1404a9e48	ASIOSTInt32LSB20
+1404a9e70	ASIOSTInt32LSB24
+1404a9e98	ASIOSTDSDInt8LSB1
+1404a9ec0	ASIOSTDSDInt8MSB1
+1404a9ee8	ASIOSTDSDInt8NER8
+1404a9fc0	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxSoundWin.cpp
+1404aa2da	   : %d ch
+1404aa300	   : %d bit
+1404aa328	   : %d bit
+1404aa48a	 : %d sample
+1404aa4d6	s ( %.3f ms )
+1404aa7c0	Module Name : %15s   Description : %s 
+1404aa898	software\\asio
+1404aa978	clsid
+1404aaa48	InprocServer32
+1404aab48	description
+1404ab2a8	X3DAudio1_7.dll
+1404ab2f0	XAudio2_8.dll
+1404ab340	XAudio2Create
+1404ab350	CreateAudioVolumeMeter
+1404ab368	CreateAudioReverb
+1404ab380	X3DAudioInitialize
+1404ab398	X3DAudioCalculate
+1404ab8e8	Output port
+1404ab900	Input port
+1404ab918	%s  Device%d:%s 
+1404ab998	Device Name : %s
+1404aba90	DSound.DLL
+1404abad0	DirectSoundEnumerateW
+1404abc20	  Primary    16bit = %s  8bit = %s 
+1404abc70	  Secondary  16bit = %s  8bit = %s \n
+1404abce0	  Primary    MONO = %s   STEREO = %s 
+1404abd30	  Secondary  MONO = %s   STEREO = %s \n
+1404abf50	Kernel32.dll
+1404abf70	GlobalMemoryStatusEx
+1404abfc8	%.2fMB\n
+1404ac0a2	 : %d.00 ms 
+1404ac1f0	DxLib
+1404ac246	 ( %d, %d )-( %d, %d )
+1404ac400	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxWindow.cpp
+1404ac5b8	Shell_TrayWnd
+1404ac698	ToolbarWindow32
+1404ac6e8	D123987X
+1404ac720	3.24f
+1404ac780	Windows
+1404ac7a0	OSR2
+1404ac7c8	Vista
+1404ac7f8	10 After
+1404ac810	NT 3.51
+1404ac828	2000
+1404ac840	%s ( Build %d %s )
+1404aca46	 %dx%d %dbit color
+1404acb10	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxSystemWin.cpp
+1404acba8	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxASyncLoad.cpp
+1404acd18	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxArchive_.cpp
+1404acdc0	\tTotal size:%d(%.3fkb)  Alloc num:%d
+1404ace10	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxMemory.cpp
+1404ace40	mem alloc  
+1404ace58	mem realloc  
+1404ace78	mem free  
+1404ace90	Alloc memory dump\n
+1404acebf	_..\\..\\..\\..\\..\\Source\\Library\\Main\\DxHandle.cpp
+1404acf90	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxFileWin.cpp
+1404ad070	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxChar.cpp
+1404ad0d8	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxInputString.cpp
+1404ad1d0	  BufSize:%d\n
+1404ad240	Mask
+1404ad250	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxMask.cpp
+1404ad390	SoftImage
+1404ad3a8	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxModel.cpp
+1404ad3d8	ModelBase
+1404ad3f0	Model
+1404ad460	Live2DModel
+1404ad478	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxLive2DCubism4.cpp
+1404ad4b0	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxMemImg.cpp
+1404ad4f0	d3dx9_50.dll
+1404ad500	d3dx9_49.dll
+1404ad510	d3dx9_48.dll
+1404ad520	d3dx9_47.dll
+1404ad530	d3dx9_46.dll
+1404ad540	d3dx9_45.dll
+1404ad550	d3dx9_44.dll
+1404ad560	d3dx9_43.dll
+1404ad570	d3dx9_42.dll
+1404ad580	d3dx9_41.dll
+1404ad590	d3dx9_40.dll
+1404ad5a0	d3dx9_39.dll
+1404ad5b0	d3dx9_38.dll
+1404ad5c0	d3dx9_37.dll
+1404ad5d0	d3dx9_36.dll
+1404ad5e0	d3dx9_35.dll
+1404ad5f0	d3dx9_34.dll
+1404ad600	d3dx9_33.dll
+1404ad610	d3dx9_32.dll
+1404ad620	d3dx9_31.dll
+1404ad630	d3dx9_30.dll
+1404ad640	d3dx9_29.dll
+1404ad650	d3dx9_28.dll
+1404ad660	d3dx9_27.dll
+1404ad670	d3dx9_26.dll
+1404ad680	d3dx9_25.dll
+1404ad690	d3dx9_24.dll
+1404ad6a0	D3DCompiler_47.dll
+1404ad6b8	D3DCompiler_46.dll
+1404ad6d0	D3DCompiler_45.dll
+1404ad6e8	D3DCompiler_44.dll
+1404ad700	D3DCompiler_43.dll
+1404ad718	D3DCompiler_42.dll
+1404ad730	D3DCompiler_41.dll
+1404ad748	D3DCompiler_40.dll
+1404ad760	D3DCompiler_39.dll
+1404ad778	D3DCompiler_38.dll
+1404ad790	D3DCompiler_37.dll
+1404ad7a8	D3DCompiler_36.dll
+1404ad7c0	D3DCompiler_35.dll
+1404ad7d8	D3DCompiler_34.dll
+1404ad7f0	D3DCompiler_33.dll
+1404ad808	ws2_32.dll
+1404ad818	WSAGetLastError
+1404ad828	WSAStartup
+1404ad838	WSACleanup
+1404ad848	WSAAsyncSelect
+1404ad858	getaddrinfo
+1404ad868	freeaddrinfo
+1404ad878	gethostbyaddr
+1404ad888	gethostbyname
+1404ad898	gethostname
+1404ad8a4	ntohs
+1404ad8ac	htons
+1404ad8b8	connect
+1404ad8c0	socket
+1404ad8d0	sendto
+1404ad8d8	recvfrom
+1404ad8e4	accept
+1404ad8f0	closesocket
+1404ad900	shutdown
+1404ad90c	listen
+1404ad920	inet_addr
+1404ad938	setsockopt
+1404ad948	Imm32.dll
+1404ad958	ImmAssociateContext
+1404ad970	ImmGetContext
+1404ad980	ImmReleaseContext
+1404ad998	ImmGetOpenStatus
+1404ad9b0	ImmGetConversionStatus
+1404ad9c8	ImmNotifyIME
+1404ad9d8	ImmSetOpenStatus
+1404ad9f0	ImmGetCandidateListW
+1404ada08	ImmGetCandidateListCountW
+1404ada28	ImmGetCompositionStringW
+1404ada48	ImmSetCompositionStringW
+1404ada68	winmm.dll
+1404ada78	timeSetEvent
+1404ada88	timeKillEvent
+1404ada98	timeBeginPeriod
+1404adaa8	timeEndPeriod
+1404adab8	timeGetTime
+1404adac8	timeGetDevCaps
+1404adad8	joyGetPosEx
+1404adae8	joyGetDevCapsW
+1404adaf8	mciSendCommandW
+1404adb08	waveOutOpen
+1404adb18	waveOutClose
+1404adb28	waveOutPrepareHeader
+1404adb40	waveOutUnprepareHeader
+1404adb58	waveOutWrite
+1404adb68	waveOutReset
+1404adb78	kernel32.dll
+1404adb88	GetModuleHandleA
+1404adba0	GetModuleHandleW
+1404adbb8	VerifyVersionInfoA
+1404adbd0	VerifyVersionInfoW
+1404adbe8	VerSetConditionMask
+1404adc00	CreateEventA
+1404adc10	SetEvent
+1404adc20	ResetEvent
+1404adc30	CreateThread
+1404adc40	SetThreadPriority
+1404adc58	GetThreadPriority
+1404adc70	ExitThread
+1404adc80	GetExitCodeThread
+1404adc98	GetCurrentThread
+1404adcb0	GetCurrentThreadId
+1404adcc8	SuspendThread
+1404adcd8	ResumeThread
+1404adce8	WaitForSingleObject
+1404add00	WaitForMultipleObjects
+1404add18	GetProcessHeap
+1404add28	HeapAlloc
+1404add38	HeapFree
+1404add48	VirtualAlloc
+1404add58	VirtualFree
+1404add68	VirtualQuery
+1404add78	GlobalAlloc
+1404add88	GlobalFree
+1404add98	GlobalLock
+1404adda8	GlobalUnlock
+1404addb8	GlobalSize
+1404addc8	CreateSemaphoreA
+1404adde0	ReleaseSemaphore
+1404addf8	GetVersionExA
+1404ade08	GetVersionExW
+1404ade18	GetSystemInfo
+1404ade28	lstrlenA
+1404ade38	lstrlenW
+1404ade48	lstrcmpA
+1404ade58	lstrcmpW
+1404ade68	lstrcpyA
+1404ade78	lstrcpyW
+1404ade88	lstrcpynA
+1404ade98	lstrcpynW
+1404adea8	GetTickCount
+1404adeb8	QueryPerformanceCounter
+1404aded0	QueryPerformanceFrequency
+1404adef0	CloseHandle
+1404adf00	GetTempPathA
+1404adf10	GetTempPathW
+1404adf20	GetTempFileNameA
+1404adf38	GetTempFileNameW
+1404adf50	CreateFileA
+1404adf60	CreateFileW
+1404adf70	DeleteFileA
+1404adf80	DeleteFileW
+1404adf90	GetFileSize
+1404adfa0	WriteFile
+1404adfb0	ReadFile
+1404adfc0	SetFilePointer
+1404adfd0	FindFirstFileA
+1404adfe0	FindFirstFileW
+1404adff0	FindNextFileA
+1404ae000	FindNextFileW
+1404ae010	FindClose
+1404ae020	SetCurrentDirectoryA
+1404ae038	SetCurrentDirectoryW
+1404ae050	GetCurrentDirectoryA
+1404ae068	GetCurrentDirectoryW
+1404ae080	Sleep
+1404ae088	InitializeCriticalSection
+1404ae0a8	DeleteCriticalSection
+1404ae0c0	EnterCriticalSection
+1404ae0d8	LeaveCriticalSection
+1404ae0f0	ExitProcess
+1404ae100	LoadResource
+1404ae110	FindResourceA
+1404ae120	FindResourceW
+1404ae130	LockResource
+1404ae140	SizeofResource
+1404ae150	GetOEMCP
+1404ae160	OutputDebugStringA
+1404ae178	OutputDebugStringW
+1404ae190	GlobalMemoryStatus
+1404ae1a4	MulDiv
+1404ae1b0	GetLocalTime
+1404ae1c0	GetSystemPowerStatus
+1404ae1d8	FileTimeToLocalFileTime
+1404ae1f0	FileTimeToSystemTime
+1404ae208	GetLastError
+1404ae218	MultiByteToWideChar
+1404ae230	ole32.dll
+1404ae240	CoCreateInstance
+1404ae258	CoTaskMemAlloc
+1404ae268	CoTaskMemFree
+1404ae278	CoInitializeEx
+1404ae288	CoFreeUnusedLibraries
+1404ae2a0	CoUninitialize
+1404ae2b0	CLSIDFromString
+1404ae2c0	oleaut32.dll
+1404ae2d0	SysAllocString
+1404ae2e0	SysFreeString
+1404ae2f0	VariantClear
+1404ae300	VariantInit
+1404ae310	comctl32.dll
+1404ae320	InitCommonControls
+1404ae338	Ole32.dll
+1404ae348	CoSetProxyBlanket
+1404ae360	PropVariantClear
+1404ae378	User32.dll
+1404ae388	WINNLSEnableIME
+1404ae398	UpdateLayeredWindow
+1404ae3b0	CreateWindowExA
+1404ae3c0	CreateWindowExW
+1404ae3d0	DestroyWindow
+1404ae3e0	IsWindow
+1404ae3f0	ShowWindow
+1404ae400	UpdateWindow
+1404ae410	BringWindowToTop
+1404ae428	SetForegroundWindow
+1404ae440	GetWindowThreadProcessId
+1404ae460	SetActiveWindow
+1404ae470	GetForegroundWindow
+1404ae488	GetDesktopWindow
+1404ae4a0	FindWindowA
+1404ae4b0	FindWindowW
+1404ae4c0	MoveWindow
+1404ae4d0	SetWindowPos
+1404ae4e0	GetClientRect
+1404ae4f0	AdjustWindowRectEx
+1404ae508	GetWindowRect
+1404ae518	SetWindowLongA
+1404ae528	SetWindowLongW
+1404ae538	SetWindowLongPtrA
+1404ae550	SetWindowLongPtrW
+1404ae568	GetWindowLongA
+1404ae578	GetWindowLongW
+1404ae588	GetWindowLongPtrA
+1404ae5a0	GetWindowLongPtrW
+1404ae5b8	SetWindowTextA
+1404ae5c8	SetWindowTextW
+1404ae5d8	ClientToScreen
+1404ae5e8	EnumDisplayDevicesA
+1404ae600	EnumDisplayDevicesW
+1404ae618	ShutdownBlockReasonCreate
+1404ae638	ShutdownBlockReasonDestroy
+1404ae658	SetTimer
+1404ae668	PostThreadMessageA
+1404ae680	PostThreadMessageW
+1404ae698	PeekMessageA
+1404ae6a8	PeekMessageW
+1404ae6b8	GetMessageA
+1404ae6c8	GetMessageW
+1404ae6d8	SendMessageA
+1404ae6e8	SendMessageW
+1404ae6f8	PostMessageA
+1404ae708	PostMessageW
+1404ae718	PostQuitMessage
+1404ae728	DefWindowProcA
+1404ae738	DefWindowProcW
+1404ae748	TranslateAcceleratorA
+1404ae760	TranslateAcceleratorW
+1404ae778	TranslateMessage
+1404ae790	DispatchMessageA
+1404ae7a8	DispatchMessageW
+1404ae7c0	MsgWaitForMultipleObjects
+1404ae7e0	GetQueueStatus
+1404ae7f0	RegisterWindowMessageA
+1404ae808	RegisterWindowMessageW
+1404ae820	RegisterClassA
+1404ae830	RegisterClassW
+1404ae840	RegisterClassExA
+1404ae858	RegisterClassExW
+1404ae870	UnregisterClassA
+1404ae888	UnregisterClassW
+1404ae8a0	SetClassLongA
+1404ae8b0	SetClassLongW
+1404ae8c0	SetClassLongPtrA
+1404ae8d8	SetClassLongPtrW
+1404ae8ec	GetDC
+1404ae8f8	ReleaseDC
+1404ae908	BeginPaint
+1404ae918	EndPaint
+1404ae928	MessageBoxA
+1404ae938	MessageBoxW
+1404ae948	GetSystemMetrics
+1404ae960	ChangeDisplaySettingsA
+1404ae978	ChangeDisplaySettingsW
+1404ae990	ShowCursor
+1404ae9a0	SetCursorPos
+1404ae9b0	GetCursorPos
+1404ae9c0	SetCursor
+1404ae9d0	LoadCursorA
+1404ae9e0	LoadCursorW
+1404ae9f0	LoadIconA
+1404aea00	LoadIconW
+1404aea10	ClipCursor
+1404aea20	LoadMenuA
+1404aea30	LoadMenuW
+1404aea40	CreateMenu
+1404aea50	DeleteMenu
+1404aea60	DestroyMenu
+1404aea70	EnableMenuItem
+1404aea80	GetSubMenu
+1404aea90	SetMenuItemInfoA
+1404aeaa8	SetMenuItemInfoW
+1404aeac0	GetMenuItemInfoA
+1404aead8	GetMenuItemInfoW
+1404aeaf0	SetMenu
+1404aeaf8	DrawMenuBar
+1404aeb08	GetMenuItemCount
+1404aeb20	InsertMenuItemA
+1404aeb30	InsertMenuItemW
+1404aeb40	SetWindowRgn
+1404aeb50	FillRect
+1404aeb60	SystemParametersInfoA
+1404aeb78	SystemParametersInfoW
+1404aeb90	AttachThreadInput
+1404aeba8	SetWindowsHookExW
+1404aebc0	UnhookWindowsHookEx
+1404aebd8	GetKeyboardState
+1404aebf0	KillTimer
+1404aec00	EnumDisplaySettingsA
+1404aec18	EnumDisplaySettingsW
+1404aec30	EnumDisplayMonitors
+1404aec48	IsDialogMessageA
+1404aec60	IsDialogMessageW
+1404aec78	OpenClipboard
+1404aec88	CloseClipboard
+1404aec98	EmptyClipboard
+1404aeca8	SetClipboardData
+1404aecc0	GetClipboardData
+1404aecd8	IsClipboardFormatAvailable
+1404aecf8	CreateAcceleratorTableA
+1404aed10	CreateAcceleratorTableW
+1404aed28	DestroyAcceleratorTable
+1404aed40	CopyAcceleratorTableA
+1404aed58	CopyAcceleratorTableW
+1404aed70	GetMonitorInfoA
+1404aed80	GetMonitorInfoW
+1404aed90	CharLowerBuffA
+1404aeda0	CharLowerBuffW
+1404aedb0	GetRawInputDeviceList
+1404aedc8	GetRawInputDeviceInfoA
+1404aede0	CloseTouchInputHandle
+1404aedf8	GetTouchInputInfo
+1404aee10	IsTouchWindow
+1404aee20	RegisterTouchWindow
+1404aee38	UnregisterTouchWindow
+1404aee50	gdi32.dll
+1404aee60	AddFontMemResourceEx
+1404aee78	RemoveFontMemResourceEx
+1404aee90	GetFontUnicodeRanges
+1404aeea8	GetDeviceCaps
+1404aeeb8	EnumFontFamiliesExA
+1404aeed0	EnumFontFamiliesExW
+1404aeee8	CreateFontA
+1404aeef8	CreateFontW
+1404aef08	GetTextMetricsA
+1404aef18	GetTextMetricsW
+1404aef28	GetTextExtentPoint32A
+1404aef40	GetTextExtentPoint32W
+1404aef58	GetCharacterPlacementA
+1404aef70	GetCharacterPlacementW
+1404aef88	GetGlyphOutlineA
+1404aefa0	GetGlyphOutlineW
+1404aefb8	TextOutA
+1404aefc8	TextOutW
+1404aefd8	SetTextColor
+1404aefe8	SetBkColor
+1404aeff8	SetBkMode
+1404af008	CreateCompatibleDC
+1404af020	CreateDCA
+1404af030	CreateDCW
+1404af040	GetObjectA
+1404af050	GetObjectW
+1404af060	GetStockObject
+1404af070	SelectObject
+1404af080	DeleteObject
+1404af090	DeleteDC
+1404af0a0	CreateSolidBrush
+1404af0b8	Rectangle
+1404af0c4	BitBlt
+1404af0d0	CreateDIBSection
+1404af0e8	StretchDIBits
+1404af0f8	SetDIBitsToDevice
+1404af110	CreateRectRgn
+1404af120	CombineRgn
+1404af130	GetKerningPairsW
+1404af148	advapi32.dll
+1404af158	RegOpenKeyA
+1404af168	RegOpenKeyW
+1404af178	RegEnumKeyA
+1404af188	RegEnumKeyW
+1404af198	RegOpenKeyExA
+1404af1a8	RegOpenKeyExW
+1404af1b8	RegQueryValueExA
+1404af1d0	RegQueryValueExW
+1404af1e8	shell32.dll
+1404af1f8	DragQueryFileA
+1404af208	DragQueryFileW
+1404af218	DragFinish
+1404af228	DragAcceptFiles
+1404af238	ntdll.dll
+1404af248	RtlGetVersion
+1404af258	Mfplat.dll
+1404af268	MFStartup
+1404af278	MFShutdown
+1404af288	MFCreateMediaType
+1404af2a0	MFCreateWaveFormatExFromMFMediaType
+1404af2c8	MFCreateAttributes
+1404af2e0	MFCreateAsyncResult
+1404af2f8	MFInvokeCallback
+1404af310	Mfreadwrite.dll
+1404af320	MFCreateSourceReaderFromURL
+1404af340	MFCreateSourceReaderFromByteStream
+1404af368	Propsys.dll
+1404af378	PropVariantToInt64
+1404af390	usp10.dll
+1404af3a0	ScriptItemize
+1404af3b0	ScriptShape
+1404af3c0	shcore.dll
+1404af3d0	SetProcessDpiAwareness
+1404af3e8	GetProcessDpiAwareness
+1404af400	GetDpiForMonitor
+1404af418	dwmapi.dll
+1404af428	DwmEnableComposition
+1404af440	DwmGetWindowAttribute
+1404af458	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxWinAPI.cpp
+1404af490	Movie
+1404af520	MFStartup Error\n
+1404af548	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxMovieWin.cpp
+1404af590	CoCreateInstance Error : CLSID_FilterGraph\n
+1404af5e8	MovieRenderer
+1404af610	Could not add renderer filter to graph!\n
+1404af670	QueryInterface Error : IID_IBasicAudio\n
+1404af6c0	QueryInterface Error : IID_IMediaControl\n
+1404af720	QueryInterface Error : IID_IMediaSeeking\n
+1404af778	RenderFile faired!\n
+1404af7a0	Movie File Open Error : 
+1404af810	 %u x %u  %u bit 
+1404af838	1YWeW0~0W0_0\n
+1404afa38	DISPLAY
+1404afa70	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxLogWin.cpp
+1404afaa8	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxFontWin.cpp
+1404afbee	 in CFont
+1404afc46	 in CFont
+1404afc7a	 in CFont
+1404afcc4	 in CFont
+1404aff00	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxBaseImageWin.cpp
+1404aff40	Base_VERTEX_NOTEX_2D.vso
+1404aff60	POSITION
+1404aff6c	COLOR
+1404aff78	Base_VERTEX2D.vso
+1404aff90	TEXCOORD
+1404affa0	Base_VERTEX_BLENDTEX_2D.vso
+1404affc0	Base_VERTEX_NOTEX_3D.vso
+1404affe0	Base_VERTEX_3D.vso
+1404afff8	Base_VERTEX3D.vso
+1404b000c	NORMAL
+1404b0018	Base_VERTEX3DSHADER.vso
+1404b0030	TANGENT
+1404b0038	BINORMAL
+1404b0048	Base_VERTEX2DSHADER.vso
+1404b01e8	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxGraphicsD3D11.cpp
+1404b07f4	  Format:%d  SizeX:%d  SizeY:%d \n
+1404b08c2	  Format:%d  SizeX:%d  SizeY:%d \n
+1404b0950	  Format:%d  SizeX:%d  SizeY:%d \n
+1404b09e0	  Format:%d  SizeX:%d  SizeY:%d \n
+1404b0a42	 %dx%d ( %d, %d )-( %d, %d )]
+1404b0ac2	 %dx%d ( %d, %d )-( %d, %d ) Not Main Target]
+1404b0b58	1YWe 
+1404b0f0a	[Graphics_D3D11_Texture_SetupCommonBuffer]\n
+1404b12e8	Graphics Device:%s
+1404b1310	DXGI_FORMAT_R8G8B8A8_UNORM
+1404b1350	DXGI_FORMAT_D16_UNORM
+1404b1390	DXGI_FORMAT_D24_UNORM_S8_UINT
+1404b13d8	DXGI_FORMAT_D32_FLOAT
+1404b1418	DXGI_FORMAT_B5G6R5_UNORM
+1404b1438	DXGI_FORMAT_B5G5R5A1_UNORM
+1404b1480	DXGI_FORMAT_B8G8R8X8_UNORM
+1404b14c8	DXGI_FORMAT_B4G4R4A4_UNORM
+1404b17a0	DXGI_FORMAT_R16G16B16A16_UNORM
+1404b1840	DXGI_FORMAT_R16G16B16A16_FLOAT
+1404b18e8	DXGI_FORMAT_R32G32B32A32_FLOAT
+1404b1998	DXGI_FORMAT_R8_UNORM
+1404b19b0	DXGI_FORMAT_R8G8_UNORM
+1404b1a58	DXGI_FORMAT_R16_UNORM
+1404b1a70	DXGI_FORMAT_R16G16_UNORM
+1404b1b20	DXGI_FORMAT_R16_FLOAT
+1404b1b38	DXGI_FORMAT_R16G16_FLOAT
+1404b1bf8	DXGI_FORMAT_R32_FLOAT
+1404b1c10	DXGI_FORMAT_R32G32_FLOAT
+1404b27c8	D3D_FEATURE_LEVEL_9_1
+1404b27e0	D3D_FEATURE_LEVEL_9_2
+1404b27f8	D3D_FEATURE_LEVEL_9_3
+1404b2810	D3D_FEATURE_LEVEL_10_0
+1404b2828	D3D_FEATURE_LEVEL_10_1
+1404b2840	D3D_FEATURE_LEVEL_11_0
+1404b2858	D3D_FEATURE_LEVEL_11_1
+1404b2900	\tAdapter No.%d Desc:%s  VRAM:%dMB
+1404b2950	\t\tOutput Device No.%d Name:%s ( %d, %d )-( %d, %d )
+1404b2eb8	BLENDINDICES
+1404b2ec8	BLENDWEIGHT
+1404b2fc6	 %d byte )\n
+1404b301e	 %d byte )\n
+1404b305a	 in G_D3D_DrawCircle
+1404b3088	DirectX 11
+1404b31aa	[Graphics_D3D11_BltBmpOrBaseImageToGraph3_NoMipMapBlt]\n
+1404b3368	  Format:%d  SizeX:%d  SizeY:%d \n
+1404b34c8	  Format:%d  SizeX:%d  SizeY:%d \n
+1404b366c	  Format:%d  SizeX:%d  SizeY:%d \n
+1404b36ec	  Format:%d  SizeX:%d  SizeY:%d \n
+1404b388f	?..\\..\\..\\..\\..\\Source\\Library\\Main\\DxRingBuffer.cpp
+1404b390c	 %d byte)
+1404b3920	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxSoundConvert.cpp
+1404b3c00	\\\\.\\root\\cimv2
+1404b3c20	Win32_PNPEntity
+1404b3c40	DeviceID
+1404b3c60	VID_
+1404b3c70	VID_%4X
+1404b3c80	PID_
+1404b3c90	PID_%4X
+1404b3ce0	Device Product GUID  : %08x,%04x,%04x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x
+1404b3d80	Device Instance GUID : %08x,%04x,%04x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x
+1404b3e58	1YWe 
+1404b3f50	1YWe 
+1404b3f78	Device Product Name  : %s
+1404b3fb0	Device Instance Name : %s
+1404b4050	XBOX 360 FOR WINDOWS
+1404b4100	XBOX ONE FOR WINDOWS
+1404b4ae0	xinput1_4.dll
+1404b4b00	xinput1_3.dll
+1404b4b20	xinput9_1_0.dll
+1404b4b98	XInputGetState
+1404b4ba8	XInputSetState
+1404b5020	Controller (XBOX 360 For Windows)
+1404b5190	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxNetwork.cpp
+1404b52c4	 in AcceptNetWork
+1404b5318	 in RecvSocket\n
+1404b5372	 in RecvSocket\n
+1404b53e8	 %d byte)
+1404b5428	 in SendSocket\n
+1404b5482	 in SendSocket\n
+1404b54a4	NoName
+1404b54b8	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxHeap.cpp
+1404b5646	  HeapAddress:0x%ll016x
+1404b56ec	  HeapMemInfo->UseMemTagCount:%d
+1404b581a	 MemTag->UseHeapMem:0x%ll016x  HeapMemInfo:0x%ll016x
+1404b591c	 1  MemTag->Size %d
+1404b596c	 2  MemTag->Size %d
+1404b5da0	\tsize:%10d(%10.3fkb)  user size:%10d(%10.3fkb)  time:%05d  file:%-26s  line:%-6d  ID:%-5d  addr:%016llx
+1404b5e08	  data:[
+1404b5e14	%02x 
+1404b5f20	  Heap->UseSeparateInfo = TRUE
+1404b5fc0	  Heap->UseSeparateInfo = FALSE
+1404b60dc	  Heap->UseSeparateInfo = TRUE
+1404b616c	  Heap->UseSeparateInfo = FALSE
+1404b61fa	  TotalSize:%lld   ( Heap->TotalUseSize + Heap->TotalFreeSize ):%lld
+1404b62da	  TotalSize:%lld   TotalSize2:%lld
+1404b636c	  ( MemTag->Prev->AllocAddress + MemTag->Prev->Size ):0x%ll016x  MemTag->AllocAddress:0x%ll016x
+1404b647c	  MemTag->Next->AllocAddress:0x%ll016x  ( MemTag->AllocAddress + MemTag->Size ):0x%ll016x
+1404b657c	  ( MemTag->Prev + MemTag->Prev->Size ):0x%ll016x  MemTag:0x%ll016x
+1404b665c	  MemTag->Next:0x%ll016x  ( MemTag + MemTag->Size ):0x%ll016x
+1404b681e	  TagNum:%d  ( Heap->SepTagArrayLength - Heap->SepTagArrayUseNum ):%d
+1404b6916	  HeapMemNum:%d  ( Heap->SepHeapMemArrayLength - Heap->SepHeapMemArrayUseNum ):%d
+1404b6a7e	  UseNum:%d  Heap->UseTagNum:%d
+1404b6b0e	  TotalUseSize:%lld  Heap->TotalUseSize:%lld
+1404b6c9a	  MSB:%d  i:%d  SLI:%d  j:%d
+1404b6d40	  MemTag->FLI:%d  MSB:%d  MemTag->SLI:%d  SLI:%d
+1404b6ede	  FreeNum:%d  Heap->FreeTagNum:%d
+1404b6f7e	  TotalFreeSize:%lld  Heap->TotalFreeSize:%lld
+1404b7046	  MemTag->UserAddress:0x%ll016x  Heap->Aligned:0x%08x
+1404b7124	  Heap->UseSeparateInfo = TRUE
+1404b71d4	  Heap->UseSeparateInfo = FALSE
+1404b7238	Coords2d
+1404b7248	Matrix4x4
+1404b7258	ColorRGBA
+1404b7268	ColorRGB
+1404b7278	Material
+1404b7288	TextureFilename
+1404b7298	MeshFace
+1404b72a8	MeshTextureCoords
+1404b72c0	MeshNormals
+1404b72d0	MeshMaterialList
+1404b72e8	IndexedColor
+1404b72f8	MeshVertexColors
+1404b7310	FrameTransformMatrix
+1404b7328	Frame
+1404b7330	FloatKeys
+1404b7340	TimedFloatKeys
+1404b7350	AnimationKey
+1404b7360	AnimationOption
+1404b7370	Animation
+1404b7380	AnimationSet
+1404b7390	XSkinMeshHeader
+1404b73a0	SkinWeights
+1404b73ac	 \r\n\t,;
+1404b73b8	Live2DCubismCore.dll
+1404b7488	csmGetVersion
+1404b7498	csmGetLatestMocVersion
+1404b74b0	csmGetMocVersion
+1404b74c8	csmHasMocConsistency
+1404b74e0	csmGetLogFunction
+1404b74f8	csmSetLogFunction
+1404b7510	csmReviveMocInPlace
+1404b7528	csmGetSizeofModel
+1404b7540	csmInitializeModelInPlace
+1404b7560	csmUpdateModel
+1404b7570	csmReadCanvasInfo
+1404b7588	csmGetParameterCount
+1404b75a0	csmGetParameterIds
+1404b75b8	csmGetParameterTypes
+1404b75d0	csmGetParameterMinimumValues
+1404b75f0	csmGetParameterMaximumValues
+1404b7610	csmGetParameterDefaultValues
+1404b7630	csmGetParameterValues
+1404b7648	csmGetParameterKeyCounts
+1404b7668	csmGetParameterKeyValues
+1404b7688	csmGetPartCount
+1404b7698	csmGetPartIds
+1404b76a8	csmGetPartOpacities
+1404b76c0	csmGetPartParentPartIndices
+1404b76e0	csmGetDrawableCount
+1404b76f8	csmGetDrawableIds
+1404b7710	csmGetDrawableConstantFlags
+1404b7730	csmGetDrawableDynamicFlags
+1404b7750	csmGetDrawableTextureIndices
+1404b7770	csmGetDrawableDrawOrders
+1404b7790	csmGetDrawableRenderOrders
+1404b77b0	csmGetDrawableOpacities
+1404b77c8	csmGetDrawableMaskCounts
+1404b77e8	csmGetDrawableMasks
+1404b7800	csmGetDrawableVertexCounts
+1404b7820	csmGetDrawableVertexPositions
+1404b7840	csmGetDrawableVertexUvs
+1404b7858	csmGetDrawableIndexCounts
+1404b7878	csmGetDrawableIndices
+1404b7890	csmGetDrawableMultiplyColors
+1404b78b0	csmGetDrawableScreenColors
+1404b78d0	csmGetDrawableParentPartIndices
+1404b78f0	csmResetDrawableDynamicFlags
+1404b7910	_csmGetVersion@0
+1404b7928	_csmGetLatestMocVersion@0
+1404b7948	_csmGetMocVersion@8
+1404b7960	_csmHasMocConsistency@8
+1404b7978	_csmGetLogFunction@0
+1404b7990	_csmSetLogFunction@4
+1404b79a8	_csmReviveMocInPlace@8
+1404b79c0	_csmGetSizeofModel@4
+1404b79d8	_csmInitializeModelInPlace@12
+1404b79f8	_csmUpdateModel@4
+1404b7a10	_csmReadCanvasInfo@16
+1404b7a28	_csmGetParameterCount@4
+1404b7a40	_csmGetParameterIds@4
+1404b7a58	_csmGetParameterTypes@4
+1404b7a70	_csmGetParameterMinimumValues@4
+1404b7a90	_csmGetParameterMaximumValues@4
+1404b7ab0	_csmGetParameterDefaultValues@4
+1404b7ad0	_csmGetParameterValues@4
+1404b7af0	_csmGetParameterKeyCounts@4
+1404b7b10	_csmGetParameterKeyValues@4
+1404b7b30	_csmGetPartCount@4
+1404b7b48	_csmGetPartIds@4
+1404b7b60	_csmGetPartOpacities@4
+1404b7b78	_csmGetPartParentPartIndices@4
+1404b7b98	_csmGetDrawableCount@4
+1404b7bb0	_csmGetDrawableIds@4
+1404b7bc8	_csmGetDrawableConstantFlags@4
+1404b7be8	_csmGetDrawableDynamicFlags@4
+1404b7c08	_csmGetDrawableTextureIndices@4
+1404b7c28	_csmGetDrawableDrawOrders@4
+1404b7c48	_csmGetDrawableRenderOrders@4
+1404b7c68	_csmGetDrawableOpacities@4
+1404b7c88	_csmGetDrawableMaskCounts@4
+1404b7ca8	_csmGetDrawableMasks@4
+1404b7cc0	_csmGetDrawableVertexCounts@4
+1404b7ce0	_csmGetDrawableVertexPositions@4
+1404b7d08	_csmGetDrawableVertexUvs@4
+1404b7d28	_csmGetDrawableIndexCounts@4
+1404b7d48	_csmGetDrawableIndices@4
+1404b7d68	_csmGetDrawableMultiplyColors@4
+1404b7d88	_csmGetDrawableScreenColors@4
+1404b7da8	_csmGetDrawableParentPartIndices@4
+1404b7dd0	_csmResetDrawableDynamicFlags@4
+1404ba7f0	ID3D11Buffer : %d
+1404ba818	ID3D11Texture1D : %d
+1404ba848	ID3D11Texture2D : %d
+1404ba878	ID3D11Texture3D : %d
+1404ba8a8	ID3D11ShaderResourceView : %d
+1404ba8e8	ID3D11RenderTargetView : %d
+1404ba920	ID3D11DepthStencilView : %d
+1404ba958	ID3D11InputLayout : %d
+1404ba988	ID3D11VertexShader : %d
+1404ba9b8	ID3D11PixelShader : %d
+1404ba9e8	ID3D11BlendState : %d
+1404baa18	ID3D11DepthStencilState : %d
+1404baa58	ID3D11RasterizerState : %d
+1404baa90	ID3D11SamplerState : %d
+1404bab20	dxgi.dll
+1404bab88	d3d11.dll
+1404bac20	CreateDXGIFactory2
+1404bacc0	CreateDXGIFactory1
+1404bad60	CreateDXGIFactory
+1404bae50	D3D11CreateDevice
+1404bb1c8	Direct3DCreate9Ex
+1404bb220	Direct3DCreate9
+1404bb2b8	d3d9.dll
+1404bb560	DirectX 9
+1404e6170	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxGraphicsD3D9.cpp
+1404e61b0	ps_mask_blend_use_grhandle_cha.pso
+1404e61d8	ps_mask_blend_use_grhandle_chr.pso
+1404e6200	ps_mask_blend_use_grhandle_chg.pso
+1404e6228	ps_mask_blend_use_grhandle_chb.pso
+1404e6250	ps_mask_blend_use_grhandle_cha_reverse.pso
+1404e6280	ps_mask_blend_use_grhandle_chr_reverse.pso
+1404e62b0	ps_mask_blend_use_grhandle_chg_reverse.pso
+1404e62e0	ps_mask_blend_use_grhandle_chb_reverse.pso
+1404e6310	Base2DVertexShader.vso
+1404e6370	ps_nonetex_type0_ach0.pso
+1404e63c8	ps_blend0_type0_igcolor0_igtalpha0_ach0.pso
+1404e63f8	ps_mask_blend.pso
+1404e65d0	Driver:%s  Description:%s
+1404e65f0	D3DFMT_X8R8G8B8
+1404e6600	D3DFMT_R5G6B5
+1404e6610	D3DFMT_X1R5G5B5
+1404e6658	D3DFMT_D16
+1404e6668	D3DFMT_D24X8
+1404e6678	D3DFMT_D32
+1404e66d8	D3DFMT_A4R4G4B4
+1404e66e8	D3DFMT_A8R8G8B8
+1404e67a0	D3DFMT_A1R5G5B5
+1404e6930	D3DFMT_A16B16G16R16
+1404e69a0	D3DFMT_A16B16G16R16F
+1404e6a10	D3DFMT_A32B32G32R32F
+1404e6ad0	D3DFMT_G16R16
+1404e6b30	D3DFMT_R16F
+1404e6b40	D3DFMT_G16R16F
+1404e6ba8	D3DFMT_R32F
+1404e6bb8	D3DFMT_G32R32F
+1404e6c28	D3DFMT_A8B8G8R8
+1404e6d98	D3DFMT_R5G5B5
+1404e6fb8	D3DFMT_L8
+1404e6fc8	D3DFMT_A8L8
+1404e7038	D3DFMT_L16
+1404e7932	 ErrorCode %x\n
+1404e7a02	:%dByte(%dKByte)
+1404e7ad4	:%dByte(%dKByte)
+1404e7b50	No%d. UseFlag:%d UseCount:%d CubeMap:%d SizeX:%d SizeY:%d MipMapCount:%d Format:%d
+1404e7cb4	:%dByte(%dKByte)
+1404e7d94	:%dByte(%dKByte)
+1404e7e10	No%d. UseFlag:%d UseCount:%d SizeX:%d SizeY:%d Format:%d
+1404e84c0	msacm32.dll
+1404e84d0	acmFormatSuggest
+1404e84e8	acmStreamOpen
+1404e84f8	acmStreamClose
+1404e8508	acmMetrics
+1404e8518	acmStreamPrepareHeader
+1404e8530	acmStreamConvert
+1404e8548	acmStreamUnprepareHeader
+1404e8568	acmStreamSize
+1404e8580	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxSoundConvertWin.cpp
+1404e85fc	 Size:%dx%d
+1404e8618	Mono.pso
+1404e8660	Gauss_08Pixel_PS.pso
+1404e8678	Gauss_16Pixel_PS.pso
+1404e8690	Gauss_32Pixel_PS.pso
+1404e86a8	DownScaleX2.pso
+1404e86b8	DownScaleX4.pso
+1404e86c8	DownScaleX8.pso
+1404e86d8	BrightClipLess.pso
+1404e86f0	BrightClipLess_PMA.pso
+1404e8708	BrightClipFillLess.pso
+1404e8720	BrightClipFillLess_PMA.pso
+1404e8740	BrightClipGreater.pso
+1404e8758	BrightClipGreater_PMA.pso
+1404e8778	BrightClipFillGreater.pso
+1404e8798	BrightClipFillGreater_PMA.pso
+1404e87b8	BrightnessScale.pso
+1404e87d0	BrightnessScale_PMA.pso
+1404e87e8	Hsb_RGB_TO_HSB.pso
+1404e8800	Hsb_RGB_TO_HSB_PMA.pso
+1404e8818	Hsb_HSB_TO_RGB.pso
+1404e8830	Hsb_HSB_TO_RGB_PMA.pso
+1404e8848	Hsb_HSB_HLOCK.pso
+1404e8860	Hsb_HSB_HLOCK_PMA.pso
+1404e8878	Invert.pso
+1404e8888	Invert_PMA.pso
+1404e8898	Level.pso
+1404e88a8	Level_PMA.pso
+1404e88b8	TwoColor.pso
+1404e88c8	TwoColor_PMA.pso
+1404e88e0	GradientMap.pso
+1404e88f0	GradientMap_PMA.pso
+1404e8908	GradientMapRev.pso
+1404e8920	GradientMapRev_PMA.pso
+1404e8938	Replacement.pso
+1404e8948	Replacement_PMA.pso
+1404e8960	PremultipliedAlpha.pso
+1404e8978	InterpolatedAlpha.pso
+1404e8990	Y2uv2ToRgb.pso
+1404e89a0	Y2uv1ToRgb.pso
+1404e89b0	Y2uv2ToRgb_RRA.pso
+1404e89c8	Y2uv1ToRgb_RRA.pso
+1404e89e0	Bicubic.pso
+1404e89f0	Lanczos3.pso
+1404e8a00	BasBF_Normal.pso
+1404e8a18	BasBF_Multiple.pso
+1404e8a30	BasBF_Difference.pso
+1404e8a48	BasBF_Add.pso
+1404e8a58	BasBF_Screen.pso
+1404e8a70	BasBF_Overlay.pso
+1404e8a88	BasBF_Dodge.pso
+1404e8a98	BasBF_Burn.pso
+1404e8aa8	BasBF_Darken.pso
+1404e8ac0	BasBF_Lighten.pso
+1404e8ad8	BasBF_SoftLight.pso
+1404e8af0	BasBF_HardLight.pso
+1404e8b08	BasBF_Exclusion.pso
+1404e8b20	BasBF_Normal_AlphaCh.pso
+1404e8b40	BasBF_Add_AlphaCh.pso
+1404e8b58	BasBF_Multiple_AOnly.pso
+1404e8b78	BasBF_Normal_PMA.pso
+1404e8b90	BasBF_Multiple_PMA.pso
+1404e8ba8	BasBF_Difference_PMA.pso
+1404e8bc8	BasBF_Add_PMA.pso
+1404e8be0	BasBF_Screen_PMA.pso
+1404e8bf8	BasBF_Overlay_PMA.pso
+1404e8c10	BasBF_Dodge_PMA.pso
+1404e8c28	BasBF_Burn_PMA.pso
+1404e8c40	BasBF_Darken_PMA.pso
+1404e8c58	BasBF_Lighten_PMA.pso
+1404e8c70	BasBF_SoftLight_PMA.pso
+1404e8c88	BasBF_HardLight_PMA.pso
+1404e8ca0	BasBF_Exclusion_PMA.pso
+1404e8cb8	BasBF_Normal_AlphaCh_PMA.pso
+1404e8cd8	BasBF_Add_AlphaCh_PMA.pso
+1404e8cf8	BasBF_Multiple_AOnly_PMA.pso
+1404e8d18	BasBF_Mask.pso
+1404e8d28	BasBF_Mask_PMA.pso
+1404e8d40	RGBAMix_Base.pso
+1404e8d58	RGBAMix_Base_PMA.pso
+1404e8dc8	RGBAMix_S%sS%sS%sB%s%s.pso
+1404e8faf	?Hsb_HSB_BASE.pso
+1404e8fc8	Hsb_HSB_BASE_PMA.pso
+1404e8fe0	SSAO.pso
+1404e8ff0	SSAO_Blur.pso
+1404e9000	SSAO_MIX.pso
+1404e9010	FloatColorScale.pso
+1404e90c0	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxModelD3D9.cpp
+1404e9118	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxModelD3D11.cpp
+1404e9198	 %d byte )\n
+1404e9330	LOOPSTART=
+1404e9340	LOOPLENGTH=
+1404e9350	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxUseCLibOgg.cpp
+1404e9560	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxUseCLib.cpp
+1404e9598	Read Error
+1404e95a4	1.6.37
+1404e95ac	1.2.12
+1404e96e8	SampleGrabber
+1404e9740	MemFile
+1404e97a8	File Renderer
+1404e9a78	EyeBlink
+1404e9a88	LipSync
+1404e9a90	Model
+1404e9a98	Parameter
+1404e9aa8	PartOpacity
+1404e9abc	Angle
+1404e9ac8	HitArea
+1404e9ae0	Parts01Core
+1404e9af0	Parts01Arm_
+1404e9b00	Parts01ArmL_
+1404e9b10	Parts01ArmR_
+1404e9b20	ParamAngleX
+1404e9b30	ParamAngleY
+1404e9b40	ParamAngleZ
+1404e9b50	ParamEyeLOpen
+1404e9b60	ParamEyeLSmile
+1404e9b70	ParamEyeROpen
+1404e9b80	ParamEyeRSmile
+1404e9b90	ParamEyeBallX
+1404e9ba0	ParamEyeBallY
+1404e9bb0	ParamEyeBallForm
+1404e9bc8	ParamBrowLY
+1404e9bd8	ParamBrowRY
+1404e9be8	ParamBrowLX
+1404e9bf8	ParamBrowRX
+1404e9c08	ParamBrowLAngle
+1404e9c18	ParamBrowRAngle
+1404e9c28	ParamBrowLForm
+1404e9c48	ParamBrowRForm
+1404e9c58	ParamMouthForm
+1404e9c68	ParamMouthOpenY
+1404e9c78	ParamCheek
+1404e9c88	ParamBodyAngleX
+1404e9c98	ParamBodyAngleY
+1404e9ca8	ParamBodyAngleZ
+1404e9cb8	ParamBreath
+1404e9cc8	ParamArmLA
+1404e9cd8	ParamArmRA
+1404e9ce8	ParamArmLB
+1404e9cf8	ParamArmRB
+1404e9d08	ParamHandL
+1404e9d18	ParamHandR
+1404e9d28	ParamHairFront
+1404e9d38	ParamHairSide
+1404e9d48	ParamHairBack
+1404e9d58	ParamHairFluffy
+1404e9d68	ParamShoulderY
+1404e9d78	ParamBustX
+1404e9d88	ParamBustY
+1404e9d98	ParamBaseX
+1404e9da8	ParamBaseY
+1404e9db4	NONE:
+1404e9dc8	TapBody
+1404e9dd0	ArtMesh
+1404e9de0	Duration
+1404e9df8	AreBeziersRestricted
+1404e9e10	CurveCount
+1404e9e20	TotalSegmentCount
+1404e9e38	TotalPointCount
+1404e9e48	Curves
+1404e9e50	Target
+1404e9e60	FadeInTime
+1404e9e70	FadeOutTime
+1404e9e80	Segments
+1404e9e90	UserData
+1404e9ea0	UserDataCount
+1404e9eb0	TotalUserDataSize
+1404e9ecc	Value
+1404e9edc	Groups
+1404e9ee8	Parameters
+1404e9ef4	Blend
+1404e9f00	Multiply
+1404e9f10	Overwrite
+1404ea610	D_JsonNullValue
+1404ea640	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxUseCLibLive2DCubism4.cpp
+1404ea680	D_JsonError:type mismatch
+1404ea69c	ERROR
+1404ea6ac	false
+1404ea6e8	OleAut32.dll
+1404ea6f8	WAV Dest
+1404ed708	Mem Reader
+1404edef0	AMUnblock
+1404edf00	Renderer pin
+1404edf10	LoadTypeLib
+1404edf20	LoadRegTypeLib
+1404edf30	control.tlb
+1404edf50	..\\..\\..\\..\\..\\Source\\Library\\Main\\Windows\\DxUseCStrmBaseFilter.cpp
+1404edf98	XForm In
+1404edfb0	XForm Out
+1404edfc8	Output
+1404edfd8	Input
+1404edfe8	Input
+1404edff8	SampleGrabberInputPin
+1404ee010	SampleGrabber
+1404ee0e8	TIFFAdvanceDirectory
+1404ee100	TIFFUnlinkDirectory
+1404ee118	_TIFFVSetField
+1404ee128	%s: Invalid InkNames value; expecting %d names, found %d
+1404ee168	TIFFSetField
+1404ee178	Nonstandard tile width %d, convert file
+1404ee1a0	Nonstandard tile length %d, convert file
+1404ee1d0	%s: Sorry, cannot nest SubIFDs
+1404ee1f0	Unknown
+1404ee1f8	pseudo-
+1404ee200	%s: Invalid %stag "%s" (not supported by codec)
+1404ee230	%s: Failed to allocate space for list of custom values
+1404ee268	%s: Bad field type %d for "%s"
+1404ee288	%s: Null count for "%s" (type %d, writecount %d, passcount %d)
+1404ee2c8	custom tag binary object
+1404ee2e8	DotRange
+1404ee2f8	%s: Bad value %u for "%s" tag
+1404ee318	%s: Unknown %stag %u
+1404ee330	%s: Cannot modify tag "%s" while writing
+1404ee360	_TIFFVGetField
+1404ee370	Error fetching directory count
+1404ee390	Error fetching directory link
+1404ee3b0	Error writing directory link
+1404ee3d0	initYCbCrConversion
+1404ee3e8	initCIELabConversion
+1404ee400	BuildMapUaToAa
+1404ee410	PhotometricInterpretation
+1404ee488	BuildMapBitdepth16To8
+1404ee4a0	Sorry, requested compression method is not configured
+1404ee4d8	Sorry, can not handle images with %d-bit samples
+1404ee510	Missing needed %s tag
+1404ee528	Samples/pixel
+1404ee540	Sorry, can not handle contiguous data with %s=%d, and %s=%d and Bits/Sample=%d
+1404ee590	Color channels
+1404ee5a0	Sorry, can not handle RGB image with %s=%d
+1404ee5cc	InkSet
+1404ee5d8	Sorry, can not handle separated image with %s=%d
+1404ee610	Compression
+1404ee620	Sorry, LogL data must have %s=%d
+1404ee648	Sorry, LogLuv data must have %s=%d or %d
+1404ee678	Planarconfiguration
+1404ee690	Sorry, can not handle LogLuv images with %s=%d
+1404ee6c0	Sorry, can not handle image with %s=%d
+1404ee6e8	Missing required "Colormap" tag
+1404ee708	Out of memory for colormap copy
+1404ee728	Sorry, can not handle image
+1404ee748	No "get" routine setup
+1404ee760	No "put" routine setupl; probably can not handle image format
+1404ee7a8	No space for tile buffer
+1404ee7c8	gtTileSeparate
+1404ee7d8	Integer overflow in %s
+1404ee7f0	No space for strip buffer
+1404ee810	gtStripSeparate
+1404ee820	No space for YCbCr->RGB conversion state
+1404ee850	No space for CIE L*a*b*->RGB conversion state.
+1404ee880	Failed to initialize CIE L*a*b*->RGB conversion state.
+1404ee8b8	No space for B&W mapping table
+1404ee8d8	No space for photometric conversion table
+1404ee908	No space for Palette mapping table
+1404ee930	Assuming 8-bit colormap
+1404ee948	Out of memory
+1404ee958	Can't use TIFFReadRGBAStrip() with tiled file.
+1404ee988	Row passed to TIFFReadRGBAStrip() must be first in a strip.
+1404ee9c8	TIFFClientOpen
+1404ee9d8	"%s": Bad mode
+1404ee9e8	%s: Out of memory (TIFF structure)
+1404eea10	One of the client procedures is NULL pointer.
+1404eea40	Cannot read TIFF header
+1404eea58	Error writing TIFF header
+1404eea78	Not a TIFF file, bad magic number %d (0x%x)
+1404eeaa8	Not a TIFF file, bad version number %d (0x%x)
+1404eead8	Not a TIFF file, bad BigTIFF offsetsize %d (0x%x)
+1404eeb10	Not a TIFF file, bad BigTIFF unused %d (0x%x)
+1404eeb40	TIFFOpen
+1404eeb50	TIFFOpenW
+1404eeb60	%s Warning
+1404eeb71	IBTIFF
+1404eeb78	%s Error
+1404eeb88	SubfileType
+1404eeb98	OldSubfileType
+1404eeba8	ImageWidth
+1404eebb8	ImageLength
+1404eebc8	BitsPerSample
+1404eebd8	PhotometricInterpretation
+1404eebf8	Threshholding
+1404eec08	CellWidth
+1404eec18	CellLength
+1404eec28	FillOrder
+1404eec38	DocumentName
+1404eec48	ImageDescription
+1404eec68	StripOffsets
+1404eec78	Orientation
+1404eec88	SamplesPerPixel
+1404eec98	RowsPerStrip
+1404eeca8	StripByteCounts
+1404eecb8	MinSampleValue
+1404eecc8	MaxSampleValue
+1404eecd8	XResolution
+1404eece8	YResolution
+1404eecf8	PlanarConfiguration
+1404eed10	PageName
+1404eed20	XPosition
+1404eed30	YPosition
+1404eed40	FreeOffsets
+1404eed50	FreeByteCounts
+1404eed60	GrayResponseUnit
+1404eed78	GrayResponseCurve
+1404eed90	ResolutionUnit
+1404eeda0	PageNumber
+1404eedb0	ColorResponseUnit
+1404eedc8	TransferFunction
+1404eede0	Software
+1404eedf0	DateTime
+1404eedfc	Artist
+1404eee08	HostComputer
+1404eee18	WhitePoint
+1404eee28	PrimaryChromaticities
+1404eee40	ColorMap
+1404eee50	HalftoneHints
+1404eee60	TileWidth
+1404eee70	TileLength
+1404eee80	TileOffsets
+1404eee90	TileByteCounts
+1404eeea0	SubIFD
+1404eeea8	InkNames
+1404eeeb8	NumberOfInks
+1404eeec8	TargetPrinter
+1404eeed8	ExtraSamples
+1404eeee8	SampleFormat
+1404eeef8	SMinSampleValue
+1404eef08	SMaxSampleValue
+1404eef18	ClipPath
+1404eef28	XClipPathUnits
+1404eef38	YClipPathUnits
+1404eef48	YCbCrCoefficients
+1404eef60	YCbCrSubsampling
+1404eef78	YCbCrPositioning
+1404eef90	ReferenceBlackWhite
+1404eefa8	XMLPacket
+1404eefb8	Matteing
+1404eefc8	DataType
+1404eefd8	ImageDepth
+1404eefe8	TileDepth
+1404eeff8	ImageFullWidth
+1404ef008	ImageFullLength
+1404ef018	TextureFormat
+1404ef028	TextureWrapModes
+1404ef040	FieldOfViewCotangent
+1404ef058	MatrixWorldToScreen
+1404ef070	MatrixWorldToCamera
+1404ef088	Copyright
+1404ef098	RichTIFFIPTC
+1404ef0a8	Photoshop
+1404ef0b8	EXIFIFDOffset
+1404ef0c8	ICC Profile
+1404ef0d8	GPSIFDOffset
+1404ef0e8	FaxRecvParams
+1404ef0f8	FaxSubAddress
+1404ef108	FaxRecvTime
+1404ef120	StoNits
+1404ef128	InteroperabilityIFDOffset
+1404ef148	DNGVersion
+1404ef158	DNGBackwardVersion
+1404ef170	UniqueCameraModel
+1404ef188	LocalizedCameraModel
+1404ef1a0	CFAPlaneColor
+1404ef1b0	CFALayout
+1404ef1c0	LinearizationTable
+1404ef1d8	BlackLevelRepeatDim
+1404ef1f0	BlackLevel
+1404ef200	BlackLevelDeltaH
+1404ef218	BlackLevelDeltaV
+1404ef230	WhiteLevel
+1404ef240	DefaultScale
+1404ef250	BestQualityScale
+1404ef268	DefaultCropOrigin
+1404ef280	DefaultCropSize
+1404ef290	ColorMatrix1
+1404ef2a0	ColorMatrix2
+1404ef2b0	CameraCalibration1
+1404ef2c8	CameraCalibration2
+1404ef2e0	ReductionMatrix1
+1404ef2f8	ReductionMatrix2
+1404ef310	AnalogBalance
+1404ef320	AsShotNeutral
+1404ef330	AsShotWhiteXY
+1404ef340	BaselineExposure
+1404ef358	BaselineNoise
+1404ef368	BaselineSharpness
+1404ef380	BayerGreenSplit
+1404ef390	LinearResponseLimit
+1404ef3a8	CameraSerialNumber
+1404ef3c0	LensInfo
+1404ef3d0	ChromaBlurRadius
+1404ef3e8	AntiAliasStrength
+1404ef400	ShadowScale
+1404ef410	DNGPrivateData
+1404ef420	MakerNoteSafety
+1404ef430	CalibrationIlluminant1
+1404ef448	CalibrationIlluminant2
+1404ef460	RawDataUniqueID
+1404ef470	OriginalRawFileName
+1404ef488	OriginalRawFileData
+1404ef4a0	ActiveArea
+1404ef4b0	MaskedAreas
+1404ef4c0	AsShotICCProfile
+1404ef4d8	AsShotPreProfileMatrix
+1404ef4f0	CurrentICCProfile
+1404ef508	CurrentPreProfileMatrix
+1404ef520	PerSample
+1404ef530	Indexed
+1404ef538	GlobalParametersIFD
+1404ef550	ProfileType
+1404ef560	FaxProfile
+1404ef570	CodingMethods
+1404ef580	VersionYear
+1404ef590	ModeNumber
+1404ef59c	Decode
+1404ef5a8	ImageBaseColor
+1404ef5b8	T82Options
+1404ef5c8	StripRowCounts
+1404ef5d8	ImageLayer
+1404ef5e8	ExposureTime
+1404ef5f8	FNumber
+1404ef600	ExposureProgram
+1404ef610	SpectralSensitivity
+1404ef628	ISOSpeedRatings
+1404ef638	OptoelectricConversionFactor
+1404ef658	ExifVersion
+1404ef668	DateTimeOriginal
+1404ef680	DateTimeDigitized
+1404ef698	ComponentsConfiguration
+1404ef6b0	CompressedBitsPerPixel
+1404ef6c8	ShutterSpeedValue
+1404ef6e0	ApertureValue
+1404ef6f0	BrightnessValue
+1404ef700	ExposureBiasValue
+1404ef718	MaxApertureValue
+1404ef730	SubjectDistance
+1404ef740	MeteringMode
+1404ef750	LightSource
+1404ef75c	Flash
+1404ef768	FocalLength
+1404ef778	SubjectArea
+1404ef788	MakerNote
+1404ef798	UserComment
+1404ef7a8	SubSecTime
+1404ef7b8	SubSecTimeOriginal
+1404ef7d0	SubSecTimeDigitized
+1404ef7e8	FlashpixVersion
+1404ef7f8	ColorSpace
+1404ef808	PixelXDimension
+1404ef818	PixelYDimension
+1404ef828	RelatedSoundFile
+1404ef840	FlashEnergy
+1404ef850	SpatialFrequencyResponse
+1404ef870	FocalPlaneXResolution
+1404ef888	FocalPlaneYResolution
+1404ef8a0	FocalPlaneResolutionUnit
+1404ef8c0	SubjectLocation
+1404ef8d0	ExposureIndex
+1404ef8e0	SensingMethod
+1404ef8f0	FileSource
+1404ef900	SceneType
+1404ef910	CFAPattern
+1404ef920	CustomRendered
+1404ef930	ExposureMode
+1404ef940	WhiteBalance
+1404ef950	DigitalZoomRatio
+1404ef968	FocalLengthIn35mmFilm
+1404ef980	SceneCaptureType
+1404ef998	GainControl
+1404ef9a8	Contrast
+1404ef9b8	Saturation
+1404ef9c8	Sharpness
+1404ef9d8	DeviceSettingDescription
+1404ef9f8	SubjectDistanceRange
+1404efa10	ImageUniqueID
+1404efa20	_TIFFMergeFields
+1404efa38	for fields array
+1404efa50	TIFFMergeFieldInfo
+1404efa68	for fields array
+1404efa80	Setting up field info failed
+1404efaa0	_TIFFSetupFields
+1404efab8	Failed to allocate fields array
+1404efad8	Internal error, unknown tag 0x%x
+1404efb00	TIFFFieldWithTag
+1404efb14	Tag %d
+1404efb20	TIFFReadDirectoryCheckOrder
+1404efb40	TIFFReadCustomDirectory
+1404efb58	EstimateStripByteCounts
+1404efb70	MissingRequired
+1404efb80	TIFFFetchDirectory
+1404efb98	TIFFFetchNormalTag
+1404efbb0	TIFFFetchStripThing
+1404efbc8	TIFFFetchSubjectDistance
+1404efbe8	TIFFReadDirectory
+1404efc00	ReadDirEntryArray
+1404efc18	Incorrect count for "%s"
+1404efc38	Incompatible type for "%s"
+1404efc58	IO error during reading of "%s"
+1404efc78	Incorrect value for "%s"
+1404efc98	Cannot handle different values per sample for "%s"
+1404efcd0	Sanity check on size of "%s" value failed
+1404efd00	Out of memory reading of "%s"
+1404efd20	Incorrect count for "%s"; tag ignored
+1404efd48	Incompatible type for "%s"; tag ignored
+1404efd70	IO error during reading of "%s"; tag ignored
+1404efda0	Incorrect value for "%s"; tag ignored
+1404efdd0	Cannot handle different values per sample for "%s"; tag ignored
+1404efe10	Sanity check on size of "%s" value failed; tag ignored
+1404efe48	Out of memory reading of "%s"; tag ignored
+1404efe78	Failed to read directory at offset %I64u
+1404efea8	Unknown field with tag %d (0x%x) encountered
+1404efed8	Registering anonymous field with tag %d (0x%x) failed
+1404eff10	Planarconfig tag value assumed incorrect, assuming data is contig instead of chunky
+1404eff64	tiles
+1404eff6c	strips
+1404eff78	Cannot handle zero number of %s
+1404eff98	unknown tagname
+1404effa8	Photometric tag is missing, assuming data is YCbCr
+1404effe0	Photometric tag value assumed incorrect, assuming data is YCbCr instead of RGB
+1404f0030	BitsPerSample tag is missing, assuming 8 bits per sample
+1404f0070	SamplesPerPixel tag is missing, assuming correct SamplesPerPixel value is 3
+1404f00c0	SamplesPerPixel tag is missing, applying correct SamplesPerPixel value of 3
+1404f0110	Colormap
+1404f0120	TIFF directory is missing required "StripByteCounts" field, calculating from imagelength
+1404f0180	Bogus "StripByteCounts" field, ignoring and calculating from imagelength
+1404f01d0	Wrong "StripByteCounts" field, ignoring and calculating from imagelength
+1404f0220	Cannot handle zero scanline size
+1404f0248	Cannot handle zero tile size
+1404f0268	Cannot handle zero strip size
+1404f0288	Invalid TIFF directory; tags are not sorted in ascending order
+1404f02c8	for "StripByteCounts" array
+1404f02e8	Cannot determine size of unknown tag type %d
+1404f0318	TIFF directory is missing required "%s" field
+1404f0348	for IFD list
+1404f0358	%s: Seek error accessing TIFF directory
+1404f0380	%s: Can not read TIFF directory count
+1404f03b0	Sanity check on directory count failed, this is probably not a valid IFD offset
+1404f0400	to read TIFF directory
+1404f0418	%.100s: Can not read TIFF directory
+1404f0440	Can not read TIFF directory count
+1404f0470	Sanity check on directory count failed, zero tag directories not supported
+1404f04c0	Can not read TIFF directory
+1404f04e0	No definition found for tag %d
+1404f0500	TIFFFetchNormalTag
+1404f0520	ASCII value for tag "%s" contains null byte in value; value incorrectly truncated during reading due to implementation limitations
+1404f05a8	ASCII value for tag "%s" does not end in null byte
+1404f05e0	incorrect count for field "%s", expected 2, got %d
+1404f0618	incorrect count for field "%s", expected %d, got %d
+1404f0650	for strip array
+1404f0660	for chopped "StripByteCounts" array
+1404f0688	for chopped "StripOffsets" array
+1404f08b0	TIFFFillTile
+1404f08c0	TIFFReadBufferSetup
+1404f08d8	TIFFFillStripPartial
+1404f08f0	TIFFReadEncodedStrip
+1404f0908	TIFFReadRawStrip
+1404f0920	TIFFFillStrip
+1404f0930	TIFFReadEncodedTile
+1404f0948	TIFFReadRawTile
+1404f0958	Seek error at scanline %lu, strip %lu
+1404f0980	Read error at scanline %lu; got %I64u bytes, expected %I64u
+1404f09c0	%lu: Row out of range, max %lu
+1404f09e0	%lu: Sample out of range, max %lu
+1404f0a08	%lu: Strip out of range, max %lu
+1404f0a30	Read error at scanline %lu, strip %lu; got %I64u bytes, expected %I64u
+1404f0a78	Invalid strip byte count %I64u, strip %lu
+1404f0aa8	Read error on strip %lu; got %I64u bytes, expected %I64u
+1404f0ae8	Data buffer too small to hold strip %lu
+1404f0b10	%lu: Tile out of range, max %lu
+1404f0b30	Seek error at row %lu, col %lu, tile %lu
+1404f0b60	Read error at row %lu, col %lu; got %I64u bytes, expected %I64u
+1404f0ba0	Read error at row %lu, col %lu, tile %lu; got %I64u bytes, expected %I64u
+1404f0bf0	%I64u: Invalid tile byte count, tile %lu
+1404f0c20	Data buffer too small to hold tile %lu
+1404f0c48	No space for data buffer at scanline %lu
+1404f0c78	File not open for reading
+1404f0c98	Can not read tiles from a stripped image
+1404f0cc8	Can not read scanlines from a tiled image
+1404f0cf8	%s %s encoding is not implemented
+1404f0d20	Compression scheme %u %s encoding is not implemented
+1404f0d58	scanline
+1404f0d64	strip
+1404f0d78	%s %s decoding is not implemented
+1404f0da0	Compression scheme %u %s decoding is not implemented
+1404f0dd8	Compression algorithm does not support random access
+1404f0e10	Failed to allocate memory for %s (%ld elements of %ld bytes each)
+1404f0e58	No space for "TransferFunction" tag
+1404f0e8f	@TIFFComputeStrip
+1404f0ea8	TIFFVStripSize64
+1404f0ec0	TIFFVStripSize
+1404f0ed0	TIFFRawStripSize64
+1404f0ee8	TIFFRawStripSize
+1404f0f00	TIFFStripSize
+1404f0f10	TIFFScanlineSize64
+1404f0f28	TIFFScanlineSize
+1404f0f40	TIFFRasterScanlineSize64
+1404f0f60	TIFFRasterScanlineSize
+1404f0f78	TIFFNumberOfStrips
+1404f0f90	Invalid td_samplesperpixel value
+1404f0fb8	Invalid YCbCr subsampling (%dx%d)
+1404f0fe0	Invalid YCbCr subsampling
+1404f1000	TIFFTileRowSize
+1404f1010	TIFFVTileSize64
+1404f1020	TIFFVTileSize
+1404f1030	TIFFTileSize
+1404f1040	%lu: Col out of range, max %lu
+1404f1060	%lu: Depth out of range, max %lu
+1404f1088	TIFFNumberOfTiles
+1404f10a0	TIFFTileRowSize
+1404f10d0	TIFFWriteDirectoryTagTransferfunction
+1404f10f8	TIFFWriteDirectoryTagSubifd
+1404f1118	TIFFRewriteDirectory
+1404f1130	TIFFWriteDirectorySec
+1404f1148	TIFFWriteDirectoryTagCheckedRationalArray
+1404f1178	TIFFWriteDirectoryTagCheckedSrationalArray
+1404f11a8	TIFFWriteDirectoryTagData
+1404f11c8	TIFFLinkDirectory
+1404f11e0	TIFFResetField
+1404f11f0	TIFFWriteDirectoryTagSampleformatArray
+1404f1218	TIFFWriteDirectoryTagShortPerSample
+1404f1240	TIFFWriteDirectoryTagLongLong8Array
+1404f1268	TIFFWriteDirectoryTagIfdIfd8Array
+1404f1290	TIFFWriteDirectoryTagColormap
+1404f12b0	Error updating TIFF header
+1404f12d0	Sanity check on tag count failed, likely corrupt TIFF
+1404f1308	Error post-encoding before directory write
+1404f1338	Error flushing data before directory write
+1404f1368	Maximum TIFF file size exceeded
+1404f1388	IO error writing directory
+1404f13b0	Attempt to write value larger than 0xFFFFFFFF in Classic TIFF file.
+1404f13f8	IO error writing tag data
+1404f1418	Error writing SubIFD directory link
+1404f1440	Memory mapped files not currently supported for this operation.
+1404f1480	Attempt to reset field on directory not already on disk.
+1404f14c0	%s: Can not read TIFF directory entry.
+1404f14e8	%s: Could not find tag %d.
+1404f1508	for field buffer.
+1404f1520	Value exceeds 32bit range of output type.
+1404f1550	%s: Can not write TIFF directory entry.
+1404f1588	TIFFWriteScanline
+1404f15a0	TIFFWriteEncodedStrip
+1404f15b8	TIFFWriteRawStrip
+1404f15d0	TIFFWriteEncodedTile
+1404f15e8	TIFFWriteRawTile
+1404f1600	TIFFWriteBufferSetup
+1404f1618	TIFFAppendToStrip
+1404f1630	Seek error at scanline %lu
+1404f1650	Write error at scanline %lu
+1404f1678	PackBits
+1404f1688	ThunderScan
+1404f16a8	Old-style JPEG
+1404f16b8	CCITT RLE
+1404f16c8	CCITT RLE/W
+1404f16d8	CCITT Group 3
+1404f16e8	CCITT Group 4
+1404f16f8	ISO JBIG
+1404f1708	Deflate
+1404f1710	AdobeDeflate
+1404f1720	PixarLog
+1404f172c	SGILog
+1404f1738	SGILog24
+1404f1750	%s compression support is not configured
+1404f1780	DumpModeDecode
+1404f1790	Not enough data for scanline %lu, expected a request for at most %I64d bytes, got a request for %I64d bytes
+1404f1800	PackBitsDecode
+1404f1810	Discarding %lu bytes to avoid buffer overrun
+1404f1840	Terminating PackBitsDecode due to lack of data.
+1404f1870	Not enough data for scanline %lu
+1404f1898	FaxMode
+1404f18a0	FaxFillFunc
+1404f18b0	BadFaxLines
+1404f18c0	CleanFaxData
+1404f18d0	ConsecutiveBadFaxLines
+1404f1950	InitCCITTFax3
+1404f1960	Fax4Decode
+1404f1970	Fax3SetupState
+1404f1ea0	Fax4Encode
+1404f1eb0	Fax3DecodeRLE
+1404f1ec0	Fax3Decode1D
+1404f1f00	Fax3Encode
+1404f1f10	Fax3Decode2D
+1404f2250	Group3Options
+1404f2260	Group4Options
+1404f2270	Bad code word at line %u of %s %u (x %u)
+1404f22a0	Uncompressed data (not supported) at line %u of %s %u (x %u)
+1404f22e0	Premature EOL
+1404f22f0	Line length mismatch
+1404f2308	%s at line %u of %s %u (got %u, expected %u)
+1404f2338	Premature EOF at line %u of %s %u (x %u)
+1404f2368	Fractional scanlines cannot be read
+1404f2390	Bits/sample must be 1 for Group 3/4 encoding/decoding
+1404f23c8	Row pixels integer overflow (rowpixels %u)
+1404f23f8	for Group 3/4 run arrays
+1404f2418	No space for Group 3/4 reference line
+1404f2440	Fractional scanlines cannot be written
+1404f2468	  Group 4 Options:
+1404f2480	%suncompressed data
+1404f2498	  Group 3 Options:
+1404f24b0	%s2-d encoding
+1404f24c8	%sEOL padding
+1404f24d8	 (%lu = 0x%lx)\n
+1404f24e8	  Fax Data:
+1404f24f4	 clean
+1404f2500	 receiver regenerated
+1404f2518	 uncorrected errors
+1404f2530	 (%u = 0x%x)\n
+1404f2540	  Bad Fax Lines: %lu\n
+1404f2558	  Consecutive Bad Fax Lines: %lu\n
+1404f2580	Merging common CCITT Fax codec-specific tags failed
+1404f25b8	InitCCITTFax3
+1404f25c8	No space for state block
+1404f25e8	Merging CCITT Fax 3 codec-specific tags failed
+1404f2618	TIFFInitCCITTFax3
+1404f2630	Merging CCITT Fax 4 codec-specific tags failed
+1404f2660	TIFFInitCCITTFax4
+1404f2676	"@ThunderSetupDecode
+1404f2690	ThunderDecode
+1404f26a0	ThunderDecodeRow
+1404f26f0	Wrong bitspersample value (%d), Thunder decoder only supports 4bits per sample.
+1404f2740	Not enough
+1404f2750	Too much
+1404f2760	%s data at scanline %lu (%I64u != %I64u)
+1404f2790	NeXTDecode
+1404f27a0	Not enough data for scanline %ld
+1404f27c8	TIFFInitLZW
+1404f27d8	LZWSetupDecode
+1404f27e8	LZWPreDecode
+1404f27f8	LZWDecode
+1404f2808	LZWDecodeCompat
+1404f2818	LZWSetupEncode
+1404f2828	No space for LZW state block
+1404f2848	No space for LZW code table
+1404f2868	Old-style LZW codes, convert file
+1404f2890	Bogus encoding, loop in the code table; scanline %d
+1404f28c8	LZWDecode: Strip %d not terminated with EOI code
+1404f2900	LZWDecode: Corrupted LZW table at scanline %d
+1404f2930	Corrupted LZW table at scanline %d
+1404f2960	Wrong length of decoded string: data probably corrupted at scanline %d
+1404f29a8	Not enough data at scanline %d (short %I64d bytes)
+1404f29e0	No space for LZW hash table
+1404f2a00	LogLuvSetupEncode
+1404f2a18	LogLuvDecode32
+1404f2a28	LogLuvVSetField
+1404f2aa0	TIFFInitSGILog
+1404f2ab0	LogL16InitState
+1404f2ac0	LogL16Decode
+1404f2ad0	LogLuvInitState
+1404f2ae0	LogLuvSetupDecode
+1404f2af8	LogLuvDecode24
+1404f2b08	SGILogDataFmt
+1404f2b18	SGILogEncode
+1404f2b28	Not enough data at row %lu (short %I64d pixels)
+1404f2b58	No support for converting user data format to LogL
+1404f2b90	No space for SGILog translation buffer
+1404f2bb8	SGILog compression cannot handle non-contiguous data
+1404f2bf0	No support for converting user data format to LogLuv
+1404f2c28	must be either LogLUV or LogL
+1404f2c50	Inappropriate photometric interpretation %d for SGILog compression; %s
+1404f2ca0	XYZ, Luv
+1404f2cb0	SGILog compression supported only for %s, or raw data
+1404f2ce8	Unknown data format %d for LogLuv compression
+1404f2d18	Unknown encoding %d for LogLuv compression
+1404f2d48	Merging SGILog codec-specific tags failed
+1404f2d78	%s: No space for LogLuv state block
+14050b2a0	PredictorEncodeTile
+14050b2e8	PredictorSetup
+14050b2f8	Predictor
+14050b310	Horizontal differencing "Predictor" not supported with %d-bit samples
+14050b358	Floating point "Predictor" not supported with %d data format
+14050b398	"Predictor" value %d not supported
+14050b3c0	Out of memory allocating %I64d byte temp buffer.
+14050b3f8	  Predictor: 
+14050b408	none 
+14050b410	horizontal differencing 
+14050b430	floating point predictor 
+14050b450	%u (0x%x)\n
+14050b460	Merging Predictor codec-specific tags failed
+14050b490	TIFFPredictorInit
+14050be18	Too many bytes for PNG signature
+14050be40	Potential overflow in png_zalloc()
+14050be68	Application built with libpng-
+14050be88	 but running with 
+14050bea0	Ignoring invalid time value
+14050bec0	unexpected zlib return code
+14050bee0	unexpected end of LZ stream
+14050bf00	missing LZ dictionary
+14050bf18	zlib IO error
+14050bf28	bad parameters to zlib
+14050bf40	damaged LZ stream
+14050bf58	insufficient memory
+14050bf70	truncated
+14050bf80	unsupported zlib version
+14050bfa0	unexpected zlib return
+14050bfb8	gamma value does not match sRGB
+14050bfd8	gamma value does not match libpng estimate
+14050c008	gamma value out of range
+14050c028	duplicate
+14050c038	inconsistent chromaticities
+14050c058	invalid chromaticities
+14050c070	internal error checking chromaticities
+14050c098	profile '
+14050c0b0	invalid sRGB rendering intent
+14050c0d8	inconsistent rendering intents
+14050c0f8	duplicate sRGB information ignored
+14050c120	cHRM chunk does not match sRGB
+14050c140	too short
+14050c150	exceeds application limits
+14050c170	length does not match profile
+14050c190	invalid length
+14050c1a0	tag count too large
+14050c1b8	invalid rendering intent
+14050c1d8	intent outside defined range
+14050c1f8	invalid signature
+14050c210	PCS illuminant is not D50
+14050c230	RGB color space not permitted on grayscale PNG
+14050c260	Gray color space not permitted on RGB PNG
+14050c290	invalid ICC profile color space
+14050c2b0	invalid embedded Abstract ICC profile
+14050c2d8	unexpected DeviceLink ICC profile class
+14050c300	unexpected NamedColor ICC profile class
+14050c328	unrecognized ICC profile class
+14050c348	unexpected ICC PCS encoding
+14050c368	ICC profile tag outside profile
+14050c388	ICC profile tag start not a multiple of 4
+14050c3b8	known incorrect sRGB profile
+14050c3d8	out-of-date sRGB profile with no signature
+14050c408	Not recognizing known sRGB profile that has been edited
+14050c440	internal error handling cHRM coefficients
+14050c470	internal error handling cHRM->XYZ
+14050c498	Image width is zero in IHDR
+14050c4b8	Invalid image width in IHDR
+14050c4d8	Image width exceeds user limit in IHDR
+14050c500	Image height is zero in IHDR
+14050c520	Invalid image height in IHDR
+14050c540	Image height exceeds user limit in IHDR
+14050c568	Invalid bit depth in IHDR
+14050c588	Invalid color type in IHDR
+14050c5a8	Invalid color type/bit depth combination in IHDR
+14050c5e0	Unknown interlace method in IHDR
+14050c608	Unknown compression method in IHDR
+14050c630	MNG features are not allowed in a PNG datastream
+14050c668	Unknown filter method in IHDR
+14050c688	Invalid filter method in IHDR
+14050c6a8	Invalid IHDR data
+14050c6c0	gamma table being rebuilt
+14050c728	Missing IHDR before IDAT
+14050c748	Missing PLTE before IDAT
+14050c768	Too many IDATs found
+14050c780	png_read_update_info/png_start_read_image: duplicate call
+14050c7c0	png_start_read_image/png_read_update_info: duplicate call
+14050c800	Invalid attempt to read row data
+14050c828	bad adaptive filter value
+14050c848	sequential row overflow
+14050c860	internal sequential row size calculation error
+14050c890	Interlace handling should be turned on when using png_read_image
+14050c8d8	Read palette index exceeding num_palette
+14050c908	.Too many IDATs found
+14050c920	..Too many IDATs found
+14050c938	Writing zero-length unknown chunk
+14050c960	profile matches sRGB but writing iCCP instead
+14050c990	Valid palette required for paletted images
+14050c9c0	No IDATs written into file
+14050c9e0	Wrote palette index exceeding num_palette
+14050ca10	png_write_info was never called before png_write_row
+14050ca48	internal write transform logic error
+14050ca70	Unknown row filter for method 0
+14050ca90	png_set_filter: UP/AVG/PAETH cannot be added after start
+14050cad0	Unknown custom filter method
+14050caf0	0123456789ABCDEF
+14050cb0a	3456789
+14050cb18	0123456789ABCDEFLibpng jmp_buf still allocated
+14050cb48	Application jmp_buf size changed
+14050cb70	undefined
+14050cb80	libpng error: %s
+14050cb98	libpng warning: %s
+14050ceb0	invalid after png_start_read_image or png_read_update_info
+14050cef0	libpng does not support gamma+background+rgb_to_gray
+14050cf28	invalid background gamma type
+14050cf48	Palette is NULL in indexed image
+14050cf70	png_do_encode_alpha: unexpected call
+14050cf98	NULL row buffer
+14050cfa8	Uninitialized row
+14050cfc0	png_do_rgb_to_gray found nongray pixel
+14050cfe8	png_do_quantize returned rowbytes=0
+14050d010	Call to NULL write function
+14050d030	Write Error
+14050d040	Can't set both read_data_fn and write_data_fn in the same structure
+14050d088	Call to NULL read function
+14050d0a8	internal error: array alloc
+14050d0c8	internal error: array realloc
+14050d150	Insufficient memory for eXIf chunk data
+14050d178	Invalid palette size, hIST allocation skipped
+14050d1a8	Insufficient memory for hIST chunk data
+14050d1d0	Invalid pCAL equation type
+14050d1f0	Invalid pCAL parameter count
+14050d210	Invalid format for pCAL parameter
+14050d238	Insufficient memory for pCAL purpose
+14050d260	Insufficient memory for pCAL units
+14050d288	Insufficient memory for pCAL params
+14050d2b0	Insufficient memory for pCAL parameter
+14050d2d8	Invalid sCAL unit
+14050d2f0	Invalid sCAL width
+14050d308	Invalid sCAL height
+14050d320	Memory allocation failed while processing sCAL
+14050d350	Invalid palette length
+14050d368	Invalid palette
+14050d378	too many text chunks
+14050d390	text compression mode is out of range
+14050d3b8	text chunk: out of memory
+14050d3d8	tRNS chunk has out-of-range samples for bit_depth
+14050d410	too many sPLT chunks
+14050d428	png_set_sPLT: invalid sPLT
+14050d448	sPLT out of memory
+14050d460	png_set_unknown_chunks now expects a valid location
+14050d498	invalid location in png_set_unknown_chunks
+14050d4c8	too many unknown chunks
+14050d4e0	unknown chunk: out of memory
+14050d500	keyword truncated
+14050d518	keyword "@1": bad character '0x@2'
+14050d540	length exceeds PNG maximum
+14050d560	 using zstream
+14050d570	in use by IDAT
+14050d580	deflateEnd failed (ignored)
+14050d5a0	compressed data too long
+14050d5c0	error writing ancillary chunked compressed data
+14050d5f0	Invalid bit depth for grayscale image
+14050d618	Invalid bit depth for RGB image
+14050d638	Invalid bit depth for paletted image
+14050d660	Invalid bit depth for grayscale+alpha image
+14050d690	Invalid bit depth for RGBA image
+14050d6b8	Invalid image color type specified
+14050d6e0	Invalid compression type specified
+14050d708	Invalid filter type specified
+14050d728	Invalid interlace type specified
+14050d750	Invalid number of colors in palette
+14050d778	Ignoring request to write a PLTE chunk in grayscale PNG
+14050d7b0	Z_OK on Z_FINISH with output space
+14050d7d8	Invalid sRGB rendering intent specified
+14050d800	No profile for iCCP chunk
+14050d820	ICC profile too short
+14050d838	ICC profile length invalid (not a multiple of 4)
+14050d870	iCCP: invalid keyword
+14050d888	sPLT: invalid keyword
+14050d8a0	Invalid sBIT depth specified
+14050d8c0	Invalid number of transparent colors specified
+14050d8f0	Ignoring attempt to write tRNS chunk out-of-range for bit_depth
+14050d930	Ignoring attempt to write 16-bit tRNS chunk when bit_depth is 8
+14050d970	Can't write tRNS with an alpha channel
+14050d998	Invalid background palette index
+14050d9c0	Ignoring attempt to write 16-bit bKGD chunk when bit_depth is 8
+14050da00	Ignoring attempt to write bKGD chunk out-of-range for bit_depth
+14050da40	Invalid number of histogram entries specified
+14050da70	tEXt: invalid keyword
+14050da88	tEXt: text too long
+14050daa0	zTXt: invalid compression type
+14050dac0	zTXt: invalid keyword
+14050dad8	iTXt: invalid keyword
+14050daf0	iTXt: invalid compression
+14050db10	iTXt: uncompressed text too long
+14050db38	Unrecognized unit type for oFFs chunk
+14050db60	Unrecognized equation type for pCAL chunk
+14050db90	pCAL: invalid keyword
+14050dba8	Can't write sCAL (buffer too small)
+14050dbd0	Unrecognized unit type for pHYs chunk
+14050dbf8	Invalid time specified for tIME chunk
+14050dc50	PNG unsigned integer out of range
+14050dc78	Not a PNG file
+14050dc88	PNG file corrupted by ASCII conversion
+14050dcb0	CRC error
+14050dcc0	insufficient memory to read chunk
+14050dce8	invalid window size (libpng)
+14050dd08	zstream unclaimed
+14050dd20	extra compressed data
+14050dd38	out of place
+14050dd48	invalid
+14050dd50	missing IHDR
+14050dd60	ignored in grayscale PNG
+14050dd80	tRNS must be after
+14050dd98	hIST must be after
+14050ddb0	bKGD must be after
+14050ddc8	invalid values
+14050ddd8	too many profiles
+14050ddf0	out of memory
+14050de00	bad compression method
+14050de18	bad keyword
+14050de28	No space in chunk cache for sPLT
+14050de50	malformed sPLT chunk
+14050de68	sPLT chunk has bad length
+14050de88	sPLT chunk requires too much memory
+14050deb0	invalid with alpha channel
+14050ded0	invalid index
+14050dee0	invalid gray level
+14050def8	invalid color
+14050df08	incorrect byte-order specifier
+14050df28	invalid parameter count
+14050df40	unrecognized equation type
+14050df60	invalid data
+14050df70	invalid unit
+14050df80	bad width format
+14050df98	non-positive width
+14050dfb0	bad height format
+14050dfc8	non-positive height
+14050dfe0	no space in chunk cache
+14050dff8	Insufficient memory to process text chunk
+14050e028	unknown compression type
+14050e048	Read failure in png_handle_zTXt
+14050e068	bad compression info
+14050e080	unknown chunk exceeds memory limits
+14050e0a8	error in user chunk
+14050e0c0	Saving unknown chunk:
+14050e0e0	forcing save of an unhandled chunk; please call png_set_keep_unknown_chunks
+14050e130	unhandled critical chunk
+14050e150	invalid chunk type
+14050e168	chunk data is too large
+14050e2a8	internal row logic error
+14050e2c8	internal row size calculation error
+14050e2f0	internal row width error
+14050e310	invalid user transform pixel depth
+14050e338	Not enough image data
+14050e350	Extra compressed data
+14050e368	Too much image data
+14050e380	Row has too many bytes to allocate in memory
+14050ec58	incorrect header check
+14050ec70	unknown compression method
+14050ec90	invalid window size
+14050eca8	unknown header flags set
+14050ecc8	header crc mismatch
+14050ece0	invalid block type
+14050ecf8	invalid stored block lengths
+14050ed18	too many length or distance symbols
+14050ed40	invalid code lengths set
+14050ed60	invalid bit length repeat
+14050ed80	invalid code -- missing end-of-block
+14050eda8	invalid literal/lengths set
+14050edc8	invalid distances set
+14050ede0	invalid literal/length code
+14050ee00	invalid distance code
+14050ee18	invalid distance too far back
+14050ee38	incorrect data check
+14050ee50	incorrect length check
+1405102f0	 deflate 1.2.12 Copyright 1995-2022 Jean-loup Gailly and Mark Adler 
+1405103e0	need dictionary
+1405103f0	stream end
+140510400	file error
+140510410	stream error
+140510420	data error
+140510430	buffer error
+140510440	incompatible version
+1405104b0	 inflate 1.2.12 Copyright 1995-2022 Mark Adler 
+1405114a0	Bogus message code %d
+1405114b8	ALIGN_TYPE is wrong, please fix
+1405114d8	MAX_ALLOC_CHUNK is wrong, please fix
+140511500	Bogus buffer control mode
+140511520	Invalid component ID %d in SOS
+140511540	Invalid crop request
+140511558	DCT coefficient out of range
+140511578	DCT scaled block size %dx%d not supported
+1405115b0	Component index %d: mismatching sampling ratio %d:%d, %d:%d, %c
+1405115f0	Bogus Huffman table definition
+140511610	Bogus input colorspace
+140511628	Bogus JPEG colorspace
+140511640	Bogus marker length
+140511658	Wrong JPEG library version: library is %d, caller expects %d
+140511698	Sampling factors too large for interleaved scan
+1405116c8	Invalid memory pool code %d
+1405116e8	Unsupported JPEG data precision %d
+140511710	Invalid progressive parameters Ss=%d Se=%d Ah=%d Al=%d
+140511748	Invalid progressive parameters at scan script entry %d
+140511780	Bogus sampling factors
+140511798	Invalid scan script at entry %d
+1405117b8	Improper call to JPEG library in state %d
+1405117f0	JPEG parameter struct mismatch: library thinks size is %u, caller expects %u
+140511840	Bogus virtual array access
+140511860	Buffer passed to JPEG library is too small
+140511890	Suspension not allowed here
+1405118b0	CCIR601 sampling not implemented yet
+1405118d8	Too many color components: %d, max %d
+140511900	Unsupported color conversion request
+140511928	Bogus DAC index %d
+140511940	Bogus DAC value 0x%x
+140511958	Bogus DHT index %d
+140511970	Bogus DQT index %d
+140511988	Empty JPEG image (DNL not supported)
+1405119b0	Read from EMS failed
+1405119c8	Write to EMS failed
+1405119e0	Didn't expect more than one scan
+140511a08	Input file read error
+140511a20	Output file write error --- out of disk space?
+140511a50	Fractional sampling not implemented yet
+140511a78	Huffman code size table overflow
+140511aa0	Missing Huffman code table entry
+140511ac8	Maximum supported image dimension is %u pixels
+140511af8	Empty input file
+140511b10	Premature end of input file
+140511b30	Cannot transcode due to multiple use of quantization table %d
+140511b70	Scan script does not transmit all data
+140511b98	Invalid color quantization mode change
+140511bc0	Not implemented yet
+140511bd8	Requested feature was omitted at compile time
+140511c08	Arithmetic table 0x%02x was not defined
+140511c30	Backing store not supported
+140511c50	Huffman table 0x%02x was not defined
+140511c78	JPEG datastream contains no image
+140511ca0	Quantization table 0x%02x was not defined
+140511cd0	Not a JPEG file: starts with 0x%02x 0x%02x
+140511d00	Insufficient memory (case %d)
+140511d20	Cannot quantize more than %d color components
+140511d50	Cannot quantize to fewer than %d colors
+140511d78	Cannot quantize to more than %d colors
+140511da0	Invalid JPEG file structure: %s before SOF
+140511dd0	Invalid JPEG file structure: two SOF markers
+140511e00	Invalid JPEG file structure: missing SOS marker
+140511e30	Unsupported JPEG process: SOF type 0x%02x
+140511e60	Invalid JPEG file structure: two SOI markers
+140511e90	Failed to create temporary file %s
+140511eb8	Read failed on temporary file
+140511ed8	Seek failed on temporary file
+140511ef8	Write failed on temporary file --- out of disk space?
+140511f30	Application transferred too few scanlines
+140511f60	Unsupported marker type 0x%02x
+140511f80	Virtual array controller messed up
+140511fa8	Image too wide for this implementation
+140511fd0	Read from XMS failed
+140511fe8	Write to XMS failed
+140512000	Copyright (C) 2013, Thomas G. Lane, Guido Vollbeding
+140512038	9  13-Jan-2013
+140512048	Caution: quantization tables are too coarse for baseline JPEG
+140512090	Adobe APP14 marker: version %d, flags 0x%04x 0x%04x, transform %d
+1405120d8	Unknown APP0 marker (not JFIF), length %u
+140512108	Unknown APP14 marker (not Adobe), length %u
+140512138	Define Arithmetic Table 0x%02x: 0x%02x
+140512160	Define Huffman Table 0x%02x
+140512180	Define Quantization Table %d  precision %d
+1405121b0	Define Restart Interval %u
+1405121d0	Freed EMS handle %u
+1405121e8	Obtained EMS handle %u
+140512200	End Of Image
+140512210	        %3d %3d %3d %3d %3d %3d %3d %3d
+140512238	JFIF APP0 marker: version %d.%02d, density %dx%d  %d
+140512270	Warning: thumbnail image size does not match data length %u
+1405122b0	JFIF extension marker: type 0x%02x, length %u
+1405122e0	    with %d x %d thumbnail image
+140512308	Miscellaneous marker 0x%02x, length %u
+140512330	Unexpected marker 0x%02x
+140512350	        %4u %4u %4u %4u %4u %4u %4u %4u
+140512378	Quantizing to %d = %d*%d*%d colors
+1405123a0	Quantizing to %d colors
+1405123b8	Selected %d colors for quantization
+1405123e0	At marker 0x%02x, recovery action %d
+140512408	RST%d
+140512410	Smoothing not supported with nonstandard sampling ratios
+140512450	Start Of Frame 0x%02x: width=%u, height=%u, components=%d
+140512490	    Component %d: %dhx%dv q=%d
+1405124b0	Start of Image
+1405124c0	Start Of Scan: %d components
+1405124e0	    Component %d: dc=%d ac=%d
+140512500	  Ss=%d, Se=%d, Ah=%d, Al=%d
+140512520	Closed temporary file %s
+140512540	Opened temporary file %s
+140512560	JFIF extension marker: JPEG-compressed thumbnail image, length %u
+1405125a8	JFIF extension marker: palette thumbnail image, length %u
+1405125e8	JFIF extension marker: RGB thumbnail image, length %u
+140512620	Unrecognized component IDs %d %d %d, assuming YCbCr
+140512658	Freed XMS handle %u
+140512670	Obtained XMS handle %u
+140512688	Unknown Adobe color transform code %d
+1405126b0	Corrupt JPEG data: bad arithmetic code
+1405126e0	Inconsistent progression sequence for component %d coefficient %d
+140512728	Corrupt JPEG data: %u extraneous bytes before marker 0x%02x
+140512768	Corrupt JPEG data: premature end of data segment
+1405127a0	Corrupt JPEG data: bad Huffman code
+1405127c8	Warning: unknown JFIF revision number %d.%02d
+1405127f8	Premature end of JPEG file
+140512818	Corrupt JPEG data: found marker 0x%02x instead of RST%d
+140512850	Invalid SOS parameters for sequential JPEG
+140512880	Application transferred too many scanlines
+140512cb0	JPEGMEM
+140512cb8	%ld%c
+140513ef8	vorbis
+140522260	theora
+1405229a8	OpusHead
+1405229b8	OpusTags
+1405229c8	R128_ALBUM_GAIN
+1405229d8	R128_TRACK_GAIN
+140522ab8	Unknown exception
+140522ae8	bad allocation
+140522b10	bad array new length
+140522ca8	bad exception
+1405233d0	__based(
+1405233e0	__cdecl
+1405233e8	__pascal
+1405233f8	__stdcall
+140523408	__thiscall
+140523418	__fastcall
+140523428	__vectorcall
+140523438	__clrcall
+140523450	__swift_1
+140523460	__swift_2
+140523470	__swift_3
+140523488	__restrict
+140523498	__unaligned
+1405234a8	restrict(
+1405234c0	 delete
+1405234e8	operator
+140523570	`vftable'
+140523580	`vbtable'
+1405235a8	`local static guard'
+1405235c0	`string'
+1405235d0	`vbase destructor'
+1405235e8	`vector deleting destructor'
+140523608	`default constructor closure'
+140523628	`scalar deleting destructor'
+140523648	`vector constructor iterator'
+140523668	`vector destructor iterator'
+140523688	`vector vbase constructor iterator'
+1405236b0	`virtual displacement map'
+1405236d0	`eh vector constructor iterator'
+1405236f8	`eh vector destructor iterator'
+140523718	`eh vector vbase constructor iterator'
+140523740	`copy constructor closure'
+140523760	`udt returning'
+140523780	`local vftable'
+140523790	`local vftable constructor closure'
+1405237c0	 delete[]
+1405237d0	`omni callsig'
+1405237e0	`placement delete closure'
+140523800	`placement delete[] closure'
+140523820	`managed vector constructor iterator'
+140523848	`managed vector destructor iterator'
+140523870	`eh vector copy constructor iterator'
+140523898	`eh vector vbase copy constructor iterator'
+1405238c8	`dynamic initializer for '
+1405238e8	`dynamic atexit destructor for '
+140523910	`vector copy constructor iterator'
+140523938	`vector vbase copy constructor iterator'
+140523968	`managed vector copy constructor iterator'
+140523998	`local static thread guard'
+1405239b8	operator "" 
+1405239c8	operator co_await
+1405239e0	operator<=>
+1405239f0	 Type Descriptor'
+140523a08	 Base Class Descriptor at (
+140523a28	 Base Class Array'
+140523a40	 Class Hierarchy Descriptor'
+140523a60	 Complete Object Locator'
+140523a80	`anonymous namespace'
+140523ab0	api-ms-win-core-fibers-l1-1-1
+140523af0	api-ms-win-core-synch-l1-2-0
+140523b30	kernel32
+140523b48	api-ms-
+140523b60	FlsAlloc
+140523b78	FlsFree
+140523b88	FlsGetValue
+140523ba0	FlsSetValue
+140523bb8	InitializeCriticalSectionEx
+140523de0	(null)
+140523df0	(null)
+1405247d0	minkernel\\crts\\ucrt\\inc\\corecrt_internal_strtox.h
+140524840	__crt_strtox::floating_point_value::as_double
+1405248a0	_is_double
+1405248c0	__crt_strtox::floating_point_value::as_float
+140524920	!_is_double
+1405249c0	INITY
+1405249c8	inity
+1405249e0	INITY
+1405249e8	inity
+140524a08	IND)ind)SNAN)
+140524a20	IND)ind)acos
+140528038	sqrtf
+1405282a0	mscoree.dll
+1405282b8	CorExitProcess
+140528584	UTF-8
+140528590	UTF-16LEUNICODE
+14052887c	Sunday
+140528884	Monday
+140528890	Tuesday
+140528898	Wednesday
+1405288a8	Thursday
+1405288b4	Friday
+1405288c0	Saturday
+140528900	January
+140528908	February
+140528914	March
+14052891c	April
+140528934	August
+140528940	September
+140528950	October
+140528958	November
+140528968	December
+140528980	MM/dd/yy
+140528990	dddd, MMMM dd, yyyy
+1405289a8	HH:mm:ss
+1405289f0	Sunday
+140528a00	Monday
+140528a10	Tuesday
+140528a20	Wednesday
+140528a38	Thursday
+140528a50	Friday
+140528a60	Saturday
+140528ad8	January
+140528ae8	February
+140528b00	March
+140528b10	April
+140528b20	June
+140528b30	July
+140528b40	August
+140528b50	September
+140528b68	October
+140528b78	November
+140528b90	December
+140528bb8	MM/dd/yy
+140528bd0	dddd, MMMM dd, yyyy
+140528bf8	HH:mm:ss
+140528c10	en-US
+140528cb0	NAN(SNAN)
+140528cc0	nan(snan)
+140528cd0	NAN(IND)
+140528ce0	nan(ind)
+140528cec	e+000
+140528dd0	api-ms-win-core-datetime-l1-1-1
+140528e10	api-ms-win-core-file-l1-2-4
+140528e48	api-ms-win-core-file-l1-2-2
+140528e80	api-ms-win-core-localization-l1-2-1
+140528ed0	api-ms-win-core-localization-obsolete-l1-2-0
+140528f30	api-ms-win-core-processthreads-l1-1-2
+140528f80	api-ms-win-core-string-l1-1-0
+140528fc0	api-ms-win-core-sysinfo-l1-2-1
+140529000	api-ms-win-core-winrt-l1-1-0
+140529040	api-ms-win-core-xstate-l2-1-0
+140529080	api-ms-win-rtcore-ntuser-window-l1-1-0
+1405290d0	api-ms-win-security-systemfunctions-l1-1-0
+140529130	ext-ms-win-ntuser-dialogbox-l1-1-0
+140529180	ext-ms-win-ntuser-windowstation-l1-1-0
+1405291d0	advapi32
+1405291e8	kernelbase
+140529200	ntdll
+140529210	api-ms-win-appmodel-runtime-l1-1-2
+140529258	user32
+140529268	ext-ms-
+140529280	AreFileApisANSI
+140529298	CompareStringEx
+1405292b8	LCMapStringEx
+1405292d0	LocaleNameToLCID
+1405292e8	AppPolicyGetProcessTerminationMethod
+14052bd64	log10
+14052d150	floor
+14052d1a8	_nextafter
+14052d258	ja-JP
+14052d268	zh-CN
+14052d278	ko-KR
+14052d288	zh-TW
+14052d29c	1#INF
+14052d2a4	1#QNAN
+14052d2ac	1#SNAN
+14052d2b4	1#IND
+14052e368	de-DE
+14052e4e8	sl-SI
+14052e5f0	hi-IN
+14052e688	bn-IN
+14052e698	pa-IN
+14052e6b8	ta-IN
+14052e6c8	te-IN
+14052e6d8	kn-IN
+14052e708	sa-IN
+14052e7b8	de-CH
+14052e838	sr-SP-Latn
+14052e878	se-SE
+14052e8e0	de-AT
+14052e920	sr-SP-Cyrl
+14052e9a8	fr-CH
+14052e9f8	de-LI
+14052ea38	bs-BA-Latn
+14052eaa0	sr-BA-Latn
+14052fcc0	bn-in
+14052fcd0	bs-ba-latn
+14052fd28	de-at
+14052fd38	de-ch
+14052fd48	de-de
+14052fd58	de-li
+140530008	fr-ch
+140530078	hi-in
+140530138	kn-in
+140530268	pa-in
+1405302f8	sa-in
+140530328	se-se
+140530348	sl-si
+1405303e0	sr-ba-latn
+1405303f8	sr-sp-cyrl
+140530410	sr-sp-latn
+140530468	ta-in
+140530478	te-in
+1405305d0	CONOUT$
+1405305f0	..\\..\\..\\..\\..\\Source\\Library\\Main\\DxMemImgDrawFunction3.cpp
+140535690	success
+140535698	invalid argument
+1405356b0	buffer too small
+1405356c8	internal error
+1405356d8	corrupted stream
+1405356f0	request not implemented
+140535708	invalid state
+140535718	memory allocation failed
+140536ef8	error
+140536f00	Insufficient memory capacity.
+140536f20	media\\demo\\LD_demo%02d.txt
+140536f40	%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n
+140536f70	%d,%d\n
+140536f78	%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d
+140536fa8	%d,%d
+140536fb8	media\\system\\WhiteBack.png
+140536fd8	media\\system\\starting.png
+140536ff8	media\\system\\NowLoading.png
+140537018	media\\system\\TitleBack.png
+140537038	media\\system\\TitleLogo.png
+140537058	media\\player\\DataWindow.png
+140537078	media\\player\\TimeWindow.png
+140537098	media\\stage\\EnemyGauge2.png
+1405370b8	media\\stage\\BossApproach2.png
+1405370d8	media\\stage\\Stage2Back.png
+1405370f8	media\\stage\\Stage3Back.png
+140537118	media\\stage\\Stage6Back.png
+140537138	media\\stage\\Stage8Back1.png
+140537158	media\\stage\\Stage8Back2.png
+140537178	media\\gallery\\NoticeFrame.png
+140537198	media\\gallery\\GalleryFrame.png
+1405371b8	media\\gallery\\EnemyListWindow.png
+1405371e0	media\\system\\DemoLogo.png
+140537200	media\\system\\BetaLogo.png
+140537220	media\\system\\DemoEnd.png
+140537240	media\\system\\TitleMenu.png
+140537260	media\\system\\Stand.png
+140537278	media\\system\\TextBox.png
+140537298	media\\system\\TextIcon.png
+1405372b8	media\\system\\StageFrame.png
+1405372d8	media\\system\\StageFrame2.png
+1405372f8	media\\system\\ConfigMenu.png
+140537318	media\\system\\ConfigMenu2.png
+140537338	media\\system\\KeyConfigMenu.png
+140537358	media\\system\\ConfigNumber.png
+140537378	media\\system\\PracticeMenu.png
+140537398	media\\system\\RankingNotice.png
+1405373b8	media\\system\\KerPromotButton.png
+1405373e0	media\\system\\KerboardPromot.png
+140537400	media\\player\\Player.png
+140537418	media\\player\\Item.png
+140537430	media\\player\\PlayerFrame.png
+140537450	media\\player\\State.png
+140537468	media\\player\\PauseBack.png
+140537488	media\\player\\PauseCount.png
+1405374a8	media\\player\\DataWindow2.png
+1405374c8	media\\effect\\Effect_s.png
+1405374e8	media\\effect\\Effect_m.png
+140537508	media\\effect\\Effect_l.png
+140537528	media\\system\\Num_s.png
+140537540	media\\system\\Num_m.png
+140537558	media\\system\\Num_l.png
+140537570	media\\player\\DreamGauge.png
+140537590	media\\stage\\TutorialButton.png
+1405375b0	media\\stage\\StageBack1.png
+1405375d0	media\\stage\\StageBack1b.png
+1405375f0	media\\stage\\StageBack1c.png
+140537610	media\\stage\\StageBack1d.png
+140537630	media\\stage\\StageBack2.png
+140537650	media\\stage\\Enemy_s.png
+140537668	media\\stage\\Enemy_m.png
+140537680	media\\stage\\Enemy_l.png
+140537698	media\\stage\\Enemy_xl.png
+1405376b8	media\\stage\\EnemyGauge1.png
+1405376d8	media\\stage\\Boss.png
+1405376f0	media\\stage\\BossGauge.png
+140537710	media\\stage\\BossName.png
+140537730	media\\stage\\Bullet.png
+140537748	media\\system\\Opening.png
+140537768	media\\player\\Result.png
+140537780	media\\player\\StageClear.png
+1405377a0	media\\system\\Ending.png
+1405377b8	media\\system\\Credit.png
+1405377d0	media\\gallery\\NoticeText1.png
+1405377f0	media\\gallery\\Achievement.png
+140537810	media\\gallery\\EnemyList.png
+140537830	media\\gallery\\EnemyListPic.png
+140537850	media\\bgm\\Opening.ogg
+140537868	media\\bgm\\Title.ogg
+140537880	media\\bgm\\Tutorial.ogg
+140537898	media\\bgm\\Gameover.ogg
+1405378b0	media\\bgm\\Stage1.ogg
+1405378c8	media\\bgm\\Stage2.ogg
+1405378e0	media\\bgm\\Stage3.ogg
+1405378f8	media\\bgm\\Stage4.ogg
+140537910	media\\bgm\\Stage5.ogg
+140537928	media\\bgm\\Stage6.ogg
+140537940	media\\bgm\\Stage7.ogg
+140537958	media\\bgm\\Stage8.ogg
+140537970	media\\bgm\\Stage9.ogg
+140537988	media\\bgm\\Stage10.ogg
+1405379a0	media\\bgm\\Boss1.ogg
+1405379b8	media\\bgm\\Boss2.ogg
+1405379d0	media\\bgm\\Boss3.ogg
+1405379e8	media\\bgm\\Boss4.ogg
+140537a00	media\\bgm\\Boss5.ogg
+140537a18	media\\bgm\\StageClear.ogg
+140537a38	media\\bgm\\Ending.ogg
+140537a50	media\\bgm\\Unlock.ogg
+140537a68	media\\se\\Select.mp3
+140537a80	media\\se\\Enter.wav
+140537a98	media\\se\\Cancel.wav
+140537ab0	media\\se\\Error.wav
+140537ac8	media\\se\\Switch.wav
+140537ae0	media\\se\\Text.wav
+140537af8	media\\se\\Text2.wav
+140537b10	media\\se\\Pose.wav
+140537b28	media\\se\\Miss.wav
+140537b40	media\\se\\Miss2.wav
+140537b58	media\\se\\Extend.wav
+140537b70	media\\se\\Shot1.wav
+140537b88	media\\se\\Shot2.wav
+140537ba0	media\\se\\BossSE2.wav
+140537bb8	media\\se\\Shot4.wav
+140537bd0	media\\se\\Shot5.wav
+140537be8	media\\se\\BossSE4.wav
+140537c00	media\\se\\Shothit.wav
+140537c18	media\\se\\Shothit2.wav
+140537c30	media\\se\\Bomb1.wav
+140537c48	media\\se\\Bomb2.wav
+140537c60	media\\se\\Bomb3.wav
+140537c78	media\\se\\Bomb4.wav
+140537c90	media\\se\\Bomb5.wav
+140537ca8	media\\se\\Bomb6.wav
+140537cc0	media\\se\\Bomb7.wav
+140537cd8	media\\se\\Bomb8.wav
+140537cf0	media\\se\\Item1.wav
+140537d08	media\\se\\Item2.wav
+140537d20	media\\se\\Item3.wav
+140537d38	media\\se\\Guard.wav
+140537d50	media\\se\\DreamPower.wav
+140537d68	media\\se\\Fever1.wav
+140537d80	media\\se\\Fever2.mp3
+140537d98	media\\se\\Fever3.wav
+140537db0	media\\se\\Fever4.wav
+140537dc8	media\\se\\EnemyDown1.wav
+140537de0	media\\se\\EnemyDown2.wav
+140537df8	media\\se\\EnemyDown3.wav
+140537e10	media\\se\\Blast1.wav
+140537e28	media\\se\\Blast2.wav
+140537e40	media\\se\\Bullet1.wav
+140537e58	media\\se\\Bullet2.wav
+140537e70	media\\se\\Graze.wav
+140537e88	media\\se\\Alert.wav
+140537ea0	media\\se\\BossLife.wav
+140537eb8	media\\se\\BossApproach.wav
+140537ed8	media\\se\\BossSE1.wav
+140537ef0	media\\se\\BossSE3.wav
+140537f08	media\\se\\BossSE5.wav
+140537f20	media\\se\\BossSE6.wav
+140537f38	media\\se\\BossSE7.wav
+140537f50	media\\se\\BossSE8.wav
+140537f68	media\\se\\BossSE9.wav
+140537f80	media\\se\\BossSE10.wav
+140537f98	media\\se\\BossSE11.wav
+140537fb0	media\\se\\BossSE12.wav
+140537fc8	media\\se\\BossSE13.wav
+140537fe0	media\\se\\BossSE14.wav
+140537ff8	media\\se\\BossSE15.wav
+140538010	media\\se\\BossSE16.wav
+140538028	media\\se\\BossSE17.wav
+140538040	media\\se\\BossSE18.wav
+140538058	media\\se\\BossSE19.wav
+140538070	media\\se\\BossSE20.wav
+140538088	media\\se\\BossWeaken.wav
+1405380a0	media\\se\\Timer.wav
+1405380b8	media\\se\\Bonus.wav
+1405380d0	media\\se\\Notice.wav
+1405380e8	media\\se\\Opening1.wav
+140538100	media\\se\\Opening2.wav
+140538118	Nyashi.ttf
+140538150	save\\save.dat
+140538168	save\\config.dat
+140538178	media\\system\\Manual.png
+140538190	media\\system\\ManualMenu.png
+1405381b0	media\\system\\DifficultyTips.png
+1405381d0	media\\system\\KerPromot.png
+1405381f0	media\\player\\PauseMenu.png
+140538210	media\\stage\\TutorialPanel.png
+140538230	media\\player\\Unlock.png
+140538248	media\\gallery\\NoticeText2.png
+140538268	media\\gallery\\NoticeText3.png
+140538288	media\\gallery\\GalleryPic.png
+1405382a8	media\\system\\TitleMenu2.png
+1405382c8	media\\system\\MenuTitle.png
+1405382e8	media\\system\\EquipMenu.png
+140538308	media\\system\\MapMenu.png
+140538328	media\\system\\MapMenu2.png
+140538348	media\\stage\\BossApproach1.png
+140538368	media\\system\\Manual_eng.png
+140538388	media\\system\\ManualMenu_eng.png
+1405383a8	media\\system\\DifficultyTips_eng.png
+1405383d0	media\\system\\KerPromot_eng.png
+1405383f0	media\\player\\PauseMenu_eng.png
+140538410	media\\stage\\TutorialPanel_eng.png
+140538438	media\\player\\Unlock_eng.png
+140538458	media\\gallery\\NoticeText2_eng.png
+140538480	media\\gallery\\NoticeText3_eng.png
+1405384a8	media\\gallery\\GalleryPic_eng.png
+1405384d0	media\\system\\Manual_ch1.png
+1405384f0	media\\system\\ManualMenu_ch1.png
+140538510	media\\system\\DifficultyTips_ch1.png
+140538538	media\\system\\KerPromot_ch1.png
+140538558	media\\player\\PauseMenu_ch1.png
+140538578	media\\stage\\TutorialPanel_ch1.png
+1405385a0	media\\player\\Unlock_ch1.png
+1405385c0	media\\gallery\\NoticeText2_ch1.png
+1405385e8	media\\gallery\\NoticeText3_ch1.png
+140538610	media\\gallery\\GalleryPic_ch1.png
+140538638	media\\system\\TitleMenu2_ch1.png
+140538658	media\\system\\MenuTitle_ch1.png
+140538678	media\\system\\EquipMenu_ch1.png
+140538698	media\\system\\MapMenu_ch1.png
+1405386b8	media\\system\\MapMenu2_ch.png
+1405386d8	media\\stage\\BossApproach1_ch1.png
+140538700	media\\system\\Manual_ch2.png
+140538720	media\\system\\ManualMenu_ch2.png
+140538740	media\\system\\DifficultyTips_ch2.png
+140538768	media\\system\\KerPromot_ch2.png
+140538788	media\\player\\PauseMenu_ch2.png
+1405387a8	media\\stage\\TutorialPanel_ch2.png
+1405387d0	media\\player\\Unlock_ch2.png
+1405387f0	media\\gallery\\NoticeText2_ch2.png
+140538818	media\\gallery\\NoticeText3_ch2.png
+140538840	media\\gallery\\GalleryPic_ch2.png
+140538868	media\\system\\TitleMenu2_ch2.png
+140538888	media\\system\\MenuTitle_ch2.png
+1405388a8	media\\system\\EquipMenu_ch2.png
+1405388c8	media\\system\\MapMenu_ch2.png
+1405388e8	media\\stage\\BossApproach1_ch2.png
+140538910	ChillRoundM.ttf
+140538938	Failed to load file.
+140538950	errer
+140538958	Failed to initialize SteamAPI.
+140538980	Fatal Error - Steam must be running to play this game (SteamAPI_Init() failed).\n
+1405389d8	NowLoading...
+1405389e8	VanillaFever11
+1405389f8	LIKE DREAMER
+140538c00	ACH_00
+140538e00	Trial_Casual
+140538e1e	Trial_Maniac
+140538e3c	Trial_Expert
+140538e5a	Trial_Nightmare
+140538e78	Trial_Chaos
+140538e96	Trial_CasualCM
+140538eb4	Trial_ManiacCM
+140538ed2	Trial_ExpertCM
+140538ef0	Trial_NightmareCM
+140538f0e	Trial_ChaosCM
+140538f2c	Boss_Casual
+140538f4a	Boss_Maniac
+140538f68	Boss_Expert
+140538f86	Boss_Nightmare
+140538fa4	Boss_Chaos
+140538fc2	Boss_CasualCM
+140538fe0	Boss_ManiacCM
+140538ffe	Boss_ExpertCM
+14053901c	Boss_NightmareCM
+14053903a	Boss_ChaosCM
+140539058	All_Casual
+140539076	All_Maniac
+140539094	All_Expert
+1405390b2	All_Nightmare
+1405390d0	All_Chaos
+1405390ee	All_CasualCM
+14053910c	All_ManiacCM
+14053912a	All_ExpertCM
+140539148	All_NightmareCM
+140539166	All_ChaosCM
+140539184	Speedrun_Casual
+1405391a2	Speedrun_Maniac
+1405391c0	Speedrun_Expert
+1405391de	Speedrun_Nightmare
+1405391fc	Speedrun_Chaos
+14053921a	Speedrun_CasualCM
+140539238	Speedrun_ManiacCM
+140539256	Speedrun_ExpertCM
+140539274	Speedrun_NightmareCM
+140539292	Speedrun_ChaosCM
+1405392b0	Extra
+1405392ce	Extra
+1405392ec	Extra
+14053930a	Extra
+140539328	Extra
+140539346	ExtraCM
+140539364	ExtraCM
+140539382	ExtraCM
+1405393a0	ExtraCM
+1405393be	ExtraCM
+1405393e0	SteamUtils010
+1405393f0	Ver 2.11
+140539400	snap\\ss.dat
+140539410	snap\\SS%d.png
+140539420	Cannot find snap folder.
+140539440	Failed to load the Steam leaderboard.
+140539468	Alice
+1405394a0	%3d. %s
+1405394a8	%s %c%c%c%c  %12lld  %s  %04d/%02d/%02d
+1405394d0	%s %c%c%c%c  %s      %s  %04d/%02d/%02d
+140539500	replay\\LD_replay%02d.dat
+140539520	Replay data not found.
+1405395c0	Casual    
+1405395d0	Maniac    
+1405395e0	Expert    
+1405395f0	Nightmare 
+140539610	Extra     
+140539650	Nightmare+
+1405396d0	%s %s %c%c%c%c %s %s
+1405396e8	%12lld
+140539710	                    %c%c%c
+140539738	Stage %d : %12lld
+140539750	Stage %d : %s
+140539760	Stage %d : ------------
+140539778	Stage Ex : %12lld
+140539790	%02d.%04d/%02d/%02d %02d:%02d %s %s %s %c%c%c%c %s %12lld %s
+1405397d0	%02d.%04d/%02d/%02d %02d:%02d %s %s %s %c%c%c%c %s     %s %s
+140539810	%02d.----------------------------------------------------------------
+140539858	SteamUser021
+140539868	STEAMUSERSTATS_INTERFACE_VERSION012
+140539a20	Received stats and achievements from Steam\n
+140539a60	RequestStats - failed, %d\n
+140539a80	Stored stats for Steam\n
+140539a98	StatsStored - failed, %d\n
+140539ab8	Stored Achievement for Steam\n
+140539bc8	SteamFriends017
+140539c38	media\\text\\text01.csv
+140539c50	media\\text\\text02.csv
+140539c68	media\\text\\text03.csv
+140539c80	media\\text\\text04.csv
+140539c98	%d,%[^,],%[^,],%d
+14053bedf	DABCDEFGHIJKLMNOP
+1405409f4	.rdata
+140540a40	.rdata$voltmd
+140540b58	.data
+140540b9c	.pdata
+140540bac	_RDATA
+14056b2f2	SteamAPI_RestartAppIfNecessary
+14056b314	SteamAPI_Init
+14056b324	SteamInternal_ContextInit
+14056b340	SteamInternal_FindOrCreateUserInterface
+14056b36a	SteamAPI_UnregisterCallback
+14056b388	SteamAPI_Shutdown
+14056b39c	SteamAPI_GetHSteamUser
+14056b3b6	SteamAPI_RegisterCallback
+14056b3d2	SteamAPI_RunCallbacks
+14056b3ea	SteamAPI_RegisterCallResult
+14056b408	SteamAPI_UnregisterCallResult
+14056b426	steam_api64.dll
+14056b438	OutputDebugStringA
+14056b44e	Sleep
+14056b454	KERNEL32.dll
+14056b464	MessageBoxA
+14056b470	USER32.dll
+14056b47e	AddFontResourceExA
+14056b492	GDI32.dll
+14056b49e	FreeLibrary
+14056b4ac	GetProcAddress
+14056b4be	LoadLibraryA
+14056b4ce	LoadLibraryW
+14056b4de	CreateFileW
+14056b4ec	ReadFile
+14056b4f8	WriteFile
+14056b504	CloseHandle
+14056b512	GetLastError
+14056b522	LocalAlloc
+14056b530	LocalFree
+14056b53c	WideCharToMultiByte
+14056b552	ExitProcess
+14056b560	RtlCaptureContext
+14056b574	RtlLookupFunctionEntry
+14056b58e	RtlVirtualUnwind
+14056b5a2	UnhandledExceptionFilter
+14056b5be	SetUnhandledExceptionFilter
+14056b5dc	GetCurrentProcess
+14056b5f0	TerminateProcess
+14056b604	IsProcessorFeaturePresent
+14056b620	QueryPerformanceCounter
+14056b63a	GetCurrentProcessId
+14056b650	GetCurrentThreadId
+14056b666	GetSystemTimeAsFileTime
+14056b680	InitializeSListHead
+14056b696	IsDebuggerPresent
+14056b6aa	GetStartupInfoW
+14056b6bc	GetModuleHandleW
+14056b6d0	RtlUnwindEx
+14056b6de	RtlPcToFileHeader
+14056b6f2	RaiseException
+14056b704	SetLastError
+14056b714	EncodePointer
+14056b724	RtlUnwind
+14056b730	EnterCriticalSection
+14056b748	LeaveCriticalSection
+14056b760	DeleteCriticalSection
+14056b778	InitializeCriticalSectionAndSpinCount
+14056b7a0	TlsAlloc
+14056b7ac	TlsGetValue
+14056b7ba	TlsSetValue
+14056b7c8	TlsFree
+14056b7d2	LoadLibraryExW
+14056b7e4	GetModuleHandleExW
+14056b7fa	GetStdHandle
+14056b80a	GetModuleFileNameW
+14056b820	HeapFree
+14056b82c	HeapAlloc
+14056b838	GetFileType
+14056b846	GetConsoleOutputCP
+14056b85c	GetConsoleMode
+14056b86e	GetFileSizeEx
+14056b87e	SetFilePointerEx
+14056b892	ReadConsoleW
+14056b8a2	FlsAlloc
+14056b8ae	FlsGetValue
+14056b8bc	FlsSetValue
+14056b8ca	FlsFree
+14056b8d4	CompareStringW
+14056b8e6	LCMapStringW
+14056b8f6	GetTimeZoneInformation
+14056b910	HeapReAlloc
+14056b91e	FlushFileBuffers
+14056b932	MultiByteToWideChar
+14056b948	FindClose
+14056b954	FindFirstFileExW
+14056b968	FindNextFileW
+14056b978	IsValidCodePage
+14056b98a	GetACP
+14056b994	GetOEMCP
+14056b9a0	GetCPInfo
+14056b9ac	GetCommandLineA
+14056b9be	GetCommandLineW
+14056b9d0	GetEnvironmentStringsW
+14056b9ea	FreeEnvironmentStringsW
+14056ba04	SetEnvironmentVariableW
+14056ba1e	SetStdHandle
+14056ba2e	GetStringTypeW
+14056ba40	GetProcessHeap
+14056ba52	HeapSize
+14056ba5e	SetEndOfFile
+14056ba6e	WriteConsoleW
+14056ba7e	SetWindowPos
+14056ba8e	GetAsyncKeyState
+14056baa2	GetWindowRect
+14056bab2	CallNextHookEx
+14056bac4	GetFocus
+14056bad0	RegCloseKey
+14056badc	ADVAPI32.dll
+14056c5c0	EQQAAAPhAAABEEAAD9Qk0+EAD9CAA+AAAAKAAAAID9AAwB/QACAf0QGP14AP/9AAH///2oH/2kPwCAAoB8HDoQRIIg/hgQMP0ID4IiRihEghCAIBAIAAC8eoACIIIoqkQQQP0ID8KG/QAPRKooCCD9CA+CgoB8IIJEkhAIEP0YD8CA/QAPKBQI/TgPgpJEJARAEAT9AD+igv6CgpKCQgKAEAL9AF+cfP0AH4KC/v0IH/0AACD9GAb9AD/9OAD9+A9M/UAPGBAwMv3xAAE2+Dw+PCB8ghAwhBCSgjgATIRCQkIggoIQSIgQkoJEAISCgIKAIAKCEISQEJKCgv0YDzqCEASg/SgP/iBGghAEwP0oD4L9AD/9GA9ExEJGRCCGxP0gLzy4PDo4/nq4EASQEJLERP0BvQkCACAAgAAMiBBsuDj9KA8Q/QACAAAE/SgPBP0IDwj9KC/9EA8Q/QgPEv0JAwr9AA/9ABkCAAz9CA/9BAEAgDqCOBA4EESCEP44EDgA/oBEhEQQRP0AD/0R/wGAioSCEIIoRP0h/wGAkogC/SAP/v0AD4L9CA+qKBD9EQ8CgIKQ/WAPBBCCRKoQEBD9CC/4gqA4/SAP/QAfhIL8QP0ADygoCCAo/QkvAoKA/XAPgpJERAQgRP1oD0QAhESCQv0AD4KCAiCCCCgA+Dj8PP0JXwKC/jiCOP0ZKAv9uAA6gvw4+P6AOII4MIL+kkI4TIKCRISAgESCEEiCgJJGRJ6C/QBxgIKCEISEgJJGgrL9QA+qSoKi/TAPiP0ID/79AR8C/QgPkP0QH4T9AA+eghCEoP0QD/iAgv7+gP4QBMCAqlKCokT9CB+A/QFPAv0YD/0AT/0AD5D9AA+e/TAPiP0AD4L9EA/9AV8CiICqYoJEKIT9GK8EhIDGYkQ4EPg4+P79APsegoCCQjj92P4A/jj+/gT+/hD+/gAgAgBAEMIQgAIEAoIQggIAIAQAIP04DzAwCAAQAKL9OA8QAAj9OA8AACB8BBCiEEAC/gKCCP0AD0AAAhCSECAChP0YDyB8BAiSEBD+hP7+CP7+/Qg/BJIQCAKEgIAEgoL9CF9CihAE/RgP/QH7AiCCihAC/QAPAv0ADwIAQIKKEIL9AA+C/QAPAAAAgoYw/UgPRP0AyYT+/QAA/QgP/en/AAAQAEQQgAAACCD9GXcEEABEfI5yABAQ/QgPQP0AU5JKjP0IDzAAMP0IDxJOjAAgCP0IDyAAEAD+EiD9AA/9ACEA/QAPRBIgkgAgCFT9EZ4D/QAPEFIAIAj9CYwC/QgPfBAg/QAvfAB8AP0BUgFEkAgw/SAf/RgPSP0gPwT9AF+Q5IT9IF8EABBERJKkhCD9CA39ARIBEGZEfOKEMP1ADxACeDD9AM/9hBAA
+14056cdd0	TRUEVISION-XFILE.
+14056d890	DXBDXARC
+14056d971	 !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLM
+14056da20	ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/
+140574312	TRUEVISION-XFILE.
+14057436a	TRUEVISION-XFILE.
+14057441a	TRUEVISION-XFILE.
+1405744ca	TRUEVISION-XFILE.
+14057457a	TRUEVISION-XFILE.
+1407c72ba	abcdefghijklmnopqrstuvwxyz
+1407c72da	ABCDEFGHIJKLMNOPQRSTUVWXYZ
+1407c74e1	abcdefghijklmnopqrstuvwxyz
+1407c7501	ABCDEFGHIJKLMNOPQRSTUVWXYZ
+1407cc7d0	.?AVD_IUnknown@@
+1407cc7f8	.?AVD_IXAudio2VoiceCallback@@
+1407cc828	.?AVD_IMMNotificationClient@@
+1407cc858	.?AVD_CMMNotificationClient@DxLib@@
+1407cc890	.?AUSOUNDBUFFER_CALLBACK@DxLib@@
+1407cc8c8	.?AVD_ITfUIElementSink@@
+1407cc8f8	.?AVDX_UIElementSink@DxLib@@
+1407cc928	.?AVD_csmString@@
+1407cc950	.?AV?$D_csmVector@VD_csmString@@@@
+1407cc988	.?AVD_JsonValue@@
+1407cc9b0	.?AVD_JsonError@@
+1407cc9d8	.?AVD_JsonString@@
+1407cca00	.?AVD_JsonNullValue@@
+1407cca28	.?AVD_JsonBoolean@@
+1407cca50	.?AV?$D_csmVector@UStored@D_CubismRenderState_DxLib@@@@
+1407cca98	.?AVD_IPersist@@
+1407ccac0	.?AVD_IDispatch@@
+1407ccae8	.?AVD_IMFByteStream@@
+1407ccb10	.?AVD_IBaseFilter@@
+1407ccb38	.?AVD_IMediaFilter@@
+1407ccb60	.?AVD_IEnumMediaTypes@@
+1407ccb88	.?AVD_IPin@@
+1407ccba8	.?AVD_IEnumPins@@
+1407ccbd0	.?AVD_IMediaSample@@
+1407ccbf8	.?AVD_IMediaSample2@@
+1407ccc20	.?AVD_IMemAllocator@@
+1407ccc48	.?AVD_IMemAllocatorCallbackTemp@@
+1407ccc80	.?AVD_IMemInputPin@@
+1407ccca8	.?AVD_IQualityControl@@
+1407cccd0	.?AVD_IQualProp@@
+1407cccf8	.?AVD_IMediaSeeking@@
+1407ccd20	.?AVD_IMediaPosition@@
+1407ccd48	.?AVD_IAMovieSetup@@
+1407ccd70	.?AUD_INonDelegatingUnknown@@
+1407ccda0	.?AVD_CUnknown@@
+1407ccdc8	.?AVD_CBaseObject@@
+1407ccdf0	.?AVD_CBaseFilter@@
+1407cce18	.?AVD_CBasePin@@
+1407cce40	.?AVD_CEnumPins@@
+1407cce68	.?AVD_CBaseInputPin@@
+1407cce90	.?AVD_CRendererInputPin@@
+1407ccec0	.?AVD_CBaseRenderer@@
+1407ccee8	.?AVD_CMediaPosition@@
+1407ccf10	.?AVD_CPosPassThru@@
+1407ccf38	.?AVD_CRendererPosPassThru@@
+1407ccf68	.?AVD_CBaseVideoRenderer@@
+1407ccf98	.?AVD_CEnumMediaTypes@@
+1407ccfc0	.?AVD_CMovieRender@@
+1407ccfe8	.?AVD_CBaseOutputPin@@
+1407cd010	.?AVD_CTransformInputPin@@
+1407cd040	.?AVD_CTransformFilter@@
+1407cd070	.?AVD_CTransformOutputPin@@
+1407cd0a0	.?AVD_CWavDestOutputPin@@
+1407cd0d0	.?AVD_CWavDestFilter@@
+1407cd0f8	.?AVD_CMediaSample@@
+1407cd120	.?AVD_CBaseAllocator@@
+1407cd148	.?AVD_CCritSec@@
+1407cd170	.?AVD_CMemAllocator@@
+1407cd198	.?AVD_CAsyncStream@@
+1407cd1c0	.?AVD_CMemStream@@
+1407cd1e8	.?AVD_IAsyncReader@@
+1407cd210	.?AVD_CAsyncOutputPin@@
+1407cd238	.?AVD_CAsyncReader@@
+1407cd260	.?AVD_CMemReader@@
+1407cd288	.?AVD_CTransInPlaceInputPin@@
+1407cd2b8	.?AVD_CTransInPlaceFilter@@
+1407cd2e8	.?AVD_CTransInPlaceOutputPin@@
+1407cd318	.?AVD_IGrabberSample@@
+1407cd340	.?AVD_CSampleGrabberInPin@@
+1407cd370	.?AVD_CSampleGrabber@@
+1407cd398	.?AVD_CSampleGrabberAllocator@@
+1407cd3c8	.?AVD_SoundConvertMFByteStream@@
+1407cd400	.?AVD_btCollisionObject@@
+1407cd430	.?AVD_btRigidBody@@
+1407cd458	.?AVbad_alloc@std@@
+1407cd480	.?AVexception@std@@
+1407cd4a8	.?AVbad_array_new_length@std@@
+1407cd4d8	.?AVbad_exception@std@@
+1407cd500	.?AVtype_info@@
+1407cd520	.?AV?$CCallback@VCSteamAchievements@@UUserAchievementStored_t@@$0A@@@
+1407cd580	.?AV?$CCallback@VCSteamAchievements@@UUserStatsReceived_t@@$0A@@@
+1407cd5d8	.?AV?$CCallbackImpl@$0BA@@@
+1407cd608	.?AVCCallbackBase@@
+1407cd630	.?AV?$CCallbackImpl@$0JI@@@
+1407cd660	.?AV?$CCallback@VCSteamAchievements@@UUserStatsStored_t@@$0A@@@
+1407cd6b0	.?AV?$CCallbackImpl@$0BI@@@
+1407cd6e0	.?AV?$CCallResult@VCSteamLeaderboards@@ULeaderboardScoreUploaded_t@@@@
+1407cd740	.?AV?$CCallResult@VCSteamLeaderboards@@ULeaderboardScoresDownloaded_t@@@@
+1407cd7a0	.?AV?$CCallResult@VCSteamLeaderboards@@ULeaderboardFindResult_t@@@@
+140eef928	GroupIcon
+140eef940	<?xml version='1.0' encoding='UTF-8' standalone='yes'?>\r\n<assembly xmlns='urn:schemas-microsoft-com:asm.v1' manifestVersion='1.0'>\r\n  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">\r\n    <security>\r\n      <requestedPrivileges>\r\n        <requestedExecutionLevel level='asInvoker' uiAccess='false' />\r\n      </requestedPrivileges>\r\n    </security>\r\n  </trustInfo>\r\n</assembly>\r\n
+ff000002d0	
+ff000002ee	
+ff00001268	
+ff00001710	00000000-0000-0000-0000-000000000000

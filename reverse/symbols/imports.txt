@@ -1,0 +1,198 @@
+
+/Users/happyelements/SteamLibrary/steamapps/common/Like Dreamer/reverse/inputs/LikeDreamer.exe:	file format coff-x86-64
+Characteristics 0x22
+	executable
+	large address aware
+
+Time/Date               Sat Sep 13 05:58:08 2025
+Magic                   020b	(PE32+)
+MajorLinkerVersion      14
+MinorLinkerVersion      41
+SizeOfCode              00000000004a5c00
+SizeOfInitializedData   0000000000a49000
+SizeOfUninitializedData 0000000000000000
+AddressOfEntryPoint     000000000031ca78
+BaseOfCode              0000000000001000
+ImageBase               0000000140000000
+SectionAlignment        00001000
+FileAlignment           00000200
+MajorOSystemVersion     6
+MinorOSystemVersion     0
+MajorImageVersion       0
+MinorImageVersion       0
+MajorSubsystemVersion   6
+MinorSubsystemVersion   0
+Win32Version            00000000
+SizeOfImage             00ef2000
+SizeOfHeaders           00000400
+CheckSum                00000000
+Subsystem               00000002	(Windows GUI)
+DllCharacteristics      00008160
+					HIGH_ENTROPY_VA
+					DYNAMIC_BASE
+					NX_COMPAT
+					TERMINAL_SERVER_AWARE
+SizeOfStackReserve      0000000000100000
+SizeOfStackCommit       0000000000001000
+SizeOfHeapReserve       0000000000100000
+SizeOfHeapCommit        0000000000001000
+LoaderFlags             00000000
+NumberOfRvaAndSizes     00000010
+
+The Data Directory
+Entry 0 0000000000000000 00000000 Export Directory [.edata (or where ever we found it)]
+Entry 1 000000000056af0c 00000078 Import Directory [parts of .idata]
+Entry 2 0000000000edf000 00010ac0 Resource Directory [.rsrc]
+Entry 3 0000000000ea0000 0001b7f8 Exception Directory [.pdata]
+Entry 4 0000000000000000 00000000 Security Directory
+Entry 5 0000000000ef0000 00001ea0 Base Relocation Directory [.reloc]
+Entry 6 000000000053c6f0 00000070 Debug Directory
+Entry 7 0000000000000000 00000000 Description Directory
+Entry 8 0000000000000000 00000000 Special Directory
+Entry 9 000000000053c900 00000028 Thread Storage Directory [.tls]
+Entry a 000000000053c5b0 00000140 Load Configuration Directory
+Entry b 0000000000000000 00000000 Bound Import Directory
+Entry c 00000000004a7000 00000368 Import Address Table Directory
+Entry d 0000000000000000 00000000 Delay Import Directory
+Entry e 0000000000000000 00000000 CLR Runtime Header
+Entry f 0000000000000000 00000000 Reserved
+TLS directory:
+  StartAddressOfRawData: 0x00000140540c38
+  EndAddressOfRawData: 0x00000140540c39
+  AddressOfIndex: 0x00000140e2ff78
+  AddressOfCallBacks: 0x000001404a7418
+  SizeOfZeroFill: 0
+  Characteristics: 1048576
+  Alignment: 1
+
+
+The Import Tables:
+  lookup 0056b290 time 00000000 fwd 00000000 name 0056b426 addr 004a7308
+
+    DLL Name: steam_api64.dll
+    Hint/Ord  Name
+           3  SteamAPI_GetHSteamUser
+         937  SteamAPI_RegisterCallback
+        1032  SteamAPI_UnregisterCallback
+        1062  SteamInternal_FindOrCreateUserInterface
+        1059  SteamInternal_ContextInit
+         940  SteamAPI_RunCallbacks
+         936  SteamAPI_RegisterCallResult
+        1031  SteamAPI_UnregisterCallResult
+         926  SteamAPI_Init
+         944  SteamAPI_Shutdown
+         939  SteamAPI_RestartAppIfNecessary
+
+  lookup 0056afa8 time 00000000 fwd 00000000 name 0056b454 addr 004a7020
+
+    DLL Name: KERNEL32.dll
+    Hint/Ord  Name
+         885  HeapSize
+         724  GetProcessHeap
+         760  GetStringTypeW
+        1407  SetStdHandle
+        1350  SetEnvironmentVariableW
+        1346  SetEndOfFile
+         595  GetEnvironmentStringsW
+         497  GetCommandLineW
+        1081  OutputDebugStringA
+        1460  Sleep
+         496  GetCommandLineA
+         475  GetCPInfo
+         694  GetOEMCP
+        1610  WriteConsoleW
+         452  FreeEnvironmentStringsW
+         453  FreeLibrary
+         717  GetProcAddress
+         996  LoadLibraryA
+         999  LoadLibraryW
+         218  CreateFileW
+        1176  ReadFile
+        1611  WriteFile
+         148  CloseHandle
+         637  GetLastError
+        1005  LocalAlloc
+        1010  LocalFree
+        1591  WideCharToMultiByte
+         376  ExitProcess
+        1269  RtlCaptureContext
+        1277  RtlLookupFunctionEntry
+        1284  RtlVirtualUnwind
+        1510  UnhandledExceptionFilter
+        1444  SetUnhandledExceptionFilter
+         562  GetCurrentProcess
+        1476  TerminateProcess
+         936  IsProcessorFeaturePresent
+        1136  QueryPerformanceCounter
+         563  GetCurrentProcessId
+         567  GetCurrentThreadId
+         778  GetSystemTimeAsFileTime
+         906  InitializeSListHead
+         928  IsDebuggerPresent
+         753  GetStartupInfoW
+         661  GetModuleHandleW
+        1283  RtlUnwindEx
+        1279  RtlPcToFileHeader
+        1159  RaiseException
+        1380  SetLastError
+         325  EncodePointer
+        1282  RtlUnwind
+         329  EnterCriticalSection
+         992  LeaveCriticalSection
+         291  DeleteCriticalSection
+         902  InitializeCriticalSectionAndSpinCount
+        1494  TlsAlloc
+        1496  TlsGetValue
+        1497  TlsSetValue
+        1495  TlsFree
+         998  LoadLibraryExW
+         660  GetModuleHandleExW
+         755  GetStdHandle
+         657  GetModuleFileNameW
+         880  HeapFree
+         876  HeapAlloc
+         618  GetFileType
+         538  GetConsoleOutputCP
+         534  GetConsoleMode
+         616  GetFileSizeEx
+        1365  SetFilePointerEx
+        1173  ReadConsoleW
+         436  FlsAlloc
+         438  FlsGetValue
+         439  FlsSetValue
+         437  FlsFree
+         170  CompareStringW
+         980  LCMapStringW
+         819  GetTimeZoneInformation
+         883  HeapReAlloc
+         441  FlushFileBuffers
+        1042  MultiByteToWideChar
+         399  FindClose
+         405  FindFirstFileExW
+         422  FindNextFileW
+         942  IsValidCodePage
+         460  GetACP
+
+  lookup 0056b258 time 00000000 fwd 00000000 name 0056b470 addr 004a72d0
+
+    DLL Name: USER32.dll
+    Hint/Ord  Name
+         644  MessageBoxA
+          31  CallNextHookEx
+         498  GetWindowRect
+         289  GetAsyncKeyState
+         898  SetWindowPos
+         345  GetFocus
+
+  lookup 0056af98 time 00000000 fwd 00000000 name 0056b492 addr 004a7010
+
+    DLL Name: GDI32.dll
+    Hint/Ord  Name
+           4  AddFontResourceExA
+
+  lookup 0056af88 time 00000000 fwd 00000000 name 0056badc addr 004a7000
+
+    DLL Name: ADVAPI32.dll
+    Hint/Ord  Name
+         593  RegCloseKey
+

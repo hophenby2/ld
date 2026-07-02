@@ -1,0 +1,8 @@
+relative_path,category,extension,size_bytes,sha256,width,height,duration_seconds,encoding,line_count
+demo/LD_demo01.txt,demo,.txt,25413,995a15443d4909aa664896e33e13f105a0a23ae04a0c863ecb8a0331004615de,,,,utf-8-sig,2889
+demo/LD_demo02.txt,demo,.txt,25386,b13f572cfc32e9662ea2122ec6484cb39c7483d55cae4bec9a9d9ed4e02efad9,,,,utf-8-sig,2834
+demo/LD_demo03.txt,demo,.txt,25043,f7f0c23b866ef50871c3919b22dc8a8cfeaa9cd30831fd51e362a76902e9e2db,,,,utf-8-sig,2848
+text/text01.csv,text,.csv,33267,d20a7cce1ab8a313ae28c6a588d3622033c248377772dd161e331a770ff31b78,,,,cp932,557
+text/text02.csv,text,.csv,37382,cd16cf7f35249e196abd8793ad493d385c2f5149a0eede4c98c8878a85a60bdd,,,,cp932,557
+text/text03.csv,text,.csv,38297,0337e58ac39e85fab57b8d3f88fb5d5f00c5dd83bd89624400707a9628b46b0f,,,,utf-8-sig,557
+text/text04.csv,text,.csv,38297,12b5804ee387bd9300bc9f26605b1670cc8a97a30491a460f294441e10db4199,,,,utf-8-sig,557

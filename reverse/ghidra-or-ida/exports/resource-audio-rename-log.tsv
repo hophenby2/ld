@@ -1,0 +1,7 @@
+address	old_name	new_name	status
+1401885b0	FUN_1401885b0	dxlib_load_sound_candidate	OK
+14018bc80	FUN_14018bc80	dxlib_set_sound_mode_candidate	OK
+14015a5f0	FUN_14015a5f0	dxlib_create_font_candidate	OK
+140155cc0	FUN_140155cc0	dxlib_make_screen_candidate	OK
+140155560	FUN_140155560	dxlib_load_graph_impl_candidate	OK
+140155800	FUN_140155800	dxlib_load_div_graph_impl_candidate	OK
