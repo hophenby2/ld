@@ -182,17 +182,17 @@ This is the best current anchor for naming the title/main menu handler.
 
 ## Gameplay/stage branch evidence
 
-The exact gameplay dispatcher is still not named, but several anchors show the rough path:
+The dispatcher handlers have now been renamed and exported with Homebrew Ghidra. Detailed pseudocode is in `reconstructed/pseudocode/main_gameplay_flow.md`. Current interpretation:
 
-- State `3` initializes/starts gameplay from title/stage selection.
-- States `4` and `5` are reached from stage/result transitions and likely cover active stage/boss or stage intro variants.
-- `FUN_140106be0` reads player option globals and has dense player update/bullet/object logic; it special-cases replay mode through `DAT_140e41b00`.
-- State `0x14` is replay/demo playback update and is special-cased in the outer loop.
-- State `0x2c` is another accelerated gameplay-like branch gated by `(&DAT_140e441c0)[DAT_140e445c0]`.
+- State `3` is a pre-run/stage-start setup menu. It commits into state `4` for normal route modes or state `5` for alternate/boss-like mode, and cancels back to title state `2`.
+- State `4` is a normal route stage-selection / pre-gameplay start overlay. It persists selected stage/player options, then calls `FUN_1400f7150()` on confirm; that helper enters state `0x14` or `0x15` after initializing gameplay context. Cancel returns to state `3`.
+- State `5` is a 10-row alternate/boss/options setup state. Row `8` confirms through `FUN_1400f7150()`; row `9` or negative transition returns to state `3`.
+- State `0x14`/`0x15`/`0x2a` is the clearest gameplay-loop handler in this set: it records or replays packed input, runs per-stage gameplay updates, handles demo completion, and transitions to replay/save follow-up states.
+- State `0x2c` is an accelerated auto/ending/unlock branch gated by `(&DAT_140e441c0)[DAT_140e445c0]`; it routes to `0x2d`, `0x23`, or `0x10` after its fade-out.
 
 ## Near-term main-branch targets
 
-1. Use the dispatcher table to rename handler functions in Ghidra, starting with `0x1400d21e0` (title/main menu), `0x1400d4610`/`0x1400d5d50`/`0x14010e9b0` (gameplay cluster), and `0x1400ffc00`/`0x1401019e0`/`0x140102ae0` (config cluster).
-2. Export/decompile the currently missing dispatcher-adjacent handlers named only by address in the jump table.
-3. Map states `3`, `4`, `5`, `0x14`, and `0x2c` as the main gameplay branch before returning to replay binary details.
+1. Align `stage_spawn_dispatch_candidate` extracted fields (`entity_kind/r8d`, `field_38`, shared tail blocks) with `stage_entity_spawn_candidate` node layout and downstream entity update switch.
+2. Cross-reference stage resource/text IDs to replace generic `stage_XX` names with real stage/theme names when evidence is strong.
+3. Export/decompile the currently missing dispatcher-adjacent handlers named only by address in the jump table.
 4. Treat replay format work as deferred unless it blocks understanding main flow.

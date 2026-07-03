@@ -35,14 +35,23 @@ The goal is to reconstruct resource maps, data formats, state-machine notes, and
 - `analysis/demo-format.md` — demo TXT notes.
 - `analysis/save-replay-format.md` — save/config/replay binary notes.
 - `analysis/main-program-flow.md` — main startup loop, scene state, and high-level state transition notes.
+- `analysis/dispatcher-rename-plan.md` — proposed Ghidra names for central dispatcher handlers.
+- `tools/ghidra_scripts/RenameGameplayHelpers.java` — applied Ghidra names for confirmed gameplay helper candidates.
+- `tools/ghidra_scripts/RenamePerStageGameplayHandlers.java` — applied generic stage-index names for gameplay update handlers dispatched by state `0x14`.
+- `tools/ghidra_scripts/RenameGameplaySpawnHelpers.java` — applied conservative names for common stage spawn/event helper functions.
 - `reconstructed/pseudocode/save_replay_manager.md` — evidence-backed pseudocode for save/config/replay handlers.
+- `reconstructed/pseudocode/main_gameplay_flow.md` — evidence-backed pseudocode for the renamed gameplay-adjacent dispatcher states `0x03`, `0x04`, `0x05`, `0x14`, and `0x2c`.
+- `reconstructed/data-structures/stage-spawn-schedule.csv` / `.md` — raw extracted per-stage `stage_spawn_dispatch_candidate` and related helper call schedules.
+- `reconstructed/data-structures/stage-spawn-type-matrix.csv` and `stage-spawn-type-summary.md` — spawn type by stage count matrix and examples.
+- `reconstructed/data-structures/stage-spawn-dispatch-map.csv` and `stage-spawn-dispatch-map.md` — reconstructed `stage_spawn_dispatch_candidate` jump-table mapping.
+- `reconstructed/data-structures/stage-spawn-family-notes.md` — current stage-to-spawn-type-family interpretation.
 
 ## Next Steps
 
-1. Rename jump-table handler functions in Ghidra using `analysis/main-program-flow.md`.
-2. Export/decompile missing dispatcher handlers from states `3`, `4`, `5`, `0x14`, and `0x2c` to map the main gameplay branch.
+1. Align `stage_spawn_dispatch_candidate` extracted fields (`entity_kind/r8d`, `field_38`, shared tail blocks) with `stage_entity_spawn_candidate` node layout and downstream entity update switch.
+2. Cross-reference stage resource/text IDs to replace generic `stage_XX` names with real stage/theme names when evidence is strong.
 3. Cross-reference `media\\text\\text01.csv` to locate text manager initialization.
-4. Gradually write pseudocode in `reconstructed/pseudocode/` with evidence labels.
+4. Gradually remove `candidate` suffixes only after handler semantics are confirmed by body review and resource/UI evidence.
 5. Return to replay binary details only after the main gameplay branch is mapped.
 
 ## Legal/Use Boundary

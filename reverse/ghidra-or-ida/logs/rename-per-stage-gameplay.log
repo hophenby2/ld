@@ -1,0 +1,102 @@
+INFO  Using log config file: jar:file:/opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: /Users/happyelements/Library/ghidra/ghidra_12.1.2_PUBLIC/application.log (LoggingInitialization)  
+INFO  Loading user preferences: /Users/happyelements/Library/ghidra/ghidra_12.1.2_PUBLIC/preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (529 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (1172 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+INFO  HEADLESS Script Paths:
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/Base/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/FunctionID/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/FileFormats/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Processors/Atmel/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Processors/8051/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Processors/DATA/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Processors/JVM/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Debug/Debugger/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/BSim/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/BytePatterns/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/PyGhidra/ghidra_scripts
+    /Users/happyelements/SteamLibrary/steamapps/common/Like Dreamer/reverse/tools/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/Decompiler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/VersionTracking/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/PDB/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  HEADLESS: execution starts (HeadlessAnalyzer)  
+INFO  Opening existing project: /Users/happyelements/SteamLibrary/steamapps/common/Like Dreamer/reverse/ghidra-or-ida/project/LikeDreamerGhidra (HeadlessAnalyzer)  
+INFO  Opening project: /Users/happyelements/SteamLibrary/steamapps/common/Like Dreamer/reverse/ghidra-or-ida/project/LikeDreamerGhidra (HeadlessProject)  
+INFO  REPORT: Processing project file: /LikeDreamer.exe (HeadlessAnalyzer)  
+INFO  ANALYZING all memory and code: /LikeDreamer.exe (HeadlessAnalyzer)  
+WARN  Ignoring leading '_' chars on no-return name '___raise_securityfailure' specified in file: /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/Base/data/PEFunctionsThatDoNotReturn (NoReturnFunctionAnalyzer)  
+WARN  Ignoring leading '_' chars on no-return name '___report_rangecheckfailure' specified in file: /opt/homebrew/Cellar/ghidra/12.1.2/libexec/Ghidra/Features/Base/data/PEFunctionsThatDoNotReturn (NoReturnFunctionAnalyzer)  
+INFO  Skipping PDB processing: failed to locate PDB file in configured locations (PdbUniversalAnalyzer)  
+INFO  Use a script to set the PDB file location. I.e.,
+    PdbAnalyzer.setPdbFileOption(currentProgram, new File("/path/to/pdb/file.pdb")); or
+    PdbUniversalAnalyzer.setPdbFileOption(currentProgram, new File("/path/to/pdb/file.pdb"));
+Or set the symbol server search configuration using:    PdbPlugin.saveSymbolServerServiceConfig(...);
+ This must be done using a pre-script (prior to analysis). (PdbUniversalAnalyzer)  
+WARN  Decompiling 14017ae00: Unable to read bytes at ram:20ccccccc (DecompileCallback)  
+WARN  Decompiling 1401f1f20: Unable to read bytes at ram:144040000 (DecompileCallback)  
+INFO  Packed database cache: /var/tmp/happyelements-ghidra/packed-db-cache (PackedDatabaseCache)  
+INFO  Applied data type archive: windows_vs12_64 (ApplyDataArchiveAnalyzer)  
+INFO  -----------------------------------------------------
+    ASCII Strings                              0.509 secs
+    Apply Data Archives                        0.258 secs
+    Call Convention ID                         0.093 secs
+    Call-Fixup Installer                       0.016 secs
+    Create Address Tables                      0.742 secs
+    Create Function                            0.000 secs
+    Data Reference                             0.646 secs
+    Decompiler Switch Analysis                28.606 secs
+    Demangler Microsoft                        0.012 secs
+    Disassemble Entry Points                   0.223 secs
+    Embedded Media                             0.070 secs
+    External Entry References                  0.000 secs
+    Function ID                                2.974 secs
+    Function Start Search                      0.063 secs
+    Non-Returning Functions - Discovered       1.680 secs
+    Non-Returning Functions - Known            0.025 secs
+    PDB Universal                              0.008 secs
+    Reference                                  0.768 secs
+    Scalar Operand References                  2.750 secs
+    Shared Return Calls                        0.619 secs
+    Stack                                      0.717 secs
+    Subroutine References                      0.691 secs
+    Windows x86 PE Exception Handling          0.057 secs
+    Windows x86 PE RTTI Analyzer               0.000 secs
+    Windows x86 Thread Environment Block (TEB) Analyzer     0.000 secs
+    WindowsResourceReference                   0.281 secs
+    x86 Constant Reference Analyzer            9.546 secs
+-----------------------------------------------------
+     Total Time   51 secs
+-----------------------------------------------------
+ (AutoAnalysisManager)  
+INFO  REPORT: Analysis succeeded for file: /LikeDreamer.exe (HeadlessAnalyzer)  
+INFO  REPORT: Execute script: RenamePerStageGameplayHandlers.java  (HeadlessAnalyzer)  
+INFO  SCRIPT: /Users/happyelements/SteamLibrary/steamapps/common/Like Dreamer/reverse/tools/ghidra_scripts/RenamePerStageGameplayHandlers.java (HeadlessAnalyzer)  
+INFO  RenamePerStageGameplayHandlers.java> RENAMED	14012eba0	FUN_14012eba0	stage_00_gameplay_update_candidate (GhidraScript)  
+INFO  RenamePerStageGameplayHandlers.java> RENAMED	140118420	FUN_140118420	stage_01_gameplay_update_candidate (GhidraScript)  
+INFO  RenamePerStageGameplayHandlers.java> RENAMED	140119640	FUN_140119640	stage_02_gameplay_update_candidate (GhidraScript)  
+INFO  RenamePerStageGameplayHandlers.java> RENAMED	14011b3d0	FUN_14011b3d0	stage_03_gameplay_update_candidate (GhidraScript)  
+INFO  RenamePerStageGameplayHandlers.java> RENAMED	14011cdd0	FUN_14011cdd0	stage_04_gameplay_update_candidate (GhidraScript)  
+INFO  RenamePerStageGameplayHandlers.java> RENAMED	14011eef0	FUN_14011eef0	stage_05_gameplay_update_candidate (GhidraScript)  
+INFO  RenamePerStageGameplayHandlers.java> RENAMED	140121660	FUN_140121660	stage_06_gameplay_update_candidate (GhidraScript)  
+INFO  RenamePerStageGameplayHandlers.java> RENAMED	140123620	FUN_140123620	stage_07_gameplay_update_candidate (GhidraScript)  
+INFO  RenamePerStageGameplayHandlers.java> RENAMED	1401253e0	FUN_1401253e0	stage_08_gameplay_update_candidate (GhidraScript)  
+INFO  RenamePerStageGameplayHandlers.java> RENAMED	140128940	FUN_140128940	stage_09_gameplay_update_candidate (GhidraScript)  
+INFO  RenamePerStageGameplayHandlers.java> RENAMED	14012b260	FUN_14012b260	stage_10_gameplay_update_candidate (GhidraScript)  
+INFO  RenamePerStageGameplayHandlers.java> SUMMARY	ok=11	missing=0 (GhidraScript)  
+INFO  ANALYZING changes made by post scripts: /LikeDreamer.exe (HeadlessAnalyzer)  
+INFO  REPORT: Post-analysis succeeded for file: /LikeDreamer.exe (HeadlessAnalyzer)  
+INFO  REPORT: Save succeeded for processed file: /LikeDreamer.exe (HeadlessAnalyzer)  
