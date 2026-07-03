@@ -1,0 +1,7 @@
+# Large game package and reverse-engineering project files are kept outside Git/GitHub.
+media.dxa
+reverse/inputs/media.dxa
+reverse/ghidra-or-ida/project/
+
+# Local Claude settings
+.claude/
