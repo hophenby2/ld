@@ -192,7 +192,7 @@ The dispatcher handlers have now been renamed and exported with Homebrew Ghidra.
 
 ## Near-term main-branch targets
 
-1. Align `stage_spawn_dispatch_candidate` extracted fields (`entity_kind/r8d`, `field_38`, shared tail blocks) with `stage_entity_spawn_candidate` node layout and downstream entity update switch.
+1. Review high-value update helpers in `reconstructed/data-structures/stage-spawn-used-update-map.md` order and attach semantic labels to helper groups before renaming numeric spawn types globally.
 2. Cross-reference stage resource/text IDs to replace generic `stage_XX` names with real stage/theme names when evidence is strong.
 3. Export/decompile the currently missing dispatcher-adjacent handlers named only by address in the jump table.
 4. Treat replay format work as deferred unless it blocks understanding main flow.

@@ -17,6 +17,7 @@ public class RenameGameplaySpawnHelpers extends GhidraScript {
     private final RenameEntry[] entries = new RenameEntry[] {
         new RenameEntry("14007b710", "stage_spawn_dispatch_candidate"),
         new RenameEntry("140078a00", "stage_entity_spawn_candidate"),
+        new RenameEntry("140078b70", "stage_entity_update_dispatch_candidate"),
         new RenameEntry("140079b00", "stage_entity_flush_effects_candidate"),
         new RenameEntry("14006c420", "stage_pending_effect_flush_candidate"),
         new RenameEntry("14012e8e0", "stage_intro_banner_event_candidate"),

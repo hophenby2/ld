@@ -45,16 +45,59 @@ This means many numeric spawn types intentionally share the same case block/defa
 - Common type `0x0b` and type `0x0d` both map to case `5` / target `0x14007bb1f`.
 - Several late composite/final types (`0xfe`, `0x100`, etc.) reuse earlier case `18` / target `0x14007bf24`.
 
-The reconstructed fields currently extracted from objdump are provisional:
+The reconstructed fields extracted from objdump now line up with the `0x68`-byte node allocated by `stage_entity_spawn_candidate @ 0x140078a00`:
 
-| Extracted field | Likely meaning |
-|---|---|
-| `entity_kind/r8d` | Internal behavior/render kind passed onward to `stage_entity_spawn_candidate`. |
-| `field_38` | Default lifetime/timing/size-like field placed on the stack before the spawn call. |
-| `const` | Float/double constants selected by a case block, likely scale/speed/alpha presets. |
-| `tail` | Shared tail block used to finish argument setup before `stage_entity_spawn_candidate`. |
+| Extracted field | Node offset | Meaning | Evidence |
+|---|---:|---|---|
+| `spawn_type` / first dispatch arg | `+0x18` (`puVar1[6]`) | Entity behavior/type id. This is the value most downstream helpers test as `param_1[6]` (`0x83`, `0x84`, `0x116`, etc.), so it is the node's primary behavior discriminator. | `stage_entity_spawn_candidate` stores `param_1` at `puVar1[6]`; downstream helpers branch on `param_1[6]`. |
+| `entity_kind/r8d` | `+0x24` (`puVar1[9]`) | Render/collision category, not the main type. It is copied from dispatch `r8d` into `param_3`, then used by generic update/render helpers (`FUN_14007b010` uses `*(int *)(param_1 + 0x24)` for effect payout/scoring scale). | `stage_entity_spawn_candidate` stores `param_3` at `puVar1[9]`; `FUN_14007b010` reads offset `+0x24`. |
+| dispatch arg 2 / schedule duration | `+0x1c` and `+0x20` (`puVar1[7]`, `puVar1[8]`) | Lifetime/countdown or max lifetime. In mode `DAT_140e419b8 == 0`, this is scaled by `DAT_140539f28` except for special type `0x153`. Several child/follower helpers copy parent `+0x1c/+0x20` to synchronize lifetimes. | Stored twice by `stage_entity_spawn_candidate`; follower code clamps child `param_1[7]` against parent lifetime. |
+| dispatch x | `+0x28`, mirrored to `+0x30`/`+0x38` | X position / previous/origin x. | Stored from `param_4` into `puVar1[10]`, `puVar1[0xc]`, `puVar1[0xe]`; flush renders from `+0x28`. |
+| dispatch y | `+0x2c`, mirrored to `+0x34`/`+0x3c` | Y position / previous/origin y. | Stored from `param_5` into `puVar1[0xb]`, `puVar1[0xd]`, `puVar1[0xf]`; flush renders from `+0x2c`. |
+| angle argument | `+0x40`, `+0x42`, `+0x44` | Current/previous/target angle or heading. | Stored from `param_6`; many helpers update `+0x40`/`+0x42` and pass it to projectile/effect constructors. |
+| `const` | `+0x48` (`double`) | Speed/scale/timing constant. | Stored from `param_7`; movement helpers use `*(double *)(param_1 + 0x48)` as velocity/magnitude. |
+| `field_38` | `+0x50` (`puVar1[0x14]`) | Collision radius / clear-effect size. It is rendered as explosion size during `stage_entity_flush_effects_candidate` and used in distance tests. | `stage_entity_spawn_candidate` stores `param_8`; `stage_entity_flush_effects_candidate` multiplies offset `+0x50` by `DAT_140539e38`; targeting code subtracts it from distance. |
+| `field_40` | `+0x54` (`puVar1[0x15]`) | Active/targetable flag. Most spawns set it to `1`; helpers set it to `0` while transitioning or before removal. | Targeting code requires `+0x54 == 0` or `param_1[0x15] == 0` in specific contexts; spawn map usually sets stack `+0x40` to `1`. |
+| `field_48` | `+0x08` (`puVar1[2]`) | Parent/link id or auxiliary owner id, not spatial data. | Stored from `param_10`; direct spawns pass `DAT_140e44308` when creating child nodes. |
+| list link | `+0x60` | Next pointer in `DAT_140e45d80` list. | New nodes are appended through previous tail `+0x60`; all list walks follow `+0x60`. |
 
-The next step is to align `entity_kind/r8d` and `field_38` with the `stage_entity_spawn_candidate` node layout and downstream entity update switch.
+Important correction: the earlier column name `entity_kind/r8d` should not be treated as the primary behavior switch. The actual behavior discriminator is the node's `+0x18` type (`param_1[6]` downstream), which is the original spawn type or a child type created by another entity.
+
+## Downstream update dispatcher
+
+`stage_entity_update_dispatch_candidate @ 0x140078b70` is the per-node dispatcher. It walks `DAT_140e45d80`, reads node `+0x18`, indexes byte table `DAT_1400799a8[type]`, and dispatches the resulting update case to a helper. After the helper runs, if node `+0x54 == 0`, it calls `FUN_1400cc2f0`, then increments node timers at `+0x0c` and, when active, `+0x10`.
+
+Generated maps:
+
+- `stage-entity-update-dispatch-map.csv` — full entity type `0..0x153` to update case/helper mapping.
+- `stage-spawn-used-update-map.csv` / `.md` — the same mapping restricted to spawn types observed in per-stage schedules.
+
+Important correction: this confirms that `entity_kind/r8d` is not the switch input. The update switch input is node `+0x18`, i.e. the original `spawn_type` or a child type spawned by another entity.
+
+### Used scheduled spawn type groups by update helper
+
+| Spawn type family | Update helper pattern | Notes |
+|---|---|---|
+| `0x00..0x10` | `FUN_1401327d0` through `FUN_140080fb0` | Early/common family; types `0/1`, `2..5`, and `6..8` share update helpers. |
+| `0x19..0x2e` | `FUN_1400841d0` through `FUN_14008efc0` | Stage-family block with mostly one update helper per spawn type; `0x39/0x3a`-style sharing appears in later blocks. |
+| `0x35..0x4f` | `FUN_140090c30` through `FUN_14009b5f0` | Stage-local blocks; several paired types share helpers (`0x39/0x3a`, `0x47/0x48`). |
+| `0x57..0x77` | `FUN_14009d610` through `FUN_1400a7760` | Another contiguous stage-family range with paired helper sharing (`0x57/0x58`, `0x5b/0x5c`, `0x71/0x72`). |
+| `0x95..0xa4` | `FUN_1400a9080` through `FUN_1400acd20` | Composite/late-stage family; `0x97/0x98/0x99` and `0x9b/0x9c/0x9e/0x9f/0xa1/0xa2` share helpers. |
+| `0xfa..0x104` | `FUN_1400af090` through `FUN_1400b3540` | Special/final high-numbered family; mostly one helper per type except `0x103/0x104`. |
+
+### Child/internal type anchors
+
+Some update helpers spawn child entity types not present directly in stage schedules:
+
+| Helper | Child/internal type evidence | Notes |
+|---|---|---|
+| `FUN_14004a970` | creates `0xce..0xd9` | Broad scripted/boss-like state machine; reached by update case `0xa7`, not by the initially scheduled types above. |
+| `FUN_14002d2f0` | checks `0x83/0x84` and later `0x13f..0x151` | Paired/follower behavior; synchronizes child lifetime with parent node. |
+| `FUN_14005e890` | handles `0x116..0x119` | High-numbered family-specific behavior. |
+| `FUN_1400e20e0` | handles `0x7e/0x7f` | Bullet/emitter-like behavior: moves by angle/speed, emits effects/projectiles, clears on lifetime/bounds. |
+| `FUN_1400e0680` | handles `0x79..0x7d` | Parent-relative/follower behavior; reads parent node fields by matching ids in `DAT_140e45d80`. |
+
+Next step: review the high-value update helpers in `stage-spawn-used-update-map.md` order and attach semantic labels to helper groups before renaming numeric spawn types globally.
 
 ## Cross-stage common types
 

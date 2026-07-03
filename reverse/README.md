@@ -44,11 +44,13 @@ The goal is to reconstruct resource maps, data formats, state-machine notes, and
 - `reconstructed/data-structures/stage-spawn-schedule.csv` / `.md` — raw extracted per-stage `stage_spawn_dispatch_candidate` and related helper call schedules.
 - `reconstructed/data-structures/stage-spawn-type-matrix.csv` and `stage-spawn-type-summary.md` — spawn type by stage count matrix and examples.
 - `reconstructed/data-structures/stage-spawn-dispatch-map.csv` and `stage-spawn-dispatch-map.md` — reconstructed `stage_spawn_dispatch_candidate` jump-table mapping.
+- `reconstructed/data-structures/stage-entity-update-dispatch-map.csv` and `stage-spawn-used-update-map.md` — reconstructed `stage_entity_update_dispatch_candidate` type-to-update-helper mapping.
+- `reconstructed/data-structures/stage-spawn-semantic-name-candidates.md` — first-pass conservative semantic labels for spawn/update helper groups.
 - `reconstructed/data-structures/stage-spawn-family-notes.md` — current stage-to-spawn-type-family interpretation.
 
 ## Next Steps
 
-1. Align `stage_spawn_dispatch_candidate` extracted fields (`entity_kind/r8d`, `field_38`, shared tail blocks) with `stage_entity_spawn_candidate` node layout and downstream entity update switch.
+1. Review high-value update helpers in `stage-spawn-used-update-map.md` order and attach semantic labels to helper groups before renaming numeric spawn types globally.
 2. Cross-reference stage resource/text IDs to replace generic `stage_XX` names with real stage/theme names when evidence is strong.
 3. Cross-reference `media\\text\\text01.csv` to locate text manager initialization.
 4. Gradually remove `candidate` suffixes only after handler semantics are confirmed by body review and resource/UI evidence.

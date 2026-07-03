@@ -309,7 +309,8 @@ Common stage spawn/event helper names now applied in Ghidra:
 | Address | Applied name | Evidence summary |
 |---|---|---|
 | `0x14007b710` | `stage_spawn_dispatch_candidate` | Thin dispatch wrapper keyed by spawn/type id; decompiler signature is incomplete at this wrapper, but call sites pass spawn id plus timing/position fields. |
-| `0x140078a00` | `stage_entity_spawn_candidate` | Allocates a `0x68`-byte node in the `DAT_140e45d80` list, copies type/timing/position/scale fields, and increments entity count `DAT_140e44e6c`. |
+| `0x140078a00` | `stage_entity_spawn_candidate` | Allocates a `0x68`-byte node in the `DAT_140e45d80` list. Confirmed node anchors: `+0x18` primary behavior/type, `+0x1c/+0x20` lifetime, `+0x28/+0x2c` x/y, `+0x24` render/collision category, `+0x50` radius/clear-effect size, `+0x60` next link. |
+| `0x140078b70` | `stage_entity_update_dispatch_candidate` | Iterates `DAT_140e45d80`, uses node `+0x18` to index byte table `DAT_1400799a8`, dispatches to per-type update helpers, then runs inactive cleanup/timer increments. |
 | `0x140079b00` | `stage_entity_flush_effects_candidate` | Iterates `DAT_140e45d80`, emits effect sprites via `FUN_140070d00`, frees nodes, and clears the stage entity list/count. |
 | `0x14006c420` | `stage_pending_effect_flush_candidate` | Converts pending entries in `DAT_140e45260` into visual effects, frees them, and clears pending-effect counters. |
 | `0x14012e8e0` | `stage_intro_banner_event_candidate` | Renders intro/banner panels between a start/end frame, optionally spawns a marker with `FUN_14012e070`, and clears banner objects near the end. |
