@@ -48,6 +48,10 @@ The goal is to reconstruct resource maps, data formats, state-machine notes, and
 - `reconstructed/data-structures/stage-entity-update-dispatch-map.csv` and `stage-spawn-used-update-map.md` — reconstructed `stage_entity_update_dispatch_candidate` type-to-update-helper mapping.
 - `reconstructed/data-structures/stage-spawn-semantic-name-candidates.md` — first-pass conservative semantic labels for spawn/update helper groups.
 - `reconstructed/data-structures/stage-spawn-family-notes.md` — current stage-to-spawn-type-family interpretation.
+- `reconstructed/data-structures/projectile-helper-notes.md` — first-pass projectile/effect helper semantics for `FUN_14006c2f0`, `FUN_1400709b0`, and `FUN_140070d00`.
+- `reconstructed/data-structures/projectile-helper-callsite-map.md` — representative projectile/effect helper call-site map by stage/entity helper.
+- `reconstructed/data-structures/projectile-pattern-parameter-table.csv` — current projectile ID / update-helper / pattern parameter table.
+- `reconstructed/headers/stage_entity_layout.h` — pseudo-C layouts for `StageEntity`, projectile nodes, and effect nodes.
 
 ## Next Steps
 

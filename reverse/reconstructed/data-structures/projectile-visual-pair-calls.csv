@@ -1,0 +1,1198 @@
+helper,projectile_id,visual_selector,file,line,args_count,speed,radius_or_flags,count,spread
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/1400af090_FUN_1400af090.c,166,9,DAT_14053a160,auVar26._8_8_,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/1400a2ca0_FUN_1400a2ca0.c,263,9,"CONCAT44(uVar28,uVar26)",in_stack_ffffffffffffff08._8_8_,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/1400a2ca0_FUN_1400a2ca0.c,274,9,"CONCAT44(uVar28,uVar26)",auVar38._8_8_,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/1400a2ca0_FUN_1400a2ca0.c,282,9,"CONCAT44(uVar28,uVar26)",in_stack_ffffffffffffff08._8_8_,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/1400a2ca0_FUN_1400a2ca0.c,380,11,dVar22,in_stack_ffffffffffffff08._8_8_,iVar10 - 1U,(int)(12000 / (ulonglong)(iVar10 - 1U)) * (iVar10 + -2) & 0xffff
+FUN_14006c2f0,0,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/14007d4e0_FUN_14007d4e0.c,238,9,"(double)CONCAT44(uVar18,uVar17) + DAT_140539fa8",auVar23._8_8_,,
+FUN_14006c2f0,4,52,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/1400b3540_FUN_1400b3540.c,200,9,uVar11,in_stack_fffffffffffffee8._8_8_,,
+FUN_14006c2f0,1,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/14009f5d0_FUN_14009f5d0.c,202,2,,,,
+FUN_14006c2f0,1,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/14009f5d0_FUN_14009f5d0.c,205,2,,,,
+FUN_1400709b0,0,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/140082d90_FUN_140082d90.c,243,11,dVar24,auVar37._8_8_,uVar18,20000
+FUN_1400709b0,0,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/140082d90_FUN_140082d90.c,248,11,(dVar31 - DAT_140539fc8) + dVar26,auVar38._8_8_,uVar18,20000
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/140098700_FUN_140098700.c,240,11,dVar1 - DAT_140539f90,auVar27._8_8_,iVar9,(int)((double)iVar13 * _DAT_140539f88) * (iVar9 + -1)
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/1400b0120_FUN_1400b0120.c,184,9,dVar26,auVar31._8_8_,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/1400b0120_FUN_1400b0120.c,192,9,dVar26,auVar33._8_8_,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/1400b0120_FUN_1400b0120.c,198,9,dVar26,auVar34._8_8_,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/1401331c0_FUN_1401331c0.c,104,9,uVar4,in_stack_fffffffffffffef8._8_8_,,
+FUN_14006c2f0,9,1,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/1401331c0_FUN_1401331c0.c,123,9,dVar5,in_stack_fffffffffffffef8._8_8_,,
+FUN_14006c2f0,9,1,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/1401331c0_FUN_1401331c0.c,144,9,dVar5,in_stack_fffffffffffffef8._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/1400aa590_FUN_1400aa590.c,224,2,,,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/1400aa590_FUN_1400aa590.c,230,2,,,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/14009d610_FUN_14009d610.c,255,11,"CONCAT44(uVar25,uVar24)",in_stack_fffffffffffffee8._8_8_,iVar10,iVar11
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/14009d610_FUN_14009d610.c,264,11,dVar3,in_stack_fffffffffffffee8._8_8_,iVar10,iVar11
+FUN_14006c2f0,0,0,reverse/ghidra-or-ida/exports/stage-update-helper-sample/neighborhood-decompiled/14009d610_FUN_14009d610.c,307,9,dVar21 - dVar19,in_stack_fffffffffffffee8._8_8_,,
+FUN_14006c2f0,7,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005cc30_FUN_14005cc30.c,362,9,DAT_14053a178,"CONCAT44(uVar32,1)",,
+FUN_14006c2f0,7,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005cc30_FUN_14005cc30.c,365,9,uVar34,1,,
+FUN_14006c2f0,7,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140043710_FUN_140043710.c,191,9,"CONCAT44(uVar18,uVar17)",in_stack_fffffffffffffe88._8_8_,,
+FUN_14006c2f0,7,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140043710_FUN_140043710.c,208,9,dVar15,in_stack_fffffffffffffe88._8_8_,,
+FUN_1400709b0,3,7,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14009a4a0_FUN_14009a4a0.c,293,11,"CONCAT44(uVar25,uVar24)",in_stack_ffffffffffffff08._8_8_,uVar15,30000
+FUN_1400709b0,3,7,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14009a4a0_FUN_14009a4a0.c,304,11,"CONCAT44(uVar25,uVar24)",auVar39._8_8_,uVar15,30000
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140012dc0_FUN_140012dc0.c,191,9,dVar27,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140012dc0_FUN_140012dc0.c,199,9,dVar27,1,,
+FUN_14006c2f0,2,3,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140012dc0_FUN_140012dc0.c,424,9,dVar13,1,,
+FUN_14006c2f0,2,3,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140012dc0_FUN_140012dc0.c,432,9,dVar11 + DAT_140539f90,1,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400dcd10_FUN_1400dcd10.c,238,11,dVar22,1,uVar16,0x8000
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400dcd10_FUN_1400dcd10.c,245,11,dVar23,1,uVar16,0x8000
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400dcd10_FUN_1400dcd10.c,345,11,dVar22,1,uVar16,0x8000
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400dcd10_FUN_1400dcd10.c,352,11,dVar23,1,uVar16,0x8000
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400a7760_FUN_1400a7760.c,240,4,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400a7760_FUN_1400a7760.c,327,4,,,,
+FUN_1400709b0,10,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400270f0_FUN_1400270f0.c,288,11,dVar30,in_stack_fffffffffffffe60,in_stack_fffffffffffffe68,0x10000
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400270f0_FUN_1400270f0.c,297,11,dVar30,in_stack_fffffffffffffe60,in_stack_fffffffffffffe68,0x10000
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400270f0_FUN_1400270f0.c,412,11,dVar27,in_stack_fffffffffffffe60,in_stack_fffffffffffffe68,(iVar22 + -1) * iVar15
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400270f0_FUN_1400270f0.c,486,9,dVar37,in_stack_fffffffffffffe60,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400270f0_FUN_1400270f0.c,496,9,in_stack_fffffffffffffe58,in_stack_fffffffffffffe60,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400270f0_FUN_1400270f0.c,508,9,dVar37,in_stack_fffffffffffffe60,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400270f0_FUN_1400270f0.c,519,9,in_stack_fffffffffffffe58,in_stack_fffffffffffffe60,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400270f0_FUN_1400270f0.c,631,9,in_stack_fffffffffffffe58,uVar5,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400270f0_FUN_1400270f0.c,636,9,in_stack_fffffffffffffe58,in_stack_fffffffffffffe60,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400270f0_FUN_1400270f0.c,731,11,dVar28,uVar5,uVar6,iVar14
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400270f0_FUN_1400270f0.c,740,11,dVar28,uVar5,uVar6,iVar14
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400270f0_FUN_1400270f0.c,745,11,dVar28,uVar5,uVar6,iVar14
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140018480_FUN_140018480.c,404,2,,,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140018480_FUN_140018480.c,516,2,,,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140018480_FUN_140018480.c,527,2,,,,
+FUN_14006c2f0,3,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140018480_FUN_140018480.c,642,4,,,,
+FUN_14006c2f0,5,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140018480_FUN_140018480.c,656,4,,,,
+FUN_1400709b0,12,3,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140018480_FUN_140018480.c,718,2,,,,
+FUN_1400709b0,12,3,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140018480_FUN_140018480.c,730,2,,,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140018480_FUN_140018480.c,973,2,,,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1323,9,0,auVar84._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1339,9,0,auVar83._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1364,9,0,auVar86._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1379,9,0,auVar85._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1403,9,0,auVar88._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1419,9,0,auVar87._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1445,9,0,auVar90._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1461,9,0,auVar89._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1491,9,0,auVar91._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1516,9,0,auVar93._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1532,9,0,auVar92._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1557,9,0,auVar95._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1572,9,0,auVar94._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1596,9,0,auVar97._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1612,9,0,auVar96._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1638,9,0,auVar99._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1654,9,0,auVar98._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140023260_FUN_140023260.c,1694,9,0,auVar100._8_8_,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14008bd60_FUN_14008bd60.c,172,9,dVar26,auVar36._8_8_,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14008bd60_FUN_14008bd60.c,182,9,dVar26 + DAT_140539fc8,auVar37._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14008bd60_FUN_14008bd60.c,234,9,dVar26,auVar39._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14008bd60_FUN_14008bd60.c,243,9,dVar26 + DAT_140539ff0,auVar40._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14008bd60_FUN_14008bd60.c,547,9,dVar25,auVar49._8_8_,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14008bd60_FUN_14008bd60.c,598,9,dVar21,in_stack_fffffffffffffe78._8_8_,,
+FUN_1400709b0,10,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140014bf0_FUN_140014bf0.c,397,2,,,,
+FUN_1400709b0,10,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140014bf0_FUN_140014bf0.c,402,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140014bf0_FUN_140014bf0.c,1134,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140014bf0_FUN_140014bf0.c,1158,11,dVar32,in_stack_fffffffffffffea8._8_8_,local_res20 + -1,(int)(0x8000 / (longlong)(local_res20 + -1)) * (local_res20 + -2) & 0xffff
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140014bf0_FUN_140014bf0.c,1171,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140014bf0_FUN_140014bf0.c,1310,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140014bf0_FUN_140014bf0.c,1334,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140014bf0_FUN_140014bf0.c,1344,2,,,,
+FUN_1400709b0,0,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140014bf0_FUN_140014bf0.c,1383,11,dVar31,in_stack_fffffffffffffea8._8_8_,uVar25,(int)(0x8000 / (ulonglong)uVar25) * (local_res18 + -2) & 0xffff
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140014bf0_FUN_140014bf0.c,1472,11,dVar29,in_stack_fffffffffffffea8._8_8_,iVar16,iVar16 * 600 + -600
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140014bf0_FUN_140014bf0.c,1482,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140014bf0_FUN_140014bf0.c,1489,2,,,,
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140014bf0_FUN_140014bf0.c,1546,11,uVar20,in_stack_fffffffffffffea8._8_8_,2,iVar23
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400eb780_FUN_1400eb780.c,323,11,dVar28 + dVar26,auVar38._8_8_,iVar16 + -4,0x10000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400eb780_FUN_1400eb780.c,360,11,dVar28 + dVar26,auVar39._8_8_,iVar16 + -4,0x10000
+FUN_14006c2f0,18,14,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400eb780_FUN_1400eb780.c,516,9,"CONCAT44(uVar32,uVar31)",auVar36._8_8_,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400eb780_FUN_1400eb780.c,568,9,dVar28,in_stack_fffffffffffffea8._8_8_,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400eb780_FUN_1400eb780.c,580,9,dVar28,in_stack_fffffffffffffea8._8_8_,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400eb780_FUN_1400eb780.c,594,9,dVar26,in_stack_fffffffffffffea8._8_8_,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400eb780_FUN_1400eb780.c,607,9,dVar28,in_stack_fffffffffffffea8._8_8_,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400eb780_FUN_1400eb780.c,634,9,dVar28,auVar47._8_8_,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400eb780_FUN_1400eb780.c,642,9,dVar28,auVar49._8_8_,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400eb780_FUN_1400eb780.c,647,9,dVar28,auVar50._8_8_,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140099570_FUN_140099570.c,245,11,"(double)CONCAT44(uVar19,uVar18) + _DAT_140539f88",auVar30._8_8_,iVar7 - 1U,(int)(17000 / (ulonglong)(iVar7 - 1U)) * (iVar7 + -2) & 0xffff
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400630f0_FUN_1400630f0.c,212,9,DAT_14053a158,in_stack_fffffffffffffd50,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400630f0_FUN_1400630f0.c,219,9,uVar26,in_stack_fffffffffffffd50,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400630f0_FUN_1400630f0.c,229,9,uVar26,in_stack_fffffffffffffd50,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400630f0_FUN_1400630f0.c,246,9,uVar26,in_stack_fffffffffffffd50,,
+FUN_14006c2f0,0,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400630f0_FUN_1400630f0.c,257,9,uVar7,in_stack_fffffffffffffd50,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400630f0_FUN_1400630f0.c,268,9,uVar26,in_stack_fffffffffffffd50,,
+FUN_14006c2f0,0,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400630f0_FUN_1400630f0.c,279,9,uVar7,in_stack_fffffffffffffd50,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140052fb0_FUN_140052fb0.c,1052,3,,,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140052fb0_FUN_140052fb0.c,1060,3,,,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140052fb0_FUN_140052fb0.c,1170,3,,,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140052fb0_FUN_140052fb0.c,1358,3,,,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140052fb0_FUN_140052fb0.c,1367,3,,,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140052fb0_FUN_140052fb0.c,1505,3,,,,
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e3070_FUN_1400e3070.c,263,11,"CONCAT44(uVar29,uVar55)",in_stack_fffffffffffffef8._8_8_,uVar20,0x10000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e3070_FUN_1400e3070.c,287,11,"CONCAT44(uVar29,uVar55)",auVar41._8_8_,uVar20,0x10000
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e3070_FUN_1400e3070.c,393,11,dVar30,in_stack_fffffffffffffef8._8_8_,iVar16,iVar23
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e3070_FUN_1400e3070.c,402,11,dVar30,auVar46._8_8_,iVar16,iVar23
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e3070_FUN_1400e3070.c,410,11,dVar30,in_stack_fffffffffffffef8._8_8_,iVar16,iVar23
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e3070_FUN_1400e3070.c,434,11,"CONCAT44(uVar33,uVar32)",in_stack_fffffffffffffef8._8_8_,uVar55,25000
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e3070_FUN_1400e3070.c,478,9,dVar30,in_stack_fffffffffffffef8._8_8_,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e3070_FUN_1400e3070.c,491,9,dVar26 - dVar27,in_stack_fffffffffffffef8._8_8_,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e3070_FUN_1400e3070.c,499,9,dVar26,auVar53._8_8_,,
+FUN_14006c2f0,13,4,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005b4a0_FUN_14005b4a0.c,222,9,dVar22 + dVar23,uVar34,,
+FUN_14006c2f0,13,4,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005b4a0_FUN_14005b4a0.c,225,9,dVar22 + DAT_14053a138,uVar34,,
+FUN_14006c2f0,13,4,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005b4a0_FUN_14005b4a0.c,228,9,dVar22 + DAT_14053a1b8,uVar34,,
+FUN_14006c2f0,13,4,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005b4a0_FUN_14005b4a0.c,231,9,dVar22 + DAT_14053a208,uVar34,,
+FUN_14006c2f0,13,4,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005b4a0_FUN_14005b4a0.c,235,9,dVar22 + DAT_14053a228,in_stack_fffffffffffffe50,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005b4a0_FUN_14005b4a0.c,258,9,dVar24,in_stack_fffffffffffffe50,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005b4a0_FUN_14005b4a0.c,270,9,dVar30 + dVar5 + dVar24,in_stack_fffffffffffffe50,,
+FUN_14006c2f0,13,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005b4a0_FUN_14005b4a0.c,310,9,dVar23,in_stack_fffffffffffffe50,,
+FUN_14006c2f0,13,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005b4a0_FUN_14005b4a0.c,321,9,dVar23 + dVar5,in_stack_fffffffffffffe50,,
+FUN_14006c2f0,13,3,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005b4a0_FUN_14005b4a0.c,341,9,dVar22,"CONCAT44(uVar28,1)",,
+FUN_14006c2f0,12,3,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005b4a0_FUN_14005b4a0.c,345,9,dVar22 + DAT_140539f68,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140034e90_FUN_140034e90.c,223,9,dVar25,in_stack_fffffffffffffe68._8_8_,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140034e90_FUN_140034e90.c,247,9,dVar25,in_stack_fffffffffffffe68._8_8_,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140034e90_FUN_140034e90.c,398,11,dVar26,in_stack_fffffffffffffe68._8_8_,uVar15,0x10000
+FUN_14006c2f0,4,3,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140034e90_FUN_140034e90.c,471,9,DAT_14053a218,in_stack_fffffffffffffe68._8_8_,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,359,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,361,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,362,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,368,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,369,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,371,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,372,2,,,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,416,9,dVar27,"CONCAT44(uVar46,1)",,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,418,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,420,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,421,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,447,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,448,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,450,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,451,2,,,,
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,520,2,,,,
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,529,2,,,,
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,743,2,,,,
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,781,2,,,,
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,828,2,,,,
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,866,2,,,,
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,915,2,,,,
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,916,2,,,,
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,918,2,,,,
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,919,2,,,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,950,2,,,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,951,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,1054,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,1055,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,1057,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,1058,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,1096,2,,,,
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,1512,11,dVar31,"CONCAT44(uVar43,1)",iVar11,iVar4
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,1518,2,,,,
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,1649,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,1756,11,"CONCAT44(uVar46,uVar43)",1,local_res20,24000
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,1758,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,1766,11,"CONCAT44(uVar46,uVar43)",1,local_res20 - 1U,"(int)(24000 / (ulonglong)(local_res20 - 1U)) * (local_res20 + -2) &
+                            0xffff"
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,1770,2,,,,
+FUN_14006c2f0,5,40,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,1813,2,,,,
+FUN_14006c2f0,5,40,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140038190_FUN_140038190.c,1827,2,,,,
+FUN_1400709b0,2,9,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14008a970_FUN_14008a970.c,210,11,dVar15 + dVar2,"CONCAT44(uVar23,1)",iVar5 - 1U,(int)(20000 / (ulonglong)(iVar5 - 1U)) * (iVar5 + -2) & 0xffff
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14008a970_FUN_14008a970.c,214,11,dVar15,1,iVar5,20000
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14000ed10_FUN_14000ed10.c,248,3,,,,
+FUN_1400709b0,1,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14000ed10_FUN_14000ed10.c,550,3,,,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14000ed10_FUN_14000ed10.c,552,3,,,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14000ed10_FUN_14000ed10.c,579,3,,,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14000ed10_FUN_14000ed10.c,581,3,,,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ab110_FUN_1400ab110.c,126,11,dVar20,1,2,iVar10
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ab110_FUN_1400ab110.c,129,11,dVar20 + DAT_140539fe8,1,2,iVar10
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ab110_FUN_1400ab110.c,143,11,dVar20 - dVar6,1,2,iVar10
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ab110_FUN_1400ab110.c,146,11,dVar20 + dVar6,1,2,iVar10
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ab110_FUN_1400ab110.c,179,9,"CONCAT44(uVar27,uVar25)",1,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ab110_FUN_1400ab110.c,187,9,dVar3,1,,
+FUN_14006c2f0,10,53,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ef010_FUN_1400ef010.c,315,9,dVar24 - (double)iVar8 * dVar26,1,,
+FUN_14006c2f0,10,54,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ef010_FUN_1400ef010.c,323,9,dVar24 - (double)iVar8 * dVar26,1,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ef010_FUN_1400ef010.c,340,9,DAT_14053a178,1,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ef010_FUN_1400ef010.c,343,9,uVar1,1,,
+FUN_14006c2f0,3,8,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ef010_FUN_1400ef010.c,415,9,uVar1,1,,
+FUN_14006c2f0,2,8,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ef010_FUN_1400ef010.c,437,9,uVar1,1,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ef010_FUN_1400ef010.c,575,9,uVar1,1,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ef010_FUN_1400ef010.c,583,9,uVar2,1,,
+FUN_14006c2f0,2,55,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ef010_FUN_1400ef010.c,622,9,dVar24,1,,
+FUN_14006c2f0,2,55,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ef010_FUN_1400ef010.c,638,9,dVar24,1,,
+FUN_14006c2f0,13,11,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ef010_FUN_1400ef010.c,663,9,DAT_14053a138,"CONCAT44(uVar33,1)",,
+FUN_14006c2f0,13,11,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ef010_FUN_1400ef010.c,666,9,DAT_14053a208,1,,
+FUN_14006c2f0,13,11,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ef010_FUN_1400ef010.c,667,9,uVar1,1,,
+FUN_14006c2f0,13,11,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400ef010_FUN_1400ef010.c,668,9,uVar2,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140033070_FUN_140033070.c,188,9,"CONCAT44(uVar32,uVar16)",in_stack_fffffffffffffe68._8_8_,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140033070_FUN_140033070.c,203,9,"CONCAT44(uVar32,uVar16)",in_stack_fffffffffffffe68._8_8_,,
+FUN_14006c2f0,15,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140033070_FUN_140033070.c,749,9,"CONCAT44(uVar33,uVar31)",auVar55._8_8_,,
+FUN_14006c2f0,15,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140033070_FUN_140033070.c,756,9,"(double)CONCAT44(uVar33,uVar31) + DAT_140539f68",auVar56._8_8_,,
+FUN_14006c2f0,3,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e9e20_FUN_1400e9e20.c,412,4,,,,
+FUN_14006c2f0,5,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e9e20_FUN_1400e9e20.c,427,4,,,,
+FUN_1400709b0,4,7,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e9e20_FUN_1400e9e20.c,475,4,,,,
+FUN_1400709b0,4,10,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,789,2,,,,
+FUN_1400709b0,4,10,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,796,2,,,,
+FUN_1400709b0,4,10,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,806,2,,,,
+FUN_1400709b0,4,10,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,825,2,,,,
+FUN_1400709b0,4,10,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,832,2,,,,
+FUN_1400709b0,4,10,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,841,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,928,11,dVar38,auVar52._8_8_,uVar101,uVar28
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,939,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,949,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,970,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,978,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,987,2,,,,
+FUN_14006c2f0,3,33,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,1252,2,,,,
+FUN_14006c2f0,3,33,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,1266,2,,,,
+FUN_14006c2f0,3,34,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,1285,2,,,,
+FUN_14006c2f0,3,34,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,1300,2,,,,
+FUN_14006c2f0,19,35,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,1440,9,dVar31,auVar52._8_8_,,
+FUN_14006c2f0,19,35,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,1455,3,,,,
+FUN_14006c2f0,19,36,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,1470,2,,,,
+FUN_14006c2f0,19,36,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,1485,2,,,,
+FUN_14006c2f0,3,34,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,1610,2,,,,
+FUN_14006c2f0,3,34,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,1623,2,,,,
+FUN_14006c2f0,3,33,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,1642,2,,,,
+FUN_14006c2f0,3,33,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,1657,2,,,,
+FUN_14006c2f0,12,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,2038,9,dVar34,auVar52._8_8_,,
+FUN_14006c2f0,12,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,2054,2,,,,
+FUN_14006c2f0,13,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,2085,2,,,,
+FUN_14006c2f0,13,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,2100,2,,,,
+FUN_1400709b0,19,38,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,2193,11,dVar34,auVar96._8_8_,uVar46,0x10000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,2205,2,,,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14002d2f0_FUN_14002d2f0.c,2230,2,,,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400acd20_FUN_1400acd20.c,160,11,dVar15,"CONCAT44(uVar21,1)",uVar6,uVar4
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400acd20_FUN_1400acd20.c,164,11,in_stack_fffffffffffffef8,1,iVar5,0x8000
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400acd20_FUN_1400acd20.c,168,11,dVar15 + DAT_140539fe8,1,uVar6,uVar4
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400acd20_FUN_1400acd20.c,173,11,in_stack_fffffffffffffef8,1,iVar5,0x8000
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e6f70_FUN_1400e6f70.c,297,11,dVar27 - DAT_140539f68,auVar34._8_8_,uVar14,0x10000
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e6f70_FUN_1400e6f70.c,311,11,dVar27,in_stack_fffffffffffffef8._8_8_,uVar14,0x10000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e6f70_FUN_1400e6f70.c,465,11,dVar26,in_stack_fffffffffffffef8._8_8_,iVar1,iVar16
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e6f70_FUN_1400e6f70.c,480,11,dVar24,in_stack_fffffffffffffef8._8_8_,iVar20 + iVar19,iVar11
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140045080_FUN_140045080.c,154,11,dVar17 + DAT_140539f10,auVar27._8_8_,iVar10 + -1,iVar10 * 0x168 + -0x2d0
+FUN_1400709b0,4,7,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140045080_FUN_140045080.c,285,11,dVar17 - dVar5,in_stack_fffffffffffffea8._8_8_,iVar11,0x10000
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140082090_FUN_140082090.c,241,9,dVar21,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140082090_FUN_140082090.c,243,9,dVar21 + DAT_140539ee0,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140082090_FUN_140082090.c,246,9,dVar21 + DAT_140539fc8,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140082090_FUN_140082090.c,248,9,dVar21 + _DAT_140539fe0,1,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140082090_FUN_140082090.c,262,11,"(dVar19 + (double)CONCAT44(uVar24,uVar23)) - (double)iVar12 * dVar21",1,2,iVar15
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400483e0_FUN_1400483e0.c,133,11,DAT_14053a218,1,4,iVar5
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400941d0_FUN_1400941d0.c,228,11,"CONCAT44(uVar18,uVar17)",auVar37._8_8_,iVar12,iVar11
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400941d0_FUN_1400941d0.c,237,11,"CONCAT44(uVar18,uVar17)",in_stack_ffffffffffffff08._8_8_,iVar12,iVar11
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400941d0_FUN_1400941d0.c,248,11,dVar2,auVar40._8_8_,iVar12,iVar11
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400941d0_FUN_1400941d0.c,256,11,dVar2,in_stack_ffffffffffffff08._8_8_,iVar12,iVar11
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400941d0_FUN_1400941d0.c,277,11,"CONCAT44(uVar18,uVar17)",in_stack_ffffffffffffff08._8_8_,iVar12,iVar11
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400941d0_FUN_1400941d0.c,286,11,dVar14,auVar46._8_8_,iVar12,iVar11
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400941d0_FUN_1400941d0.c,293,11,dVar14,auVar48._8_8_,iVar12,iVar11
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400941d0_FUN_1400941d0.c,300,11,dVar14,in_stack_ffffffffffffff08._8_8_,iVar12,iVar11
+FUN_14006c2f0,1,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140043fa0_FUN_140043fa0.c,164,9,dVar17,in_stack_fffffffffffffe98._8_8_,,
+FUN_14006c2f0,1,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140043fa0_FUN_140043fa0.c,219,9,dVar17,in_stack_fffffffffffffe98._8_8_,,
+FUN_14006c2f0,5,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140043fa0_FUN_140043fa0.c,236,9,dVar15,auVar28._8_8_,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14008efc0_FUN_14008efc0.c,266,11,in_stack_fffffffffffffef8,1,iVar5,iVar5 * 0x125c + -0x125c
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14008efc0_FUN_14008efc0.c,291,11,in_stack_fffffffffffffef8,1,iVar5,iVar5 * 0x125c + -0x125c
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14008efc0_FUN_14008efc0.c,389,11,dVar23,1,iVar12,iVar10
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14008efc0_FUN_14008efc0.c,392,11,dVar23,1,iVar12,iVar10
+FUN_14006c2f0,12,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140066370_FUN_140066370.c,415,3,,,,
+FUN_14006c2f0,2,60,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140066370_FUN_140066370.c,579,9,DAT_14053a138,auVar41._8_8_,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140066370_FUN_140066370.c,702,3,,,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140066370_FUN_140066370.c,821,3,,,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140066370_FUN_140066370.c,963,3,,,,
+FUN_14006c2f0,2,18,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140066370_FUN_140066370.c,1116,3,,,,
+FUN_14006c2f0,13,3,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140066370_FUN_140066370.c,1130,2,,,,
+FUN_14006c2f0,13,3,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140066370_FUN_140066370.c,1137,2,,,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140099e50_FUN_140099e50.c,145,9,"CONCAT44(uVar16,uVar15)",1,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140099e50_FUN_140099e50.c,149,9,"(double)CONCAT44(uVar16,uVar15) + dVar10",1,,
+FUN_1400709b0,0,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140082d90_FUN_140082d90.c,243,11,dVar24,auVar37._8_8_,uVar18,20000
+FUN_1400709b0,0,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140082d90_FUN_140082d90.c,248,11,(dVar31 - DAT_140539fc8) + dVar26,auVar38._8_8_,uVar18,20000
+FUN_14006c2f0,3,7,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,320,9,dVar30,1,,
+FUN_14006c2f0,3,7,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,328,9,dVar30,1,,
+FUN_14006c2f0,3,7,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,384,9,dVar30,1,,
+FUN_14006c2f0,3,7,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,393,9,dVar30,1,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,415,11,dVar33,1,iVar17,iVar17 * 0x1b8 + -0x1b8
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,428,11,dVar33,1,iVar17 + -2,iVar5
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,439,11,dVar33,1,iVar17 + -2,iVar5
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,504,9,dVar26,1,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,508,9,dVar26,1,,
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,510,9,dVar26,1,,
+FUN_14006c2f0,2,23,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,573,9,dVar26,1,,
+FUN_14006c2f0,2,23,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,583,9,dVar26,1,,
+FUN_14006c2f0,2,23,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,593,9,dVar26,1,,
+FUN_1400709b0,16,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,1161,11,dVar31,"CONCAT44(uVar43,1)",iVar10,0x8000
+FUN_1400709b0,16,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,1167,11,dVar31,1,iVar10 - 1U,(int)(0x8000 / (ulonglong)(iVar10 - 1U)) * (iVar10 + -2) & 0xffff
+FUN_1400709b0,16,8,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140009480_FUN_140009480.c,1394,11,dVar24,1,iVar10,iVar10 * 9000
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400b1db0_FUN_1400b1db0.c,172,9,dVar18,"CONCAT44(uVar26,1)",,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400b1db0_FUN_1400b1db0.c,175,9,dVar18,1,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005fc20_FUN_14005fc20.c,202,9,uVar32,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005fc20_FUN_14005fc20.c,214,9,uVar32,1,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005fc20_FUN_14005fc20.c,502,9,dVar26 + DAT_14053a178,1,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005fc20_FUN_14005fc20.c,511,9,dVar26 + _DAT_14053a188,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005fc20_FUN_14005fc20.c,532,9,uVar5,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005fc20_FUN_14005fc20.c,539,9,dVar22,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005fc20_FUN_14005fc20.c,544,9,uVar32,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005fc20_FUN_14005fc20.c,550,9,dVar26,1,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005fc20_FUN_14005fc20.c,623,9,dVar26 + DAT_14053a178,1,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005fc20_FUN_14005fc20.c,632,9,dVar26 + _DAT_14053a188,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005fc20_FUN_14005fc20.c,654,9,uVar5,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005fc20_FUN_14005fc20.c,661,9,dVar22,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005fc20_FUN_14005fc20.c,666,9,uVar32,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005fc20_FUN_14005fc20.c,672,9,dVar22,1,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140064630_FUN_140064630.c,286,9,dVar36,1,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140064630_FUN_140064630.c,294,9,dVar36,1,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140064630_FUN_140064630.c,344,9,dVar31,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140064630_FUN_140064630.c,361,9,dVar31,1,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140064630_FUN_140064630.c,374,9,dVar31,1,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140064630_FUN_140064630.c,379,9,dVar31,1,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140064630_FUN_140064630.c,385,9,dVar31,1,,
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140064630_FUN_140064630.c,412,9,dVar31 + 0.0 + dVar30,1,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140064630_FUN_140064630.c,448,9,dVar31,1,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140064630_FUN_140064630.c,467,9,dVar31,1,,
+FUN_1400709b0,10,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e8d20_FUN_1400e8d20.c,195,11,dVar24,in_stack_ffffffffffffff18._8_8_,2,uVar17
+FUN_1400709b0,10,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e8d20_FUN_1400e8d20.c,206,11,dVar24,in_stack_ffffffffffffff18._8_8_,2,uVar17 + 0x5dc
+FUN_14006c2f0,11,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005e890_FUN_14005e890.c,236,2,,,,
+FUN_14006c2f0,11,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005e890_FUN_14005e890.c,245,2,,,,
+FUN_14006c2f0,11,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005e890_FUN_14005e890.c,256,2,,,,
+FUN_14006c2f0,11,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005e890_FUN_14005e890.c,267,2,,,,
+FUN_14006c2f0,12,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005e890_FUN_14005e890.c,304,9,uVar16,in_stack_fffffffffffffe70,,
+FUN_14006c2f0,3,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005e890_FUN_14005e890.c,326,2,,,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005e890_FUN_14005e890.c,346,9,(double)(int)uVar29 * DAT_140539e90 + DAT_140539ff0,uVar16,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005e890_FUN_14005e890.c,351,2,,,,
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140098700_FUN_140098700.c,240,11,dVar1 - DAT_140539f90,auVar27._8_8_,iVar9,(int)((double)iVar13 * _DAT_140539f88) * (iVar9 + -1)
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14001c8b0_FUN_14001c8b0.c,367,11,dVar40,auVar55._8_8_,iVar24,0x10000
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14001c8b0_FUN_14001c8b0.c,379,11,dVar40 - DAT_140539f90,auVar55._8_8_,iVar24,0x10000
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14001c8b0_FUN_14001c8b0.c,449,11,dVar33,auVar58._8_8_,uVar45,iVar13 + 27000
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14001c8b0_FUN_14001c8b0.c,456,11,dVar33 - DAT_140539fc8,auVar59._8_8_,uVar45,iVar13 + 29000
+FUN_14006c2f0,17,12,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14001c8b0_FUN_14001c8b0.c,839,9,dVar32,in_stack_fffffffffffffe98._8_8_,,
+FUN_14006c2f0,17,12,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14001c8b0_FUN_14001c8b0.c,857,9,dVar32,in_stack_fffffffffffffe98._8_8_,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14001c8b0_FUN_14001c8b0.c,920,11,dVar32,auVar62._8_8_,iVar14 + 1,iVar14 * iVar12
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14001c8b0_FUN_14001c8b0.c,1110,11,dVar40 + DAT_140539fc8,auVar64._8_8_,uVar45,0x10000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14001c8b0_FUN_14001c8b0.c,1174,11,dVar40,auVar64._8_8_,iVar14,iVar14 * 700 + -700
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14001c8b0_FUN_14001c8b0.c,1341,11,dVar32,in_stack_fffffffffffffe98._8_8_,uVar45,0x10000
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14001c8b0_FUN_14001c8b0.c,1412,9,dVar40,in_stack_fffffffffffffe98._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14001c8b0_FUN_14001c8b0.c,1427,9,dVar40,in_stack_fffffffffffffe98._8_8_,,
+FUN_14006c2f0,17,12,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14001c8b0_FUN_14001c8b0.c,1515,9,dVar32,auVar71._8_8_,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400465d0_FUN_1400465d0.c,436,9,dVar37,uVar51,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400465d0_FUN_1400465d0.c,441,9,dVar37,in_stack_fffffffffffffdc0,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400465d0_FUN_1400465d0.c,448,9,dVar37 + dVar35,uVar51,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400465d0_FUN_1400465d0.c,453,9,dVar37 + dVar35,in_stack_fffffffffffffdc0,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400465d0_FUN_1400465d0.c,516,9,dVar46,1,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400465d0_FUN_1400465d0.c,521,9,dVar37,1,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400465d0_FUN_1400465d0.c,525,9,dVar37 - dVar29,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400465d0_FUN_1400465d0.c,596,9,dVar37,uVar51,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400465d0_FUN_1400465d0.c,610,9,dVar37,in_stack_fffffffffffffdc0,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400465d0_FUN_1400465d0.c,619,11,dVar37,"CONCAT44(uVar40,1)",in_stack_fffffffffffffdc8,0x10000
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400465d0_FUN_1400465d0.c,702,11,dVar37,1,iVar10,iVar10 * 0x168 + -0x168
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400465d0_FUN_1400465d0.c,706,11,dVar37 + dVar46,1,iVar10,iVar10 * 0x168 + -0x2d0
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400465d0_FUN_1400465d0.c,783,9,dVar46,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400465d0_FUN_1400465d0.c,790,9,dVar46,1,,
+FUN_14006c2f0,13,4,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e47c0_FUN_1400e47c0.c,153,9,dVar16,auVar32._8_8_,,
+FUN_14006c2f0,13,4,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e47c0_FUN_1400e47c0.c,160,9,dVar16 + DAT_140539fc8,auVar33._8_8_,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140013c00_FUN_140013c00.c,252,11,dVar29,in_stack_fffffffffffffe78._8_8_,uVar42,0x10000
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140013c00_FUN_140013c00.c,265,11,dVar29 + DAT_140539f68,in_stack_fffffffffffffe78._8_8_,uVar42,0x10000
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140013c00_FUN_140013c00.c,347,11,dVar29,auVar38._8_8_,uVar42,0x10000
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140013c00_FUN_140013c00.c,362,11,"dVar29 + (double)CONCAT44(uVar33,uVar28)",auVar39._8_8_,uVar42,0x10000
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140004660_FUN_140004660.c,305,9,dVar24,uVar17,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140004660_FUN_140004660.c,315,9,dVar24 - dVar22,uVar17,,
+FUN_1400709b0,1,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140004660_FUN_140004660.c,353,11,dVar24 - DAT_140539ef8,uVar17,2,iVar10 + 0x4b0
+FUN_1400709b0,1,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140004660_FUN_140004660.c,361,11,dVar24 - DAT_140539fa8,uVar17,2,iVar10 + 2000
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140004660_FUN_140004660.c,416,11,dVar27,uVar17,uVar15,12000
+FUN_1400709b0,0,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140004660_FUN_140004660.c,431,11,dVar27 - DAT_140539fc8,uVar17,uVar15,12000
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140004660_FUN_140004660.c,462,11,dVar27,uVar17,uVar15,12000
+FUN_1400709b0,0,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140004660_FUN_140004660.c,476,11,dVar27 - dVar25,uVar17,uVar15,12000
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140004660_FUN_140004660.c,551,11,dVar23 + dVar27,uVar17,iVar9,iVar4
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140004660_FUN_140004660.c,568,11,dVar24 + dVar27,1,iVar9,iVar4
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140004660_FUN_140004660.c,964,11,dVar22,uVar17,uVar15,uVar20
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140004660_FUN_140004660.c,979,11,dVar27,"CONCAT44(uVar35,1)",uVar15,uVar20
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140004660_FUN_140004660.c,988,11,dVar27,1,uVar15,uVar20
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140004660_FUN_140004660.c,1337,11,dVar27,1,uVar15,0x8000
+FUN_1400709b0,3,7,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140088110_FUN_140088110.c,191,11,dVar13,"CONCAT44(uVar18,1)",in_stack_ffffffffffffff48,0x8000
+FUN_1400709b0,3,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140093540_FUN_140093540.c,195,11,DAT_140539f68,uVar4,iVar2,22000
+FUN_1400709b0,3,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140093540_FUN_140093540.c,203,11,DAT_140539ec8,uVar4,iVar2 - 1U,(int)(22000 / (ulonglong)(iVar2 - 1U)) * (iVar2 + -2) & 0xffff
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140093540_FUN_140093540.c,243,9,dVar14 + DAT_140539fb8,uVar4,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140045aa0_FUN_140045aa0.c,144,9,dVar12,1,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140045aa0_FUN_140045aa0.c,149,9,dVar12 - dVar2,1,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140011a80_FUN_140011a80.c,151,11,"CONCAT44(uVar14,uVar13)",1,uVar9,3000
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,876,3,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,882,3,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,936,3,,,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1039,11,DAT_14053a070,1,uVar41,0x10000
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1061,3,,,,
+FUN_1400709b0,3,43,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1137,3,,,,
+FUN_1400709b0,3,43,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1144,3,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1192,3,,,,
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1205,3,,,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1219,3,,,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1221,3,,,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1226,3,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1239,3,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1242,3,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1248,3,,,,
+FUN_1400709b0,2,44,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1310,3,,,,
+FUN_1400709b0,3,45,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1334,3,,,,
+FUN_1400709b0,4,46,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1394,3,,,,
+FUN_1400709b0,4,46,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1406,3,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1454,3,,,,
+FUN_1400709b0,1,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1460,3,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1469,3,,,,
+FUN_1400709b0,1,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1476,3,,,,
+FUN_1400709b0,2,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1712,3,,,,
+FUN_1400709b0,2,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1724,3,,,,
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1822,3,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1839,3,,,,
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1856,3,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1872,3,,,,
+FUN_1400709b0,2,47,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1885,3,,,,
+FUN_1400709b0,3,48,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1894,3,,,,
+FUN_1400709b0,11,49,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,1947,3,,,,
+FUN_1400709b0,2,50,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,2000,3,,,,
+FUN_1400709b0,3,50,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,2016,3,,,,
+FUN_1400709b0,3,44,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,2054,3,,,,
+FUN_1400709b0,2,45,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,2058,3,,,,
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,2097,3,,,,
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,2101,3,,,,
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,2113,3,,,,
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,2121,3,,,,
+FUN_1400709b0,12,51,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,2133,3,,,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,2141,3,,,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,2145,3,,,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,2200,3,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,2205,3,,,,
+FUN_1400709b0,4,1,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14004a970_FUN_14004a970.c,2343,3,,,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400de960_FUN_1400de960.c,353,9,dVar25,"CONCAT44(uVar34,1)",,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400de960_FUN_1400de960.c,356,9,dVar25,1,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400de960_FUN_1400de960.c,359,9,dVar25,1,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400de960_FUN_1400de960.c,365,9,dVar25,1,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400de960_FUN_1400de960.c,371,9,dVar28,1,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400de960_FUN_1400de960.c,376,9,dVar28,1,,
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140041e90_FUN_140041e90.c,168,11,dVar24 + dVar21,in_stack_fffffffffffffe80,uVar15,30000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140041e90_FUN_140041e90.c,247,11,dVar19,uVar29,iVar12,iVar13
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140041e90_FUN_140041e90.c,254,11,dVar19 + dVar7,uVar29,iVar12 + -2,(iVar13 / (iVar12 + -2)) * (iVar12 + -3) & 0xffff
+FUN_1400709b0,2,9,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140041e90_FUN_140041e90.c,303,11,(double)(int)uVar14 * DAT_140539ee0 + DAT_14053a070,"CONCAT44(uVar27,1)",iVar12,iVar12 * 0xd05 + -0xd05
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140007fc0_FUN_140007fc0.c,223,9,"CONCAT44(uVar35,uVar32)",in_stack_fffffffffffffe58._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140007fc0_FUN_140007fc0.c,240,9,dVar6,in_stack_fffffffffffffe58._8_8_,,
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140007fc0_FUN_140007fc0.c,387,11,DAT_14053a1e8,in_stack_fffffffffffffe58._8_8_,uVar32,uVar35
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140007fc0_FUN_140007fc0.c,408,9,"CONCAT44(uVar36,uVar33)",in_stack_fffffffffffffe58._8_8_,,
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140007fc0_FUN_140007fc0.c,428,9,dVar6,in_stack_fffffffffffffe58._8_8_,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140007fc0_FUN_140007fc0.c,486,9,"CONCAT44(uVar37,uVar34)",auVar59._8_8_,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140007fc0_FUN_140007fc0.c,500,9,dVar6,auVar59._8_8_,,
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140040750_FUN_140040750.c,296,4,,,,
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140040750_FUN_140040750.c,306,4,,,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140040750_FUN_140040750.c,380,4,,,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140040750_FUN_140040750.c,391,4,,,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140040750_FUN_140040750.c,405,4,,,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005a3f0_FUN_14005a3f0.c,403,9,uVar2,1,,
+FUN_14006c2f0,2,57,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005a3f0_FUN_14005a3f0.c,427,9,dVar21,1,,
+FUN_14006c2f0,3,9,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005a3f0_FUN_14005a3f0.c,429,9,dVar21 + DAT_140539fc8,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14005a3f0_FUN_14005a3f0.c,453,9,dVar21,1,,
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e0680_FUN_1400e0680.c,246,11,dVar35,auVar46._8_8_,iVar17,27000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e0680_FUN_1400e0680.c,252,11,dVar35 - DAT_140539ff0,auVar47._8_8_,iVar17,27000
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e0680_FUN_1400e0680.c,406,11,dVar29,in_stack_fffffffffffffd18._8_8_,iVar17,0x10000
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e0680_FUN_1400e0680.c,414,11,dVar29,in_stack_fffffffffffffd18._8_8_,iVar17,0x10000
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e0680_FUN_1400e0680.c,445,11,dVar29,in_stack_fffffffffffffd18._8_8_,iVar17,0x10000
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e0680_FUN_1400e0680.c,453,11,dVar29,in_stack_fffffffffffffd18._8_8_,iVar17,0x10000
+FUN_14006c2f0,6,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e0680_FUN_1400e0680.c,886,9,dVar29,auVar56._8_8_,,
+FUN_14006c2f0,6,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e0680_FUN_1400e0680.c,893,9,dVar29 + dVar30,auVar57._8_8_,,
+FUN_1400709b0,0,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140080fb0_FUN_140080fb0.c,318,11,in_stack_fffffffffffffee8,1,iVar12,18000
+FUN_1400709b0,0,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140080fb0_FUN_140080fb0.c,327,11,in_stack_fffffffffffffee8,1,iVar12 - 1U,(int)(18000 / (ulonglong)(iVar12 - 1U)) * (iVar12 + -2) & 0xffff
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140080fb0_FUN_140080fb0.c,371,11,in_stack_fffffffffffffee8,1,iVar13,0x8000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/140080fb0_FUN_140080fb0.c,381,11,in_stack_fffffffffffffee8,1,iVar13,0x8000
+FUN_1400709b0,10,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14009b5f0_FUN_14009b5f0.c,222,11,dVar26,in_stack_fffffffffffffef8._8_8_,iVar14,iVar14 * 7000 + -7000
+FUN_1400709b0,10,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14009b5f0_FUN_14009b5f0.c,235,11,dVar26 + DAT_140539f90,in_stack_fffffffffffffef8._8_8_,iVar14,iVar14 * 12000 + -12000
+FUN_1400709b0,11,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14009b5f0_FUN_14009b5f0.c,257,11,dVar26,in_stack_fffffffffffffef8._8_8_,iVar14,iVar14 * 7000 + -7000
+FUN_1400709b0,11,2,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14009b5f0_FUN_14009b5f0.c,267,11,dVar26 + dVar7,in_stack_fffffffffffffef8._8_8_,iVar14,iVar14 * 12000 + -12000
+FUN_14006c2f0,3,28,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/14009b5f0_FUN_14009b5f0.c,365,9,uVar8,in_stack_fffffffffffffef8._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e20e0_FUN_1400e20e0.c,221,9,"CONCAT44(uVar24,uVar23)",in_stack_fffffffffffffe88._8_8_,,
+FUN_14006c2f0,4,3,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e20e0_FUN_1400e20e0.c,306,9,dVar17,in_stack_fffffffffffffe88._8_8_,,
+FUN_1400709b0,4,3,reverse/ghidra-or-ida/exports/gameplay-spawn-helpers-renamed/neighborhood-decompiled/1400e20e0_FUN_1400e20e0.c,330,11,dVar17 - DAT_140539f00,in_stack_fffffffffffffe88._8_8_,2,uVar19
+FUN_14006c2f0,9,2,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/140096890_FUN_140096890.c,226,9,"CONCAT44(uVar26,uVar25)",auVar31._8_8_,,
+FUN_14006c2f0,9,2,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/140096890_FUN_140096890.c,235,9,dVar22,auVar31._8_8_,,
+FUN_14006c2f0,9,2,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/140096890_FUN_140096890.c,249,9,"CONCAT44(uVar26,uVar25)",auVar31._8_8_,,
+FUN_14006c2f0,9,2,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/140096890_FUN_140096890.c,264,9,dVar22,auVar31._8_8_,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/1400af090_FUN_1400af090.c,166,9,DAT_14053a160,auVar26._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/140097d30_FUN_140097d30.c,218,9,dVar18,auVar27._8_8_,,
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/140097d30_FUN_140097d30.c,229,11,dVar18 - dVar15,auVar27._8_8_,2,uVar11
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/140097d30_FUN_140097d30.c,239,9,dVar18 + DAT_140539fb8,auVar30._8_8_,,
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/140097d30_FUN_140097d30.c,244,11,dVar18 + DAT_140539f28,auVar31._8_8_,2,uVar11
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/140097270_FUN_140097270.c,259,9,dVar22,auVar33._8_8_,,
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/140097270_FUN_140097270.c,272,9,dVar22,auVar33._8_8_,,
+FUN_14006c2f0,6,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/140090c30_FUN_140090c30.c,184,9,"(double)CONCAT44(uVar14,uVar12) + DAT_140539fd8",auVar23._8_8_,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/1400a9080_FUN_1400a9080.c,169,9,"CONCAT44(uVar16,uVar20)","CONCAT44(uVar19,1)",,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/1400a9080_FUN_1400a9080.c,172,9,"(double)CONCAT44(uVar16,uVar20) + DAT_140539ec8",1,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/1400b0120_FUN_1400b0120.c,184,9,dVar26,auVar31._8_8_,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/1400b0120_FUN_1400b0120.c,192,9,dVar26,auVar33._8_8_,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/1400b0120_FUN_1400b0120.c,198,9,dVar26,auVar34._8_8_,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/1400a2310_FUN_1400a2310.c,247,11,dVar14,auVar19._8_8_,iVar3,iVar3 * 0x1c2 + -0x1c2
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-update-helper-priority/neighborhood-decompiled/1400a2310_FUN_1400a2310.c,254,11,dVar14 - DAT_140539f90,auVar20._8_8_,iVar3,3000
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ad970_FUN_1400ad970.c,197,11,dVar22,in_stack_fffffffffffffe60,iVar10,20000
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ad970_FUN_1400ad970.c,207,11,dVar22 + dVar20,in_stack_fffffffffffffe60,iVar10,20000
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ad970_FUN_1400ad970.c,228,11,dVar22,in_stack_fffffffffffffe60,uVar9,uVar7
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ad970_FUN_1400ad970.c,238,11,dVar22 + dVar20,in_stack_fffffffffffffe60,uVar9,uVar7
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ad970_FUN_1400ad970.c,300,11,(double)iVar10 + dVar22,in_stack_fffffffffffffe60,uVar36,9000
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ad970_FUN_1400ad970.c,325,11,(double)iVar10 + dVar22,in_stack_fffffffffffffe60,uVar36,9000
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ad970_FUN_1400ad970.c,398,11,dVar31,uVar39,2,iVar13
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ad970_FUN_1400ad970.c,402,11,dVar31,uVar39,2,iVar13
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ad970_FUN_1400ad970.c,407,11,dVar31,uVar39,2,iVar13
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ad970_FUN_1400ad970.c,420,11,dVar29,1,2,iVar13
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ad970_FUN_1400ad970.c,423,11,dVar29,1,2,iVar13
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ad970_FUN_1400ad970.c,428,11,dVar31,1,2,iVar18
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ad970_FUN_1400ad970.c,430,11,dVar31,1,2,iVar18
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ad970_FUN_1400ad970.c,432,11,dVar31,1,2,iVar18
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,264,11,dVar33 + dVar30,1,iVar20,(iVar20 + -1) * iVar12
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,333,11,dVar33,1,iVar20,0x10000
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,340,11,dVar33 - DAT_140539f68,1,iVar20,0x10000
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,400,9,dVar33,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,410,9,dVar36,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,424,9,dVar33 - dVar3,1,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,494,11,dVar34,1,iVar20,iVar18
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,497,11,dVar34,1,iVar20,iVar18
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,501,11,dVar34,1,iVar20,iVar18
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,508,11,dVar34,1,iVar20,iVar18
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,511,11,dVar34,1,iVar20,iVar18
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,515,11,dVar34,1,iVar20,iVar18
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,599,11,dVar35 + dVar3,1,2,iVar20 * 400 + iVar13
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,686,11,dVar29,1,iVar12 + 1,iVar12 * iVar21
+FUN_1400709b0,2,9,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,750,11,dVar36,1,iVar20,iVar18
+FUN_1400709b0,2,9,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400488b0_FUN_1400488b0.c,753,11,dVar36 + dVar33,1,iVar20,iVar18
+FUN_14006c2f0,7,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005cc30_FUN_14005cc30.c,362,9,DAT_14053a178,"CONCAT44(uVar32,1)",,
+FUN_14006c2f0,7,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005cc30_FUN_14005cc30.c,365,9,uVar34,1,,
+FUN_14006c2f0,7,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140043710_FUN_140043710.c,191,9,"CONCAT44(uVar18,uVar17)",in_stack_fffffffffffffe88._8_8_,,
+FUN_14006c2f0,7,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140043710_FUN_140043710.c,208,9,dVar15,in_stack_fffffffffffffe88._8_8_,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400512b0_FUN_1400512b0.c,192,9,dVar23,in_stack_fffffffffffffe78._8_8_,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400512b0_FUN_1400512b0.c,207,9,dVar25,in_stack_fffffffffffffe78._8_8_,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400512b0_FUN_1400512b0.c,226,9,dVar25,in_stack_fffffffffffffe78._8_8_,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400512b0_FUN_1400512b0.c,250,9,dVar23,in_stack_fffffffffffffe78._8_8_,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400512b0_FUN_1400512b0.c,353,9,dVar25,in_stack_fffffffffffffe78._8_8_,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400512b0_FUN_1400512b0.c,370,9,dVar25,in_stack_fffffffffffffe78._8_8_,,
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400512b0_FUN_1400512b0.c,488,11,dVar25 + dVar4,in_stack_fffffffffffffe78._8_8_,iVar11 - 1U,(int)(12000 / (ulonglong)(iVar11 - 1U)) * (iVar11 + -2) & 0xffff
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400512b0_FUN_1400512b0.c,575,11,dVar25,in_stack_fffffffffffffe78._8_8_,iVar11,0x10000
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400512b0_FUN_1400512b0.c,589,11,dVar25,in_stack_fffffffffffffe78._8_8_,iVar11,0x10000
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400512b0_FUN_1400512b0.c,664,9,dVar24,in_stack_fffffffffffffe78._8_8_,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400512b0_FUN_1400512b0.c,751,9,dVar23 + DAT_14053a018,auVar48._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140012dc0_FUN_140012dc0.c,191,9,dVar27,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140012dc0_FUN_140012dc0.c,199,9,dVar27,1,,
+FUN_14006c2f0,2,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140012dc0_FUN_140012dc0.c,424,9,dVar13,1,,
+FUN_14006c2f0,2,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140012dc0_FUN_140012dc0.c,432,9,dVar11 + DAT_140539f90,1,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e8570_FUN_1400e8570.c,166,11,"(double)CONCAT44(uVar19,uVar18) + auVar5._0_8_",auVar27._8_8_,uVar12,27000
+FUN_14006c2f0,13,7,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e8570_FUN_1400e8570.c,258,9,"CONCAT44(uVar19,uVar18)",in_stack_fffffffffffffee8._8_8_,,
+FUN_14006c2f0,12,7,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e8570_FUN_1400e8570.c,277,9,"CONCAT44(uVar19,uVar18)",in_stack_fffffffffffffee8._8_8_,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400f3060_FUN_1400f3060.c,267,9,dVar21,1,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400f3060_FUN_1400f3060.c,278,9,dVar21,1,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400f3060_FUN_1400f3060.c,338,9,dVar21,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400f3060_FUN_1400f3060.c,359,9,dVar21,1,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400f3060_FUN_1400f3060.c,393,9,(double)iVar15 * dVar20 + dVar19,1,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400f3060_FUN_1400f3060.c,408,9,dVar22,1,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400f3060_FUN_1400f3060.c,426,9,((double)iVar15 * dVar21 + dVar19) - dVar4,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400f3060_FUN_1400f3060.c,440,9,dVar22,1,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001ac40_FUN_14001ac40.c,175,9,dVar13 - dVar15,1,,
+FUN_14006c2f0,3,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,111,9,DAT_140539fc8,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,12,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,134,9,DAT_140539f90,uVar7,,
+FUN_14006c2f0,13,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,140,9,dVar26,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,8,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,235,9,"CONCAT44(uVar39,uVar34)",uVar7,,
+FUN_14006c2f0,8,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,244,9,"(double)CONCAT44(uVar39,uVar34) + dVar26",uVar7,,
+FUN_14006c2f0,9,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,252,9,"CONCAT44(uVar39,uVar34)","CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,9,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,257,9,"(double)CONCAT44(uVar39,uVar34) + dVar26",param_1[0xe],,
+FUN_14006c2f0,9,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,314,9,"CONCAT44(uVar40,uVar34)",uVar37,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,384,9,"CONCAT44(uVar40,uVar37)",uVar7,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,397,9,"CONCAT44(uVar40,uVar37)","CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,2,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,427,9,*(double *)(param_1 + 0xc) + DAT_140539f68,uVar7,,
+FUN_14006c2f0,2,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,434,9,*(double *)(param_1 + 0xc) + dVar28,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,8,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,456,9,dVar29,uVar37,,
+FUN_14006c2f0,8,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,499,9,"CONCAT44(uVar41,uVar35)",uVar7,,
+FUN_14006c2f0,9,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,506,9,"CONCAT44(uVar41,uVar35)","CONCAT44(uVar48,param_1[0xe])",,
+FUN_1400709b0,12,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,557,11,"CONCAT44(uVar42,uVar36)","CONCAT44(uVar48,param_1[0xe])","CONCAT44(uVar14,uVar37)",20000
+FUN_14006c2f0,12,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,628,9,DAT_14053a190,uVar7,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,635,9,uVar3,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,8,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,699,9,uVar2,uVar37,,
+FUN_14006c2f0,9,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,709,9,uVar2,uVar37,,
+FUN_14006c2f0,5,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,735,9,DAT_14053a018,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,8,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,763,9,uVar7,uVar37,,
+FUN_14006c2f0,8,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,774,9,uVar7,uVar37,,
+FUN_14006c2f0,2,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,792,9,uVar7,uVar37,,
+FUN_14006c2f0,4,17,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14006ce40_FUN_14006ce40.c,837,9,0,"CONCAT44(uVar48,1)",,
+FUN_1400709b0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400270f0_FUN_1400270f0.c,288,11,dVar30,in_stack_fffffffffffffe60,in_stack_fffffffffffffe68,0x10000
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400270f0_FUN_1400270f0.c,297,11,dVar30,in_stack_fffffffffffffe60,in_stack_fffffffffffffe68,0x10000
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400270f0_FUN_1400270f0.c,412,11,dVar27,in_stack_fffffffffffffe60,in_stack_fffffffffffffe68,(iVar22 + -1) * iVar15
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400270f0_FUN_1400270f0.c,486,9,dVar37,in_stack_fffffffffffffe60,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400270f0_FUN_1400270f0.c,496,9,in_stack_fffffffffffffe58,in_stack_fffffffffffffe60,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400270f0_FUN_1400270f0.c,508,9,dVar37,in_stack_fffffffffffffe60,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400270f0_FUN_1400270f0.c,519,9,in_stack_fffffffffffffe58,in_stack_fffffffffffffe60,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400270f0_FUN_1400270f0.c,631,9,in_stack_fffffffffffffe58,uVar5,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400270f0_FUN_1400270f0.c,636,9,in_stack_fffffffffffffe58,in_stack_fffffffffffffe60,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400270f0_FUN_1400270f0.c,731,11,dVar28,uVar5,uVar6,iVar14
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400270f0_FUN_1400270f0.c,740,11,dVar28,uVar5,uVar6,iVar14
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400270f0_FUN_1400270f0.c,745,11,dVar28,uVar5,uVar6,iVar14
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140018480_FUN_140018480.c,404,2,,,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140018480_FUN_140018480.c,516,2,,,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140018480_FUN_140018480.c,527,2,,,,
+FUN_14006c2f0,3,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140018480_FUN_140018480.c,642,4,,,,
+FUN_14006c2f0,5,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140018480_FUN_140018480.c,656,4,,,,
+FUN_1400709b0,12,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140018480_FUN_140018480.c,718,2,,,,
+FUN_1400709b0,12,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140018480_FUN_140018480.c,730,2,,,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140018480_FUN_140018480.c,973,2,,,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140041710_FUN_140041710.c,162,9,"CONCAT44(uVar20,uVar19)","CONCAT44(uVar23,1)",,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140041710_FUN_140041710.c,169,9,dVar17,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140041710_FUN_140041710.c,180,9,dVar18,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140041710_FUN_140041710.c,191,9,dVar17,1,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1323,9,0,auVar84._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1339,9,0,auVar83._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1364,9,0,auVar86._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1379,9,0,auVar85._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1403,9,0,auVar88._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1419,9,0,auVar87._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1445,9,0,auVar90._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1461,9,0,auVar89._8_8_,,
+FUN_14006c2f0,2,31,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1491,9,0,auVar91._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1516,9,0,auVar93._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1532,9,0,auVar92._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1557,9,0,auVar95._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1572,9,0,auVar94._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1596,9,0,auVar97._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1612,9,0,auVar96._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1638,9,0,auVar99._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1654,9,0,auVar98._8_8_,,
+FUN_14006c2f0,3,32,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140023260_FUN_140023260.c,1694,9,0,auVar100._8_8_,,
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14008ffe0_FUN_14008ffe0.c,175,11,((double)iVar9 - (double)iVar14) * dVar21 + dVar3,1,uVar17,27000
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14008ffe0_FUN_14008ffe0.c,181,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14008ffe0_FUN_14008ffe0.c,261,2,,,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14008bd60_FUN_14008bd60.c,172,9,dVar26,auVar36._8_8_,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14008bd60_FUN_14008bd60.c,182,9,dVar26 + DAT_140539fc8,auVar37._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14008bd60_FUN_14008bd60.c,234,9,dVar26,auVar39._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14008bd60_FUN_14008bd60.c,243,9,dVar26 + DAT_140539ff0,auVar40._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14008bd60_FUN_14008bd60.c,547,9,dVar25,auVar49._8_8_,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14008bd60_FUN_14008bd60.c,598,9,dVar21,in_stack_fffffffffffffe78._8_8_,,
+FUN_1400709b0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140014bf0_FUN_140014bf0.c,397,2,,,,
+FUN_1400709b0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140014bf0_FUN_140014bf0.c,402,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140014bf0_FUN_140014bf0.c,1134,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140014bf0_FUN_140014bf0.c,1158,11,dVar32,in_stack_fffffffffffffea8._8_8_,local_res20 + -1,(int)(0x8000 / (longlong)(local_res20 + -1)) * (local_res20 + -2) & 0xffff
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140014bf0_FUN_140014bf0.c,1171,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140014bf0_FUN_140014bf0.c,1310,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140014bf0_FUN_140014bf0.c,1334,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140014bf0_FUN_140014bf0.c,1344,2,,,,
+FUN_1400709b0,0,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140014bf0_FUN_140014bf0.c,1383,11,dVar31,in_stack_fffffffffffffea8._8_8_,uVar25,(int)(0x8000 / (ulonglong)uVar25) * (local_res18 + -2) & 0xffff
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140014bf0_FUN_140014bf0.c,1472,11,dVar29,in_stack_fffffffffffffea8._8_8_,iVar16,iVar16 * 600 + -600
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140014bf0_FUN_140014bf0.c,1482,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140014bf0_FUN_140014bf0.c,1489,2,,,,
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140014bf0_FUN_140014bf0.c,1546,11,uVar20,in_stack_fffffffffffffea8._8_8_,2,iVar23
+FUN_1400709b0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400289b0_FUN_1400289b0.c,111,11,dVar20,1,uVar10,30000
+FUN_1400709b0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400289b0_FUN_1400289b0.c,113,11,dVar20,1,uVar10,30000
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400289b0_FUN_1400289b0.c,201,11,DAT_14053a218,1,4,iVar9
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400289b0_FUN_1400289b0.c,265,11,dVar20 + DAT_140539f68,1,iVar13,0x10000
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400289b0_FUN_1400289b0.c,337,11,dVar20,1,uVar10,0x10000
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400289b0_FUN_1400289b0.c,348,11,dVar20,1,uVar10,0x10000
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400289b0_FUN_1400289b0.c,421,11,"CONCAT44(uVar23,uVar22)",1,iVar13,iVar13 * 0x960 + -0x960
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400289b0_FUN_1400289b0.c,449,11,"CONCAT44(uVar23,uVar22)",1,iVar13,iVar13 * 0x960 + -0x960
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400630f0_FUN_1400630f0.c,212,9,DAT_14053a158,in_stack_fffffffffffffd50,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400630f0_FUN_1400630f0.c,219,9,uVar26,in_stack_fffffffffffffd50,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400630f0_FUN_1400630f0.c,229,9,uVar26,in_stack_fffffffffffffd50,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400630f0_FUN_1400630f0.c,246,9,uVar26,in_stack_fffffffffffffd50,,
+FUN_14006c2f0,0,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400630f0_FUN_1400630f0.c,257,9,uVar7,in_stack_fffffffffffffd50,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400630f0_FUN_1400630f0.c,268,9,uVar26,in_stack_fffffffffffffd50,,
+FUN_14006c2f0,0,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400630f0_FUN_1400630f0.c,279,9,uVar7,in_stack_fffffffffffffd50,,
+FUN_14006c2f0,13,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005b4a0_FUN_14005b4a0.c,222,9,dVar22 + dVar23,uVar34,,
+FUN_14006c2f0,13,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005b4a0_FUN_14005b4a0.c,225,9,dVar22 + DAT_14053a138,uVar34,,
+FUN_14006c2f0,13,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005b4a0_FUN_14005b4a0.c,228,9,dVar22 + DAT_14053a1b8,uVar34,,
+FUN_14006c2f0,13,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005b4a0_FUN_14005b4a0.c,231,9,dVar22 + DAT_14053a208,uVar34,,
+FUN_14006c2f0,13,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005b4a0_FUN_14005b4a0.c,235,9,dVar22 + DAT_14053a228,in_stack_fffffffffffffe50,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005b4a0_FUN_14005b4a0.c,258,9,dVar24,in_stack_fffffffffffffe50,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005b4a0_FUN_14005b4a0.c,270,9,dVar30 + dVar5 + dVar24,in_stack_fffffffffffffe50,,
+FUN_14006c2f0,13,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005b4a0_FUN_14005b4a0.c,310,9,dVar23,in_stack_fffffffffffffe50,,
+FUN_14006c2f0,13,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005b4a0_FUN_14005b4a0.c,321,9,dVar23 + dVar5,in_stack_fffffffffffffe50,,
+FUN_14006c2f0,13,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005b4a0_FUN_14005b4a0.c,341,9,dVar22,"CONCAT44(uVar28,1)",,
+FUN_14006c2f0,12,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005b4a0_FUN_14005b4a0.c,345,9,dVar22 + DAT_140539f68,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140034e90_FUN_140034e90.c,223,9,dVar25,in_stack_fffffffffffffe68._8_8_,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140034e90_FUN_140034e90.c,247,9,dVar25,in_stack_fffffffffffffe68._8_8_,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140034e90_FUN_140034e90.c,398,11,dVar26,in_stack_fffffffffffffe68._8_8_,uVar15,0x10000
+FUN_14006c2f0,4,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140034e90_FUN_140034e90.c,471,9,DAT_14053a218,in_stack_fffffffffffffe68._8_8_,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,359,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,361,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,362,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,368,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,369,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,371,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,372,2,,,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,416,9,dVar27,"CONCAT44(uVar46,1)",,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,418,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,420,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,421,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,447,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,448,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,450,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,451,2,,,,
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,520,2,,,,
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,529,2,,,,
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,743,2,,,,
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,781,2,,,,
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,828,2,,,,
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,866,2,,,,
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,915,2,,,,
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,916,2,,,,
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,918,2,,,,
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,919,2,,,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,950,2,,,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,951,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,1054,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,1055,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,1057,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,1058,2,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,1096,2,,,,
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,1512,11,dVar31,"CONCAT44(uVar43,1)",iVar11,iVar4
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,1518,2,,,,
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,1649,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,1756,11,"CONCAT44(uVar46,uVar43)",1,local_res20,24000
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,1758,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,1766,11,"CONCAT44(uVar46,uVar43)",1,local_res20 - 1U,"(int)(24000 / (ulonglong)(local_res20 - 1U)) * (local_res20 + -2) &
+                            0xffff"
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,1770,2,,,,
+FUN_14006c2f0,5,40,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,1813,2,,,,
+FUN_14006c2f0,5,40,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140038190_FUN_140038190.c,1827,2,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140088c20_FUN_140088c20.c,147,11,dVar20,uVar26,uVar17,iVar12 * iVar8
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140088c20_FUN_140088c20.c,160,11,dVar20 + DAT_14053a018,"CONCAT44(uVar19,1)",uVar26,iVar8 * 0xfa + -0xfa
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140098f40_FUN_140098f40.c,148,9,dVar18 + DAT_140539f58,auVar24._8_8_,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000d480_FUN_14000d480.c,220,9,dVar4,in_stack_fffffffffffffe78._8_8_,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000d480_FUN_14000d480.c,235,9,dVar4,in_stack_fffffffffffffe78._8_8_,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000d480_FUN_14000d480.c,259,11,dVar2,in_stack_fffffffffffffe78._8_8_,iVar19,0x10000
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000d480_FUN_14000d480.c,272,11,dVar2 + DAT_140539f28,in_stack_fffffffffffffe78._8_8_,iVar19,0x10000
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000d480_FUN_14000d480.c,292,11,dVar2,in_stack_fffffffffffffe78._8_8_,iVar19,0x10000
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000d480_FUN_14000d480.c,305,11,dVar2 + DAT_140539f28,in_stack_fffffffffffffe78._8_8_,iVar19,0x10000
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000d480_FUN_14000d480.c,332,9,dVar4,in_stack_fffffffffffffe78._8_8_,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000d480_FUN_14000d480.c,347,9,dVar4,in_stack_fffffffffffffe78._8_8_,,
+FUN_14006c2f0,3,24,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000d480_FUN_14000d480.c,402,9,DAT_14053a138,in_stack_fffffffffffffe78._8_8_,,
+FUN_14006c2f0,3,24,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000d480_FUN_14000d480.c,419,9,uVar11,in_stack_fffffffffffffe78._8_8_,,
+FUN_14006c2f0,3,24,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000d480_FUN_14000d480.c,447,9,uVar11,in_stack_fffffffffffffe78._8_8_,,
+FUN_14006c2f0,3,25,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000d480_FUN_14000d480.c,465,9,DAT_14053a138,in_stack_fffffffffffffe78._8_8_,,
+FUN_14006c2f0,3,25,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000d480_FUN_14000d480.c,482,9,uVar11,in_stack_fffffffffffffe78._8_8_,,
+FUN_14006c2f0,3,25,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000d480_FUN_14000d480.c,503,9,uVar11,in_stack_fffffffffffffe78._8_8_,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000ed10_FUN_14000ed10.c,248,3,,,,
+FUN_1400709b0,1,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000ed10_FUN_14000ed10.c,550,3,,,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000ed10_FUN_14000ed10.c,552,3,,,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000ed10_FUN_14000ed10.c,579,3,,,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000ed10_FUN_14000ed10.c,581,3,,,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002aac0_FUN_14002aac0.c,231,9,"SUB84(dVar2 - dVar21,0)",1,,
+FUN_14006c2f0,14,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002aac0_FUN_14002aac0.c,266,9,uVar24,1,,
+FUN_14006c2f0,14,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002aac0_FUN_14002aac0.c,273,9,uVar24,1,,
+FUN_14006c2f0,10,53,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ef010_FUN_1400ef010.c,315,9,dVar24 - (double)iVar8 * dVar26,1,,
+FUN_14006c2f0,10,54,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ef010_FUN_1400ef010.c,323,9,dVar24 - (double)iVar8 * dVar26,1,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ef010_FUN_1400ef010.c,340,9,DAT_14053a178,1,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ef010_FUN_1400ef010.c,343,9,uVar1,1,,
+FUN_14006c2f0,3,8,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ef010_FUN_1400ef010.c,415,9,uVar1,1,,
+FUN_14006c2f0,2,8,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ef010_FUN_1400ef010.c,437,9,uVar1,1,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ef010_FUN_1400ef010.c,575,9,uVar1,1,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ef010_FUN_1400ef010.c,583,9,uVar2,1,,
+FUN_14006c2f0,2,55,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ef010_FUN_1400ef010.c,622,9,dVar24,1,,
+FUN_14006c2f0,2,55,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ef010_FUN_1400ef010.c,638,9,dVar24,1,,
+FUN_14006c2f0,13,11,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ef010_FUN_1400ef010.c,663,9,DAT_14053a138,"CONCAT44(uVar33,1)",,
+FUN_14006c2f0,13,11,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ef010_FUN_1400ef010.c,666,9,DAT_14053a208,1,,
+FUN_14006c2f0,13,11,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ef010_FUN_1400ef010.c,667,9,uVar1,1,,
+FUN_14006c2f0,13,11,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ef010_FUN_1400ef010.c,668,9,uVar2,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140033070_FUN_140033070.c,188,9,"CONCAT44(uVar32,uVar16)",in_stack_fffffffffffffe68._8_8_,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140033070_FUN_140033070.c,203,9,"CONCAT44(uVar32,uVar16)",in_stack_fffffffffffffe68._8_8_,,
+FUN_14006c2f0,15,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140033070_FUN_140033070.c,749,9,"CONCAT44(uVar33,uVar31)",auVar55._8_8_,,
+FUN_14006c2f0,15,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140033070_FUN_140033070.c,756,9,"(double)CONCAT44(uVar33,uVar31) + DAT_140539f68",auVar56._8_8_,,
+FUN_14006c2f0,3,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e9e20_FUN_1400e9e20.c,412,4,,,,
+FUN_14006c2f0,5,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e9e20_FUN_1400e9e20.c,427,4,,,,
+FUN_1400709b0,4,7,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e9e20_FUN_1400e9e20.c,475,4,,,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140036b60_FUN_140036b60.c,177,11,dVar21,1,uVar28,iVar15
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140036b60_FUN_140036b60.c,186,9,dVar21 + dVar7,1,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140036b60_FUN_140036b60.c,196,9,dVar21 + dVar7,1,,
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140036b60_FUN_140036b60.c,301,11,dVar21,1,iVar19,0x10000
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140036b60_FUN_140036b60.c,312,11,dVar21,1,iVar19,0x10000
+FUN_1400709b0,4,10,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,789,2,,,,
+FUN_1400709b0,4,10,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,796,2,,,,
+FUN_1400709b0,4,10,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,806,2,,,,
+FUN_1400709b0,4,10,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,825,2,,,,
+FUN_1400709b0,4,10,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,832,2,,,,
+FUN_1400709b0,4,10,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,841,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,928,11,dVar38,auVar52._8_8_,uVar101,uVar28
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,939,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,949,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,970,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,978,2,,,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,987,2,,,,
+FUN_14006c2f0,3,33,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,1252,2,,,,
+FUN_14006c2f0,3,33,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,1266,2,,,,
+FUN_14006c2f0,3,34,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,1285,2,,,,
+FUN_14006c2f0,3,34,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,1300,2,,,,
+FUN_14006c2f0,19,35,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,1440,9,dVar31,auVar52._8_8_,,
+FUN_14006c2f0,19,35,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,1455,3,,,,
+FUN_14006c2f0,19,36,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,1470,2,,,,
+FUN_14006c2f0,19,36,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,1485,2,,,,
+FUN_14006c2f0,3,34,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,1610,2,,,,
+FUN_14006c2f0,3,34,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,1623,2,,,,
+FUN_14006c2f0,3,33,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,1642,2,,,,
+FUN_14006c2f0,3,33,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,1657,2,,,,
+FUN_14006c2f0,12,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,2038,9,dVar34,auVar52._8_8_,,
+FUN_14006c2f0,12,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,2054,2,,,,
+FUN_14006c2f0,13,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,2085,2,,,,
+FUN_14006c2f0,13,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,2100,2,,,,
+FUN_1400709b0,19,38,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,2193,11,dVar34,auVar96._8_8_,uVar46,0x10000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,2205,2,,,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14002d2f0_FUN_14002d2f0.c,2230,2,,,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400210c0_FUN_1400210c0.c,201,9,dVar22,auVar27._8_8_,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400210c0_FUN_1400210c0.c,214,9,dVar22 + dVar3,auVar27._8_8_,,
+FUN_14006c2f0,17,12,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400210c0_FUN_1400210c0.c,315,9,dVar5,auVar31._8_8_,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e6f70_FUN_1400e6f70.c,297,11,dVar27 - DAT_140539f68,auVar34._8_8_,uVar14,0x10000
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e6f70_FUN_1400e6f70.c,311,11,dVar27,in_stack_fffffffffffffef8._8_8_,uVar14,0x10000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e6f70_FUN_1400e6f70.c,465,11,dVar26,in_stack_fffffffffffffef8._8_8_,iVar1,iVar16
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e6f70_FUN_1400e6f70.c,480,11,dVar24,in_stack_fffffffffffffef8._8_8_,iVar20 + iVar19,iVar11
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140045080_FUN_140045080.c,154,11,dVar17 + DAT_140539f10,auVar27._8_8_,iVar10 + -1,iVar10 * 0x168 + -0x2d0
+FUN_1400709b0,4,7,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140045080_FUN_140045080.c,285,11,dVar17 - dVar5,in_stack_fffffffffffffea8._8_8_,iVar11,0x10000
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140082090_FUN_140082090.c,241,9,dVar21,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140082090_FUN_140082090.c,243,9,dVar21 + DAT_140539ee0,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140082090_FUN_140082090.c,246,9,dVar21 + DAT_140539fc8,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140082090_FUN_140082090.c,248,9,dVar21 + _DAT_140539fe0,1,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140082090_FUN_140082090.c,262,11,"(dVar19 + (double)CONCAT44(uVar24,uVar23)) - (double)iVar12 * dVar21",1,2,iVar15
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400483e0_FUN_1400483e0.c,133,11,DAT_14053a218,1,4,iVar5
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001b540_FUN_14001b540.c,225,9,dVar19 + dVar18,in_stack_fffffffffffffe60,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001b540_FUN_14001b540.c,233,3,,,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001b540_FUN_14001b540.c,263,3,,,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001b540_FUN_14001b540.c,271,3,,,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001b540_FUN_14001b540.c,313,3,,,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001b540_FUN_14001b540.c,430,9,dVar19 + dVar18,"CONCAT44(uVar30,1)",,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001b540_FUN_14001b540.c,434,3,,,,
+FUN_14006c2f0,1,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140043fa0_FUN_140043fa0.c,164,9,dVar17,in_stack_fffffffffffffe98._8_8_,,
+FUN_14006c2f0,1,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140043fa0_FUN_140043fa0.c,219,9,dVar17,in_stack_fffffffffffffe98._8_8_,,
+FUN_14006c2f0,5,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140043fa0_FUN_140043fa0.c,236,9,dVar15,auVar28._8_8_,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059000_FUN_140059000.c,188,9,dVar18,auVar27._8_8_,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059000_FUN_140059000.c,196,9,dVar18 + dVar8,in_stack_fffffffffffffea8._8_8_,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059000_FUN_140059000.c,208,9,dVar18,auVar30._8_8_,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059000_FUN_140059000.c,213,9,dVar18 + dVar8,auVar31._8_8_,,
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400120b0_FUN_1400120b0.c,156,11,dVar19 + DAT_140539ee0,uVar28,uVar10,0x960
+FUN_1400709b0,13,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400120b0_FUN_1400120b0.c,263,11,dVar19,uVar28,iVar5,iVar9
+FUN_1400709b0,13,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400120b0_FUN_1400120b0.c,271,11,dVar19 + DAT_140539f90,uVar28,iVar5,iVar9
+FUN_1400709b0,6,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400120b0_FUN_1400120b0.c,364,11,dVar19,uVar28,uVar10,22000
+FUN_1400709b0,6,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400120b0_FUN_1400120b0.c,372,11,dVar19 + DAT_140539fa8,uVar28,uVar10,22000
+FUN_14006c2f0,12,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140066370_FUN_140066370.c,415,3,,,,
+FUN_14006c2f0,2,60,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140066370_FUN_140066370.c,579,9,DAT_14053a138,auVar41._8_8_,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140066370_FUN_140066370.c,702,3,,,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140066370_FUN_140066370.c,821,3,,,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140066370_FUN_140066370.c,963,3,,,,
+FUN_14006c2f0,2,18,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140066370_FUN_140066370.c,1116,3,,,,
+FUN_14006c2f0,13,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140066370_FUN_140066370.c,1130,2,,,,
+FUN_14006c2f0,13,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140066370_FUN_140066370.c,1137,2,,,,
+FUN_1400709b0,6,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140029880_FUN_140029880.c,289,4,,,,
+FUN_14006c2f0,7,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140029880_FUN_140029880.c,384,4,,,,
+FUN_14006c2f0,7,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140029880_FUN_140029880.c,394,4,,,,
+FUN_1400709b0,2,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140029880_FUN_140029880.c,546,4,,,,
+FUN_14006c2f0,2,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140029880_FUN_140029880.c,556,4,,,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140029880_FUN_140029880.c,583,4,,,,
+FUN_14006c2f0,3,7,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,320,9,dVar30,1,,
+FUN_14006c2f0,3,7,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,328,9,dVar30,1,,
+FUN_14006c2f0,3,7,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,384,9,dVar30,1,,
+FUN_14006c2f0,3,7,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,393,9,dVar30,1,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,415,11,dVar33,1,iVar17,iVar17 * 0x1b8 + -0x1b8
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,428,11,dVar33,1,iVar17 + -2,iVar5
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,439,11,dVar33,1,iVar17 + -2,iVar5
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,504,9,dVar26,1,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,508,9,dVar26,1,,
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,510,9,dVar26,1,,
+FUN_14006c2f0,2,23,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,573,9,dVar26,1,,
+FUN_14006c2f0,2,23,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,583,9,dVar26,1,,
+FUN_14006c2f0,2,23,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,593,9,dVar26,1,,
+FUN_1400709b0,16,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,1161,11,dVar31,"CONCAT44(uVar43,1)",iVar10,0x8000
+FUN_1400709b0,16,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,1167,11,dVar31,1,iVar10 - 1U,(int)(0x8000 / (ulonglong)(iVar10 - 1U)) * (iVar10 + -2) & 0xffff
+FUN_1400709b0,16,8,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140009480_FUN_140009480.c,1394,11,dVar24,1,iVar10,iVar10 * 9000
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e6340_FUN_1400e6340.c,145,9,dVar4,auVar22._8_8_,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e6340_FUN_1400e6340.c,151,11,dVar4 - DAT_140539f00,auVar23._8_8_,2,uVar18
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e6340_FUN_1400e6340.c,196,11,dVar4,in_stack_fffffffffffffe98._8_8_,iVar10,30000
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e6340_FUN_1400e6340.c,212,11,dVar4,in_stack_fffffffffffffe98._8_8_,iVar10 - 1U,(int)(30000 / (ulonglong)(iVar10 - 1U)) * (iVar10 + -2) & 0xffff
+FUN_14006c2f0,13,8,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e6340_FUN_1400e6340.c,284,9,uVar2,in_stack_fffffffffffffe98._8_8_,,
+FUN_14006c2f0,12,9,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e6340_FUN_1400e6340.c,309,9,uVar2,auVar27._8_8_,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005fc20_FUN_14005fc20.c,202,9,uVar32,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005fc20_FUN_14005fc20.c,214,9,uVar32,1,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005fc20_FUN_14005fc20.c,502,9,dVar26 + DAT_14053a178,1,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005fc20_FUN_14005fc20.c,511,9,dVar26 + _DAT_14053a188,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005fc20_FUN_14005fc20.c,532,9,uVar5,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005fc20_FUN_14005fc20.c,539,9,dVar22,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005fc20_FUN_14005fc20.c,544,9,uVar32,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005fc20_FUN_14005fc20.c,550,9,dVar26,1,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005fc20_FUN_14005fc20.c,623,9,dVar26 + DAT_14053a178,1,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005fc20_FUN_14005fc20.c,632,9,dVar26 + _DAT_14053a188,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005fc20_FUN_14005fc20.c,654,9,uVar5,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005fc20_FUN_14005fc20.c,661,9,dVar22,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005fc20_FUN_14005fc20.c,666,9,uVar32,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005fc20_FUN_14005fc20.c,672,9,dVar22,1,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140064630_FUN_140064630.c,286,9,dVar36,1,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140064630_FUN_140064630.c,294,9,dVar36,1,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140064630_FUN_140064630.c,344,9,dVar31,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140064630_FUN_140064630.c,361,9,dVar31,1,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140064630_FUN_140064630.c,374,9,dVar31,1,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140064630_FUN_140064630.c,379,9,dVar31,1,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140064630_FUN_140064630.c,385,9,dVar31,1,,
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140064630_FUN_140064630.c,412,9,dVar31 + 0.0 + dVar30,1,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140064630_FUN_140064630.c,448,9,dVar31,1,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140064630_FUN_140064630.c,467,9,dVar31,1,,
+FUN_1400709b0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e8d20_FUN_1400e8d20.c,195,11,dVar24,in_stack_ffffffffffffff18._8_8_,2,uVar17
+FUN_1400709b0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e8d20_FUN_1400e8d20.c,206,11,dVar24,in_stack_ffffffffffffff18._8_8_,2,uVar17 + 0x5dc
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059760_FUN_140059760.c,99,9,dVar12,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059760_FUN_140059760.c,111,9,dVar12,1,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059760_FUN_140059760.c,123,9,dVar12,1,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059760_FUN_140059760.c,134,9,dVar12,1,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059760_FUN_140059760.c,158,9,dVar12,1,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059760_FUN_140059760.c,171,9,dVar12,1,,
+FUN_1400709b0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059760_FUN_140059760.c,205,11,dVar14,1,2,iVar5
+FUN_1400709b0,10,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059760_FUN_140059760.c,207,11,dVar14,1,2,iVar5
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059760_FUN_140059760.c,211,11,dVar14,1,2,iVar5
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059760_FUN_140059760.c,213,11,dVar14,1,2,iVar5
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059760_FUN_140059760.c,244,9,dVar12,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059760_FUN_140059760.c,252,9,dVar12 + dVar14,1,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059760_FUN_140059760.c,262,9,dVar12,1,,
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140059760_FUN_140059760.c,271,9,dVar12,1,,
+FUN_14006c2f0,11,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005e890_FUN_14005e890.c,236,2,,,,
+FUN_14006c2f0,11,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005e890_FUN_14005e890.c,245,2,,,,
+FUN_14006c2f0,11,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005e890_FUN_14005e890.c,256,2,,,,
+FUN_14006c2f0,11,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005e890_FUN_14005e890.c,267,2,,,,
+FUN_14006c2f0,12,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005e890_FUN_14005e890.c,304,9,uVar16,in_stack_fffffffffffffe70,,
+FUN_14006c2f0,3,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005e890_FUN_14005e890.c,326,2,,,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005e890_FUN_14005e890.c,346,9,(double)(int)uVar29 * DAT_140539e90 + DAT_140539ff0,uVar16,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005e890_FUN_14005e890.c,351,2,,,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001c8b0_FUN_14001c8b0.c,367,11,dVar40,auVar55._8_8_,iVar24,0x10000
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001c8b0_FUN_14001c8b0.c,379,11,dVar40 - DAT_140539f90,auVar55._8_8_,iVar24,0x10000
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001c8b0_FUN_14001c8b0.c,449,11,dVar33,auVar58._8_8_,uVar45,iVar13 + 27000
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001c8b0_FUN_14001c8b0.c,456,11,dVar33 - DAT_140539fc8,auVar59._8_8_,uVar45,iVar13 + 29000
+FUN_14006c2f0,17,12,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001c8b0_FUN_14001c8b0.c,839,9,dVar32,in_stack_fffffffffffffe98._8_8_,,
+FUN_14006c2f0,17,12,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001c8b0_FUN_14001c8b0.c,857,9,dVar32,in_stack_fffffffffffffe98._8_8_,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001c8b0_FUN_14001c8b0.c,920,11,dVar32,auVar62._8_8_,iVar14 + 1,iVar14 * iVar12
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001c8b0_FUN_14001c8b0.c,1110,11,dVar40 + DAT_140539fc8,auVar64._8_8_,uVar45,0x10000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001c8b0_FUN_14001c8b0.c,1174,11,dVar40,auVar64._8_8_,iVar14,iVar14 * 700 + -700
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001c8b0_FUN_14001c8b0.c,1341,11,dVar32,in_stack_fffffffffffffe98._8_8_,uVar45,0x10000
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001c8b0_FUN_14001c8b0.c,1412,9,dVar40,in_stack_fffffffffffffe98._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001c8b0_FUN_14001c8b0.c,1427,9,dVar40,in_stack_fffffffffffffe98._8_8_,,
+FUN_14006c2f0,17,12,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14001c8b0_FUN_14001c8b0.c,1515,9,dVar32,auVar71._8_8_,,
+FUN_14006c2f0,17,13,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140022120_FUN_140022120.c,280,9,dVar29,uVar36,,
+FUN_14006c2f0,17,13,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140022120_FUN_140022120.c,296,9,dVar29,"CONCAT44(uVar32,1)",,
+FUN_1400709b0,6,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140022120_FUN_140022120.c,504,11,DAT_14053a238,"CONCAT44(uVar32,1)",5,iVar8
+FUN_14006c2f0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400526c0_FUN_1400526c0.c,151,9,uVar3,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400526c0_FUN_1400526c0.c,159,9,uVar3,1,,
+FUN_14006c2f0,13,44,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400526c0_FUN_1400526c0.c,170,9,uVar3,1,,
+FUN_14006c2f0,13,45,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400526c0_FUN_1400526c0.c,176,9,uVar3,1,,
+FUN_14006c2f0,12,44,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400526c0_FUN_1400526c0.c,182,9,uVar3,1,,
+FUN_14006c2f0,12,45,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400526c0_FUN_1400526c0.c,187,9,uVar3,1,,
+FUN_14006c2f0,3,58,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140063ec0_FUN_140063ec0.c,141,9,0,auVar26._8_8_,,
+FUN_14006c2f0,3,59,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140063ec0_FUN_140063ec0.c,203,9,0,auVar29._8_8_,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400a8a80_FUN_1400a8a80.c,153,9,"CONCAT44(uVar16,uVar15)",in_stack_fffffffffffffec8._8_8_,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400a8a80_FUN_1400a8a80.c,170,9,dVar13,in_stack_fffffffffffffec8._8_8_,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400f4430_FUN_1400f4430.c,202,9,dVar14,"CONCAT44(uVar21,1)",,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400f4430_FUN_1400f4430.c,205,9,dVar14 + DAT_140539fc8,1,,
+FUN_14006c2f0,17,12,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14009cd10_FUN_14009cd10.c,222,9,dVar17,"CONCAT44(uVar29,1)",,
+FUN_14006c2f0,17,12,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14009cd10_FUN_14009cd10.c,228,9,dVar17,1,,
+FUN_14006c2f0,13,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140044910_FUN_140044910.c,151,9,0,uVar36,,
+FUN_14006c2f0,13,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140044910_FUN_140044910.c,161,9,DAT_140539f00,auVar31._8_8_,,
+FUN_14006c2f0,13,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140044910_FUN_140044910.c,169,9,0,auVar33._8_8_,,
+FUN_14006c2f0,12,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140044910_FUN_140044910.c,176,9,0,uVar36,,
+FUN_14006c2f0,12,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140044910_FUN_140044910.c,186,9,DAT_140539f00,auVar31._8_8_,,
+FUN_14006c2f0,12,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140044910_FUN_140044910.c,194,9,0,auVar35._8_8_,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400465d0_FUN_1400465d0.c,436,9,dVar37,uVar51,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400465d0_FUN_1400465d0.c,441,9,dVar37,in_stack_fffffffffffffdc0,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400465d0_FUN_1400465d0.c,448,9,dVar37 + dVar35,uVar51,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400465d0_FUN_1400465d0.c,453,9,dVar37 + dVar35,in_stack_fffffffffffffdc0,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400465d0_FUN_1400465d0.c,516,9,dVar46,1,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400465d0_FUN_1400465d0.c,521,9,dVar37,1,,
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400465d0_FUN_1400465d0.c,525,9,dVar37 - dVar29,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400465d0_FUN_1400465d0.c,596,9,dVar37,uVar51,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400465d0_FUN_1400465d0.c,610,9,dVar37,in_stack_fffffffffffffdc0,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400465d0_FUN_1400465d0.c,619,11,dVar37,"CONCAT44(uVar40,1)",in_stack_fffffffffffffdc8,0x10000
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400465d0_FUN_1400465d0.c,702,11,dVar37,1,iVar10,iVar10 * 0x168 + -0x168
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400465d0_FUN_1400465d0.c,706,11,dVar37 + dVar46,1,iVar10,iVar10 * 0x168 + -0x2d0
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400465d0_FUN_1400465d0.c,783,9,dVar46,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400465d0_FUN_1400465d0.c,790,9,dVar46,1,,
+FUN_14006c2f0,1,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000e3b0_FUN_14000e3b0.c,173,9,dVar16,1,,
+FUN_14006c2f0,1,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000e3b0_FUN_14000e3b0.c,179,9,dVar16 + DAT_140539f10,1,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14000e3b0_FUN_14000e3b0.c,245,9,"dVar18 + (double)CONCAT44(uVar22,uVar21)",1,,
+FUN_14006c2f0,13,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e47c0_FUN_1400e47c0.c,153,9,dVar16,auVar32._8_8_,,
+FUN_14006c2f0,13,4,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e47c0_FUN_1400e47c0.c,160,9,dVar16 + DAT_140539fc8,auVar33._8_8_,,
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140013c00_FUN_140013c00.c,252,11,dVar29,in_stack_fffffffffffffe78._8_8_,uVar42,0x10000
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140013c00_FUN_140013c00.c,265,11,dVar29 + DAT_140539f68,in_stack_fffffffffffffe78._8_8_,uVar42,0x10000
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140013c00_FUN_140013c00.c,347,11,dVar29,auVar38._8_8_,uVar42,0x10000
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140013c00_FUN_140013c00.c,362,11,"dVar29 + (double)CONCAT44(uVar33,uVar28)",auVar39._8_8_,uVar42,0x10000
+FUN_14006c2f0,0,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14009b0a0_FUN_14009b0a0.c,164,9,"(double)CONCAT44(uVar20,uVar19) - DAT_140539fb8",1,,
+FUN_14006c2f0,0,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140021c80_FUN_140021c80.c,101,9,dVar11,auVar18._8_8_,,
+FUN_14006c2f0,0,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140021c80_FUN_140021c80.c,108,9,dVar11 + DAT_140539f90,auVar19._8_8_,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400dc1c0_FUN_1400dc1c0.c,171,9,dVar22,1,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400dc1c0_FUN_1400dc1c0.c,175,9,dVar22 + DAT_140539fc8,1,,
+FUN_14006c2f0,5,15,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400dc1c0_FUN_1400dc1c0.c,314,9,0,1,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140004660_FUN_140004660.c,305,9,dVar24,uVar17,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140004660_FUN_140004660.c,315,9,dVar24 - dVar22,uVar17,,
+FUN_1400709b0,1,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140004660_FUN_140004660.c,353,11,dVar24 - DAT_140539ef8,uVar17,2,iVar10 + 0x4b0
+FUN_1400709b0,1,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140004660_FUN_140004660.c,361,11,dVar24 - DAT_140539fa8,uVar17,2,iVar10 + 2000
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140004660_FUN_140004660.c,416,11,dVar27,uVar17,uVar15,12000
+FUN_1400709b0,0,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140004660_FUN_140004660.c,431,11,dVar27 - DAT_140539fc8,uVar17,uVar15,12000
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140004660_FUN_140004660.c,462,11,dVar27,uVar17,uVar15,12000
+FUN_1400709b0,0,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140004660_FUN_140004660.c,476,11,dVar27 - dVar25,uVar17,uVar15,12000
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140004660_FUN_140004660.c,551,11,dVar23 + dVar27,uVar17,iVar9,iVar4
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140004660_FUN_140004660.c,568,11,dVar24 + dVar27,1,iVar9,iVar4
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140004660_FUN_140004660.c,964,11,dVar22,uVar17,uVar15,uVar20
+FUN_1400709b0,4,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140004660_FUN_140004660.c,979,11,dVar27,"CONCAT44(uVar35,1)",uVar15,uVar20
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140004660_FUN_140004660.c,988,11,dVar27,1,uVar15,uVar20
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140004660_FUN_140004660.c,1337,11,dVar27,1,uVar15,0x8000
+FUN_1400709b0,3,7,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140088110_FUN_140088110.c,191,11,dVar13,"CONCAT44(uVar18,1)",in_stack_ffffffffffffff48,0x8000
+FUN_1400709b0,3,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140093540_FUN_140093540.c,195,11,DAT_140539f68,uVar4,iVar2,22000
+FUN_1400709b0,3,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140093540_FUN_140093540.c,203,11,DAT_140539ec8,uVar4,iVar2 - 1U,(int)(22000 / (ulonglong)(iVar2 - 1U)) * (iVar2 + -2) & 0xffff
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140093540_FUN_140093540.c,243,9,dVar14 + DAT_140539fb8,uVar4,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140045aa0_FUN_140045aa0.c,144,9,dVar12,1,,
+FUN_14006c2f0,12,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140045aa0_FUN_140045aa0.c,149,9,dVar12 - dVar2,1,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140011a80_FUN_140011a80.c,151,11,"CONCAT44(uVar14,uVar13)",1,uVar9,3000
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400de960_FUN_1400de960.c,353,9,dVar25,"CONCAT44(uVar34,1)",,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400de960_FUN_1400de960.c,356,9,dVar25,1,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400de960_FUN_1400de960.c,359,9,dVar25,1,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400de960_FUN_1400de960.c,365,9,dVar25,1,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400de960_FUN_1400de960.c,371,9,dVar28,1,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400de960_FUN_1400de960.c,376,9,dVar28,1,,
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140041e90_FUN_140041e90.c,168,11,dVar24 + dVar21,in_stack_fffffffffffffe80,uVar15,30000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140041e90_FUN_140041e90.c,247,11,dVar19,uVar29,iVar12,iVar13
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140041e90_FUN_140041e90.c,254,11,dVar19 + dVar7,uVar29,iVar12 + -2,(iVar13 / (iVar12 + -2)) * (iVar12 + -3) & 0xffff
+FUN_1400709b0,2,9,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140041e90_FUN_140041e90.c,303,11,(double)(int)uVar14 * DAT_140539ee0 + DAT_14053a070,"CONCAT44(uVar27,1)",iVar12,iVar12 * 0xd05 + -0xd05
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140007fc0_FUN_140007fc0.c,223,9,"CONCAT44(uVar35,uVar32)",in_stack_fffffffffffffe58._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140007fc0_FUN_140007fc0.c,240,9,dVar6,in_stack_fffffffffffffe58._8_8_,,
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140007fc0_FUN_140007fc0.c,387,11,DAT_14053a1e8,in_stack_fffffffffffffe58._8_8_,uVar32,uVar35
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140007fc0_FUN_140007fc0.c,408,9,"CONCAT44(uVar36,uVar33)",in_stack_fffffffffffffe58._8_8_,,
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140007fc0_FUN_140007fc0.c,428,9,dVar6,in_stack_fffffffffffffe58._8_8_,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140007fc0_FUN_140007fc0.c,486,9,"CONCAT44(uVar37,uVar34)",auVar59._8_8_,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140007fc0_FUN_140007fc0.c,500,9,dVar6,auVar59._8_8_,,
+FUN_14006c2f0,20,37,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140037b30_FUN_140037b30.c,82,9,dVar10,1,,
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140040750_FUN_140040750.c,296,4,,,,
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140040750_FUN_140040750.c,306,4,,,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140040750_FUN_140040750.c,380,4,,,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140040750_FUN_140040750.c,391,4,,,,
+FUN_14006c2f0,9,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140040750_FUN_140040750.c,405,4,,,,
+FUN_14006c2f0,6,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140094bc0_FUN_140094bc0.c,163,9,"(double)CONCAT44(uVar18,uVar17) + DAT_140539ef8",1,,
+FUN_14006c2f0,6,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140094bc0_FUN_140094bc0.c,167,9,"(double)CONCAT44(uVar18,uVar17) + DAT_140539fc8",1,,
+FUN_14006c2f0,6,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140094bc0_FUN_140094bc0.c,169,9,"(double)CONCAT44(uVar18,uVar17) + DAT_140539fe8",1,,
+FUN_14006c2f0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005a3f0_FUN_14005a3f0.c,403,9,uVar2,1,,
+FUN_14006c2f0,2,57,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005a3f0_FUN_14005a3f0.c,427,9,dVar21,1,,
+FUN_14006c2f0,3,9,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005a3f0_FUN_14005a3f0.c,429,9,dVar21 + DAT_140539fc8,1,,
+FUN_14006c2f0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005a3f0_FUN_14005a3f0.c,453,9,dVar21,1,,
+FUN_14006c2f0,3,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140057f90_FUN_140057f90.c,137,9,DAT_14053a138,in_stack_fffffffffffffe88._8_8_,,
+FUN_14006c2f0,4,15,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140057f90_FUN_140057f90.c,148,9,0,auVar31._8_8_,,
+FUN_14006c2f0,4,16,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140057f90_FUN_140057f90.c,186,9,0,auVar32._8_8_,,
+FUN_14006c2f0,4,16,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140057f90_FUN_140057f90.c,234,9,0,auVar33._8_8_,,
+FUN_14006c2f0,13,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140057f90_FUN_140057f90.c,268,9,uVar11,in_stack_fffffffffffffe88._8_8_,,
+FUN_14006c2f0,13,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140057f90_FUN_140057f90.c,285,9,uVar9,in_stack_fffffffffffffe88._8_8_,,
+FUN_14006c2f0,13,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140057f90_FUN_140057f90.c,295,9,uVar11,in_stack_fffffffffffffe88._8_8_,,
+FUN_14006c2f0,4,16,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140057f90_FUN_140057f90.c,305,9,0,auVar37._8_8_,,
+FUN_1400709b0,5,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400a1df0_FUN_1400a1df0.c,125,11,dVar14 + DAT_140539f00,1,uVar8,4000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e0680_FUN_1400e0680.c,246,11,dVar35,auVar46._8_8_,iVar17,27000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e0680_FUN_1400e0680.c,252,11,dVar35 - DAT_140539ff0,auVar47._8_8_,iVar17,27000
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e0680_FUN_1400e0680.c,406,11,dVar29,in_stack_fffffffffffffd18._8_8_,iVar17,0x10000
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e0680_FUN_1400e0680.c,414,11,dVar29,in_stack_fffffffffffffd18._8_8_,iVar17,0x10000
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e0680_FUN_1400e0680.c,445,11,dVar29,in_stack_fffffffffffffd18._8_8_,iVar17,0x10000
+FUN_1400709b0,11,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e0680_FUN_1400e0680.c,453,11,dVar29,in_stack_fffffffffffffd18._8_8_,iVar17,0x10000
+FUN_14006c2f0,6,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e0680_FUN_1400e0680.c,886,9,dVar29,auVar56._8_8_,,
+FUN_14006c2f0,6,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e0680_FUN_1400e0680.c,893,9,dVar29 + dVar30,auVar57._8_8_,,
+FUN_14006c2f0,10,1,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14005dd50_FUN_14005dd50.c,212,9,dVar25,"CONCAT44(uVar32,1)",,
+FUN_1400709b0,3,7,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ee710_FUN_1400ee710.c,118,11,uVar15,1,uVar13,0x10000
+FUN_1400709b0,2,7,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ee710_FUN_1400ee710.c,130,11,uVar15,1,uVar13,0x10000
+FUN_14006c2f0,3,41,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ee710_FUN_1400ee710.c,160,9,DAT_14053a178,1,,
+FUN_14006c2f0,3,41,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ee710_FUN_1400ee710.c,165,9,uVar15,1,,
+FUN_14006c2f0,2,42,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ee710_FUN_1400ee710.c,175,9,uVar15,1,,
+FUN_14006c2f0,2,42,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ee710_FUN_1400ee710.c,180,9,uVar15,1,,
+FUN_1400709b0,3,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ee710_FUN_1400ee710.c,250,11,dVar16,1,iVar7,0x10000
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400ee710_FUN_1400ee710.c,253,11,dVar16,1,iVar7,0x10000
+FUN_1400709b0,10,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14009b5f0_FUN_14009b5f0.c,222,11,dVar26,in_stack_fffffffffffffef8._8_8_,iVar14,iVar14 * 7000 + -7000
+FUN_1400709b0,10,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14009b5f0_FUN_14009b5f0.c,235,11,dVar26 + DAT_140539f90,in_stack_fffffffffffffef8._8_8_,iVar14,iVar14 * 12000 + -12000
+FUN_1400709b0,11,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14009b5f0_FUN_14009b5f0.c,257,11,dVar26,in_stack_fffffffffffffef8._8_8_,iVar14,iVar14 * 7000 + -7000
+FUN_1400709b0,11,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14009b5f0_FUN_14009b5f0.c,267,11,dVar26 + dVar7,in_stack_fffffffffffffef8._8_8_,iVar14,iVar14 * 12000 + -12000
+FUN_14006c2f0,3,28,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/14009b5f0_FUN_14009b5f0.c,365,9,uVar8,in_stack_fffffffffffffef8._8_8_,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e20e0_FUN_1400e20e0.c,221,9,"CONCAT44(uVar24,uVar23)",in_stack_fffffffffffffe88._8_8_,,
+FUN_14006c2f0,4,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e20e0_FUN_1400e20e0.c,306,9,dVar17,in_stack_fffffffffffffe88._8_8_,,
+FUN_1400709b0,4,3,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400e20e0_FUN_1400e20e0.c,330,11,dVar17 - DAT_140539f00,in_stack_fffffffffffffe88._8_8_,2,uVar19
+FUN_14006c2f0,6,0,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140034670_FUN_140034670.c,225,9,"CONCAT44(uVar26,uVar25)","CONCAT44(uVar28,1)",,
+FUN_14006c2f0,3,2,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140058ad0_FUN_140058ad0.c,73,9,DAT_14053a0f8,uVar5,,
+FUN_14006c2f0,4,16,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140058ad0_FUN_140058ad0.c,82,9,0,uVar5,,
+FUN_14006c2f0,4,15,reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/140058ad0_FUN_140058ad0.c,125,9,0,"CONCAT44(uVar13,1)",,
+FUN_14006c2f0,8,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/1400af900_FUN_1400af900.c,141,9,DAT_14053a160,auVar25._8_8_,,
+FUN_1400709b0,13,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/1400b0b70_FUN_1400b0b70.c,163,11,DAT_14053a1b8,auVar21._8_8_,iVar7,iVar7 * 400 + -400
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/1400a5dd0_FUN_1400a5dd0.c,238,9,dVar27,in_stack_fffffffffffffeb8._8_8_,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/1400a5dd0_FUN_1400a5dd0.c,270,9,dVar27,in_stack_fffffffffffffeb8._8_8_,,
+FUN_14006c2f0,10,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/1400a5dd0_FUN_1400a5dd0.c,282,9,dVar26,in_stack_fffffffffffffeb8._8_8_,,
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/1400a5dd0_FUN_1400a5dd0.c,367,11,"CONCAT44(uVar29,uVar28)",auVar47._8_8_,uVar8,iVar13
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/1400a5dd0_FUN_1400a5dd0.c,377,11,"CONCAT44(uVar29,uVar28)",in_stack_fffffffffffffeb8._8_8_,uVar8,iVar13
+FUN_1400709b0,15,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/1400a5dd0_FUN_1400a5dd0.c,404,11,"CONCAT44(uVar29,uVar28)",in_stack_fffffffffffffeb8._8_8_,uVar8,iVar13
+FUN_1400709b0,2,7,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/1400a5dd0_FUN_1400a5dd0.c,486,11,"CONCAT44(uVar32,uVar31)",auVar53._8_8_,uVar8,27000
+FUN_1400709b0,2,7,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/1400a5dd0_FUN_1400a5dd0.c,494,11,"(double)CONCAT44(uVar32,uVar31) + DAT_140539f90",auVar54._8_8_,uVar8,27000
+FUN_14006c2f0,13,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/1400b2760_FUN_1400b2760.c,171,9,dVar21,in_stack_fffffffffffffed0,,
+FUN_14006c2f0,0,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/1400b2760_FUN_1400b2760.c,231,9,uVar5,in_stack_fffffffffffffed0,,
+FUN_14006c2f0,1,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/1400a4440_FUN_1400a4440.c,203,9,"CONCAT44(uVar24,uVar26)",auVar30._8_8_,,
+FUN_14006c2f0,1,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/1400a4440_FUN_1400a4440.c,221,9,"(double)CONCAT44(uVar24,uVar26) + DAT_140539fe8",auVar31._8_8_,,
+FUN_1400709b0,9,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/140092b20_FUN_140092b20.c,212,11,"CONCAT44(uVar19,uVar18)",in_stack_ffffffffffffff18._8_8_,iVar4 + 1,iVar4 * iVar6
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/140092b20_FUN_140092b20.c,233,11,dVar14,auVar29._8_8_,uVar9,20000
+FUN_1400709b0,8,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/140092b20_FUN_140092b20.c,240,11,dVar17 - DAT_140539fc8,auVar30._8_8_,uVar9,20000
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/140095130_FUN_140095130.c,258,9,in_stack_fffffffffffffeb8,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/140095130_FUN_140095130.c,269,9,"(double)CONCAT44(uVar34,uVar33) - dVar27",1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/140095130_FUN_140095130.c,280,9,dVar28,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/140095130_FUN_140095130.c,298,9,in_stack_fffffffffffffeb8,1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/140095130_FUN_140095130.c,309,9,"(double)CONCAT44(uVar34,uVar33) - dVar27",1,,
+FUN_14006c2f0,7,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/140095130_FUN_140095130.c,320,9,dVar28,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/140095130_FUN_140095130.c,399,9,dVar32,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/140095130_FUN_140095130.c,413,9,in_stack_fffffffffffffeb8,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/140095130_FUN_140095130.c,435,9,dVar32,1,,
+FUN_1400709b0,2,0,reverse/ghidra-or-ida/exports/missing-helper-priority/neighborhood-decompiled/140095130_FUN_140095130.c,492,11,in_stack_fffffffffffffeb8,1,uVar33,0x8000
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/remaining-helper-priority/neighborhood-decompiled/1400a3990_FUN_1400a3990.c,236,4,,,,
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/remaining-helper-priority/neighborhood-decompiled/1400a3990_FUN_1400a3990.c,244,4,,,,
+FUN_1400709b0,7,0,reverse/ghidra-or-ida/exports/remaining-helper-priority/neighborhood-decompiled/1400a3990_FUN_1400a3990.c,252,4,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/remaining-helper-priority/neighborhood-decompiled/1400a3990_FUN_1400a3990.c,291,4,,,,
+FUN_1400709b0,12,0,reverse/ghidra-or-ida/exports/remaining-helper-priority/neighborhood-decompiled/1400a3990_FUN_1400a3990.c,300,4,,,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/remaining-helper-priority/neighborhood-decompiled/1400a4fe0_FUN_1400a4fe0.c,156,9,dVar18 + dVar4,in_stack_ffffffffffffff08._8_8_,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/remaining-helper-priority/neighborhood-decompiled/1400a4fe0_FUN_1400a4fe0.c,169,9,dVar18,in_stack_ffffffffffffff08._8_8_,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/remaining-helper-priority/neighborhood-decompiled/1400a4fe0_FUN_1400a4fe0.c,185,9,dVar18,in_stack_ffffffffffffff08._8_8_,,
+FUN_14006c2f0,5,0,reverse/ghidra-or-ida/exports/remaining-helper-priority/neighborhood-decompiled/1400a4fe0_FUN_1400a4fe0.c,196,9,dVar18 + dVar4,in_stack_ffffffffffffff08._8_8_,,
+FUN_14006c2f0,0,0,reverse/ghidra-or-ida/exports/remaining-helper-priority/neighborhood-decompiled/140092230_FUN_140092230.c,173,9,dVar19,"CONCAT44(uVar30,1)",,
+FUN_14006c2f0,0,0,reverse/ghidra-or-ida/exports/remaining-helper-priority/neighborhood-decompiled/140092230_FUN_140092230.c,179,9,dVar19 + DAT_140539f68,1,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/remaining-helper-priority/neighborhood-decompiled/140091540_FUN_140091540.c,268,9,dVar21,in_stack_fffffffffffffec8._8_8_,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/remaining-helper-priority/neighborhood-decompiled/140091540_FUN_140091540.c,281,9,"CONCAT44(uVar33,uVar32)",in_stack_fffffffffffffec8._8_8_,,
+FUN_14006c2f0,4,0,reverse/ghidra-or-ida/exports/remaining-helper-priority/neighborhood-decompiled/140091540_FUN_140091540.c,289,9,"(double)CONCAT44(uVar33,uVar32) + DAT_140539ee0",auVar38._8_8_,,
+FUN_14006c2f0,3,1,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,111,9,DAT_140539fc8,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,12,1,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,134,9,DAT_140539f90,uVar7,,
+FUN_14006c2f0,13,1,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,140,9,dVar26,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,8,2,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,235,9,"CONCAT44(uVar39,uVar34)",uVar7,,
+FUN_14006c2f0,8,2,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,244,9,"(double)CONCAT44(uVar39,uVar34) + dVar26",uVar7,,
+FUN_14006c2f0,9,2,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,252,9,"CONCAT44(uVar39,uVar34)","CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,9,2,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,257,9,"(double)CONCAT44(uVar39,uVar34) + dVar26",param_1[0xe],,
+FUN_14006c2f0,9,2,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,314,9,"CONCAT44(uVar40,uVar34)",uVar37,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,384,9,"CONCAT44(uVar40,uVar37)",uVar7,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,397,9,"CONCAT44(uVar40,uVar37)","CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,2,4,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,427,9,*(double *)(param_1 + 0xc) + DAT_140539f68,uVar7,,
+FUN_14006c2f0,2,4,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,434,9,*(double *)(param_1 + 0xc) + dVar28,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,8,4,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,456,9,dVar29,uVar37,,
+FUN_14006c2f0,8,4,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,499,9,"CONCAT44(uVar41,uVar35)",uVar7,,
+FUN_14006c2f0,9,4,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,506,9,"CONCAT44(uVar41,uVar35)","CONCAT44(uVar48,param_1[0xe])",,
+FUN_1400709b0,12,4,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,557,11,"CONCAT44(uVar42,uVar36)","CONCAT44(uVar48,param_1[0xe])","CONCAT44(uVar14,uVar37)",20000
+FUN_14006c2f0,12,2,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,628,9,DAT_14053a190,uVar7,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,635,9,uVar3,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,8,4,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,699,9,uVar2,uVar37,,
+FUN_14006c2f0,9,4,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,709,9,uVar2,uVar37,,
+FUN_14006c2f0,5,1,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,735,9,DAT_14053a018,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,8,2,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,763,9,uVar7,uVar37,,
+FUN_14006c2f0,8,2,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,774,9,uVar7,uVar37,,
+FUN_14006c2f0,2,2,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,792,9,uVar7,uVar37,,
+FUN_14006c2f0,4,17,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,837,9,0,"CONCAT44(uVar48,1)",,
+FUN_14006c2f0,4,15,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,160,9,0,"CONCAT44(uVar30,param_1[0xe])",,
+FUN_14006c2f0,5,15,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,241,9,0,"CONCAT44(uVar30,param_1[0xe])",,
+FUN_1400709b0,8,3,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,305,11,dVar22,uVar11,2,uVar26
+FUN_1400709b0,8,3,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,313,11,in_stack_ffffffffffffff18,uVar11,2,uVar26
+FUN_14006c2f0,5,15,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,329,9,0,"CONCAT44(uVar30,1)",,
+FUN_14006c2f0,4,15,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,339,9,0,"CONCAT44(uVar30,param_1[0xe])",,
+FUN_14006c2f0,5,15,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,399,9,0,uVar11,,
+FUN_14006c2f0,4,15,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,412,9,0,"CONCAT44(uVar30,param_1[0xe])",,
+FUN_14006c2f0,4,15,reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14006c620_FUN_14006c620.c,218,9,0,param_1[0xe],,
+FUN_14006c2f0,3,1,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,111,9,DAT_140539fc8,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,12,1,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,134,9,DAT_140539f90,uVar7,,
+FUN_14006c2f0,13,1,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,140,9,dVar26,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,8,2,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,235,9,"CONCAT44(uVar39,uVar34)",uVar7,,
+FUN_14006c2f0,8,2,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,244,9,"(double)CONCAT44(uVar39,uVar34) + dVar26",uVar7,,
+FUN_14006c2f0,9,2,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,252,9,"CONCAT44(uVar39,uVar34)","CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,9,2,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,257,9,"(double)CONCAT44(uVar39,uVar34) + dVar26",param_1[0xe],,
+FUN_14006c2f0,9,2,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,314,9,"CONCAT44(uVar40,uVar34)",uVar37,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,384,9,"CONCAT44(uVar40,uVar37)",uVar7,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,397,9,"CONCAT44(uVar40,uVar37)","CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,2,4,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,427,9,*(double *)(param_1 + 0xc) + DAT_140539f68,uVar7,,
+FUN_14006c2f0,2,4,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,434,9,*(double *)(param_1 + 0xc) + dVar28,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,8,4,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,456,9,dVar29,uVar37,,
+FUN_14006c2f0,8,4,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,499,9,"CONCAT44(uVar41,uVar35)",uVar7,,
+FUN_14006c2f0,9,4,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,506,9,"CONCAT44(uVar41,uVar35)","CONCAT44(uVar48,param_1[0xe])",,
+FUN_1400709b0,12,4,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,557,11,"CONCAT44(uVar42,uVar36)","CONCAT44(uVar48,param_1[0xe])","CONCAT44(uVar14,uVar37)",20000
+FUN_14006c2f0,12,2,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,628,9,DAT_14053a190,uVar7,,
+FUN_14006c2f0,13,2,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,635,9,uVar3,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,8,4,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,699,9,uVar2,uVar37,,
+FUN_14006c2f0,9,4,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,709,9,uVar2,uVar37,,
+FUN_14006c2f0,5,1,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,735,9,DAT_14053a018,"CONCAT44(uVar48,param_1[0xe])",,
+FUN_14006c2f0,8,2,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,763,9,uVar7,uVar37,,
+FUN_14006c2f0,8,2,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,774,9,uVar7,uVar37,,
+FUN_14006c2f0,2,2,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,792,9,uVar7,uVar37,,
+FUN_14006c2f0,4,17,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ce40_FUN_14006ce40.c,837,9,0,"CONCAT44(uVar48,1)",,
+FUN_14006c2f0,4,15,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,160,9,0,"CONCAT44(uVar30,param_1[0xe])",,
+FUN_14006c2f0,5,15,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,241,9,0,"CONCAT44(uVar30,param_1[0xe])",,
+FUN_1400709b0,8,3,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,305,11,dVar22,uVar11,2,uVar26
+FUN_1400709b0,8,3,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,313,11,in_stack_ffffffffffffff18,uVar11,2,uVar26
+FUN_14006c2f0,5,15,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,329,9,0,"CONCAT44(uVar30,1)",,
+FUN_14006c2f0,4,15,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,339,9,0,"CONCAT44(uVar30,param_1[0xe])",,
+FUN_14006c2f0,5,15,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,399,9,0,uVar11,,
+FUN_14006c2f0,4,15,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006ecf0_FUN_14006ecf0.c,412,9,0,"CONCAT44(uVar30,param_1[0xe])",,
+FUN_14006c2f0,4,15,reverse/ghidra-or-ida/exports/projectile-draw-helper/neighborhood-decompiled/14006c620_FUN_14006c620.c,218,9,0,param_1[0xe],,

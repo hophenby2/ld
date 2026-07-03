@@ -186,21 +186,22 @@ The Homebrew Ghidra export pass on 2026-07-03 produced decompilations under `ghi
 
 Remaining export status: all scheduled helper bodies from the current high-value adjacent list have now been exported and reviewed. Remaining work shifts to projectile-helper semantics, resource-frame naming, typed struct cleanup, and optional formal Ghidra renames.
 
-### Projectile/bullet system is only partially understood
+### Projectile/bullet system is now first-pass mapped
 
-Common projectile helper calls are recognized but not fully named:
+Common projectile/effect helpers have first-pass names and field layouts in `reverse/reconstructed/data-structures/projectile-helper-notes.md`:
 
-- `FUN_14006c2f0(...)`
-- `FUN_1400709b0(...)`
-- `FUN_140070d00(...)`
+- `FUN_14006c2f0(...)` → `spawn_projectile_node_candidate`.
+- `FUN_1400709b0(...)` → `spawn_projectile_spread_candidate`.
+- `FUN_140070d00(...)` → `spawn_effect_node_candidate`.
+- `FUN_140070250(...)` → `draw_projectile_visual_candidate`.
 
-Current understanding is pattern-level only: aimed shots, burst shots, rings, spreads, difficulty-scaled cadence, and projectile IDs are often inferable from call sites. Still missing:
+The projectile ID / update-helper / pattern table lives at `reverse/reconstructed/data-structures/projectile-pattern-parameter-table.csv`, the Bullet.png frame/visual-selector map lives at `reverse/reconstructed/data-structures/bullet-frame-visual-map.md`, the update-helper semantic pass lives at `reverse/reconstructed/data-structures/projectile-update-helper-semantics.md`, the constructor-pair visual coverage lives at `reverse/reconstructed/data-structures/projectile-visual-pair-coverage.md`, and pseudo-C node layouts live in `reverse/reconstructed/headers/stage_entity_layout.h`.
 
-- Projectile/bullet struct.
-- Complete projectile ID table.
-- Bullet frame/resource mapping.
-- Full parameter semantics for the projectile constructor helpers.
+Current understanding covers single-shot allocation, ring/fan expansion, effect node allocation, linked-list globals, 16-bit fixed-angle convention, main dispatcher groupings, the projectile visual draw selector, `Bullet.png` visual frame clusters, a first deeper pass over `FUN_14006c620`, `FUN_14006ce40`, `FUN_14006ecf0`, `FUN_14006faa0`, `FUN_14006fcd0`, and `FUN_14006ffc0`, and raw constructor-call coverage for `1195` literal projectile spawns / `109` distinct `(projectile_id, visual_selector_or_variant)` pairs. Still missing:
+
 - Collision/lifetime behavior for bullets.
+- Manual stage/type semantic annotation for the highest-value `(projectile_id, visual_selector)` pairs in boss/final helpers.
+- Full naming of higher projectile IDs beyond first-pass dispatcher groups.
 
 ### Collision, damage, score, and effects are only partially reconstructed
 
@@ -246,10 +247,11 @@ The next readability jump will come from a formal `StageEntity` pseudo-struct an
 
 ## Recommended next steps
 
-1. Analyze projectile helpers `FUN_14006c2f0`, `FUN_1400709b0`, and `FUN_140070d00` and build a projectile ID/pattern table.
-2. Add a pseudo-C `StageEntity` layout document/header and start rewriting reviewed helper notes in terms of named fields.
-3. Expand resource frame mapping for `Enemy_s/m/l`, `Boss`, and `Bullet` sheets.
-4. Keep Ghidra renames conservative and per-type until helper behavior, schedule usage, and resource identity agree.
+1. Manually annotate the high-value boss/final representative functions from `projectile-visual-pair-coverage.csv`, tying `(projectile_id, visual_selector)` pairs back to stage spawn semantic names.
+2. Expand remaining resource frame mapping for `Enemy_s/m/l` and `Boss` sheets, now that Bullet.png has a first-pass visual-selector map.
+3. Locate and type the projectile collision/lifetime walker that consumes `radius_or_flags` and active/draw flags.
+4. Rewrite reviewed helper notes opportunistically in terms of the new `StageEntity`, `ProjectileNode`, and `EffectNode` pseudo-fields.
+5. Keep Ghidra renames conservative and per-type until helper behavior, schedule usage, and resource identity agree.
 
 ## Legal/use boundary
 
