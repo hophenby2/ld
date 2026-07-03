@@ -34,14 +34,16 @@ The goal is to reconstruct resource maps, data formats, state-machine notes, and
 - `analysis/text-csv-format.md` — CSV text notes.
 - `analysis/demo-format.md` — demo TXT notes.
 - `analysis/save-replay-format.md` — save/config/replay binary notes.
+- `analysis/main-program-flow.md` — main startup loop, scene state, and high-level state transition notes.
+- `reconstructed/pseudocode/save_replay_manager.md` — evidence-backed pseudocode for save/config/replay handlers.
 
 ## Next Steps
 
-1. Import `inputs/LikeDreamer.exe` into Ghidra/IDA if available.
-2. Cross-reference `VanillaFever11` to locate DXArchive key setup.
+1. Rename jump-table handler functions in Ghidra using `analysis/main-program-flow.md`.
+2. Export/decompile missing dispatcher handlers from states `3`, `4`, `5`, `0x14`, and `0x2c` to map the main gameplay branch.
 3. Cross-reference `media\\text\\text01.csv` to locate text manager initialization.
-4. Cross-reference `replay\\LD_replay%02d.dat` to locate replay handling.
-5. Gradually write pseudocode in `reconstructed/pseudocode/` with evidence labels.
+4. Gradually write pseudocode in `reconstructed/pseudocode/` with evidence labels.
+5. Return to replay binary details only after the main gameplay branch is mapped.
 
 ## Legal/Use Boundary
 

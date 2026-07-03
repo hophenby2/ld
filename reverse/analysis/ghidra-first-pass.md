@@ -75,6 +75,30 @@ reverse/ghidra-or-ida/exports/decompiled-anchors/
 5. Identify `FUN_140155c60` and `FUN_140155bf0`; likely image/texture load helpers.
 6. Trace callers/callees for replay candidates `FUN_140115880`, `FUN_1401171d0`, `FUN_140114580`.
 
+## Main program flow notes
+
+The main branch is now prioritized over replay internals. Current high-confidence anchors:
+
+- `game_startup_init_candidate @ 0x1400f4f70` performs Steam init, save/config load, DxLib/DXArchive setup, resource loading, then enters the outer frame loop.
+- The outer frame loop calls `FUN_1400f5ef0()` once per frame as the central update/render dispatcher. A Ghidra export was blocked by the local Ghidra checkout, but `objdump` disassembly in `exports/main-dispatcher-objdump.txt` reveals a jump table at `0x1400f6b78` indexed by `DAT_140e45270` for states `0x00..0x30`.
+- `DAT_140e45270` is the main scene/state id; `DAT_140e45274` is a scene-local cursor/substate; `DAT_140e418c8` is a per-scene frame counter; `DAT_140e45fac` is a transition/fade timer.
+- `FUN_1400d21e0` contains the clearest title/main-menu transition switch: menu rows start gameplay (`state 3`), replay list (`0x0e`), and option/config branches (`0x0a`, etc.).
+- See `analysis/main-program-flow.md` for the current state table, including concrete handler addresses for all dispatcher states `0x00..0x30`, and next main-branch targets.
+
+## Save/config/replay handler notes
+
+The replay candidates have now been partially characterized:
+
+| Address | Current name | Interpretation |
+|---|---|---|
+| `1401171d0` | `replay_handler_candidate_B` | Scans 24 replay slots. Reads `0xa98` bytes per `replay\\LD_replay%02d.dat` and marks a slot present when the first `int32` is `200`. |
+| `140115880` | `replay_or_save_handler_candidate_A` | Replay selection/load path. It writes `save\\save.dat`, then loads selected replay header plus 8-byte input records into a linked list. |
+| `140114580` | `replay_or_save_handler_candidate_C` | Replay save/export path. It writes a `0xa98` header followed by 8-byte input records, then rescans replay slots and writes save data. |
+| `1401019e0` | `config_handler_candidate` | Config menu update path for the 28-byte `save\\config.dat` block. |
+| `1400d0a30` | `save_init_or_reset_candidate` | Simple save block writer for `DAT_140e41b10`, size `0x2730`. |
+
+See `analysis/save-replay-format.md` and `reconstructed/pseudocode/save_replay_manager.md` for the current binary-layout notes.
+
 ## Candidate renames applied
 
 The following user-defined names were applied to the Ghidra project and re-exported under `exports/renamed-decompiled/`:
