@@ -35,6 +35,7 @@ The goal is to reconstruct resource maps, data formats, state-machine notes, and
 - `analysis/demo-format.md` — demo TXT notes.
 - `analysis/save-replay-format.md` — save/config/replay binary notes.
 - `analysis/main-program-flow.md` — main startup loop, scene state, and high-level state transition notes.
+- `analysis/reverse-status-2026-07-03.md` — current reverse-engineering status, completed areas, gaps, and next export priorities.
 - `analysis/dispatcher-rename-plan.md` — proposed Ghidra names for central dispatcher handlers.
 - `tools/ghidra_scripts/RenameGameplayHelpers.java` — applied Ghidra names for confirmed gameplay helper candidates.
 - `tools/ghidra_scripts/RenamePerStageGameplayHandlers.java` — applied generic stage-index names for gameplay update handlers dispatched by state `0x14`.
