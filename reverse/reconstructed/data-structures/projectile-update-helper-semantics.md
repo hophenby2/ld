@@ -19,7 +19,9 @@ Raw decompiler form is `undefined4 *param_1`; important field aliases:
 | `*(short *)((char*)param_1 + 0x26)` | `prev_angle` | Secondary/target angle in specialized helpers. |
 | `*(double *)(param_1 + 10)` | `speed` | Current speed. |
 | `*(double *)(param_1 + 0xc)` | `base_speed` | Baseline speed or acceleration divisor. |
-| `param_1[0xe]` | `radius_or_flags` | Boundary margin / radius / draw flag, depending helper. |
+| `param_1[0xe]` | `collision_radius` | Collision/cancel radius consumed by player-hit/graze and cancel-object walkers; also used as a boundary margin by some movement helpers. |
+| `param_1[0xf]` | `graze_or_hit_processed` | One-shot graze/near-miss flag set after player graze effects fire. |
+| `param_1[0x10]` | `collision_enabled` | Collision/graze enable flag; startup-safe projectile IDs toggle this. |
 
 All helpers eventually draw through:
 
@@ -96,7 +98,7 @@ Dispatcher ID: `0x08`.
 Behavior summary:
 
 - Moves like a common projectile using `speed + speed_or_accel_hint`.
-- Checks a wider boundary rectangle based on `radius_or_flags`.
+- Checks a wider boundary rectangle based on `collision_radius`/margin.
 - On boundary crossing, computes a reflected angle:
   - left/right reflections use `-0x8000 - angle` style transformation;
   - top/bottom reflections use `-angle` style transformation.
@@ -205,4 +207,4 @@ Behavior summary:
 
 1. Cleanly type `FUN_140070250` and all six update helpers in a local pseudo-C copy using `ProjectileNode` fields.
 2. Collect spawn-call evidence that maps `(projectile_id, variant_or_owner)` pairs to the visual selectors in `bullet-frame-visual-map.md`.
-3. Deepen collision/lifetime semantics by locating the projectile collision walker that reads `radius_or_flags` and `draw/collision_enabled` fields.
+3. Deepen `DAT_140e46ea0` list semantics to decide whether `FUN_1400cd750` is player-shot, bomb/cancel-field, or mixed object-vs-projectile collision.

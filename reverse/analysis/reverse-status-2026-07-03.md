@@ -197,7 +197,7 @@ Common projectile/effect helpers have first-pass names and field layouts in `rev
 
 The projectile ID / update-helper / pattern table lives at `reverse/reconstructed/data-structures/projectile-pattern-parameter-table.csv`, the Bullet.png frame/visual-selector map lives at `reverse/reconstructed/data-structures/bullet-frame-visual-map.md`, the update-helper semantic pass lives at `reverse/reconstructed/data-structures/projectile-update-helper-semantics.md`, the constructor-pair visual coverage lives at `reverse/reconstructed/data-structures/projectile-visual-pair-coverage.md`, and pseudo-C node layouts live in `reverse/reconstructed/headers/stage_entity_layout.h`.
 
-Current understanding covers single-shot allocation, ring/fan expansion, effect node allocation, linked-list globals, 16-bit fixed-angle convention, main dispatcher groupings, the projectile visual draw selector, `Bullet.png` visual frame clusters, a first deeper pass over `FUN_14006c620`, `FUN_14006ce40`, `FUN_14006ecf0`, `FUN_14006faa0`, `FUN_14006fcd0`, and `FUN_14006ffc0`, and raw constructor-call coverage for `1195` literal projectile spawns / `109` distinct `(projectile_id, visual_selector_or_variant)` pairs. Still missing:
+Current understanding covers single-shot allocation, ring/fan expansion, effect node allocation, linked-list globals, 16-bit fixed-angle convention, main dispatcher groupings, the projectile visual draw selector, `Bullet.png` visual frame clusters, a first deeper pass over `FUN_14006c620`, `FUN_14006ce40`, `FUN_14006ecf0`, `FUN_14006faa0`, `FUN_14006fcd0`, and `FUN_14006ffc0`, raw constructor-call coverage for `1195` literal projectile spawns / `109` distinct `(projectile_id, visual_selector_or_variant)` pairs, the first player-hit/graze/cancel collision pass in `reverse/reconstructed/data-structures/projectile-collision-graze-notes.md`, the `DAT_140e46ea0` player-side shot/special/cancel object list in `reverse/reconstructed/data-structures/player-side-object-list.md`, the `DAT_140e46e90` reward/collectible item list in `reverse/reconstructed/data-structures/reward-item-list.md`, and first-pass reward/HUD global names in `reverse/reconstructed/data-structures/reward-hud-globals.md`. Still missing:
 
 - Collision/lifetime behavior for bullets.
 - Manual stage/type semantic annotation for the highest-value `(projectile_id, visual_selector)` pairs in boss/final helpers.
@@ -208,6 +208,7 @@ Current understanding covers single-shot allocation, ring/fan expansion, effect 
 Known pieces include lifetime, cleanup, active flag, and some radius/effect fields, but the full systems remain incomplete:
 
 - Player/enemy collision.
+- Final UI/resource-label confirmation for reward/HUD globals (score, special gauge, stock, token).
 - Bullet collision.
 - Boss HP and gauge behavior.
 - Damage scaling.
@@ -249,7 +250,7 @@ The next readability jump will come from a formal `StageEntity` pseudo-struct an
 
 1. Manually annotate the high-value boss/final representative functions from `projectile-visual-pair-coverage.csv`, tying `(projectile_id, visual_selector)` pairs back to stage spawn semantic names.
 2. Expand remaining resource frame mapping for `Enemy_s/m/l` and `Boss` sheets, now that Bullet.png has a first-pass visual-selector map.
-3. Locate and type the projectile collision/lifetime walker that consumes `radius_or_flags` and active/draw flags.
+3. Cross-reference HUD graphics/text and result-screen save fields to finalize reward/HUD names from `reward-hud-globals.md`, especially whether `stock_level` is life, shield, guard, or another game-specific term.
 4. Rewrite reviewed helper notes opportunistically in terms of the new `StageEntity`, `ProjectileNode`, and `EffectNode` pseudo-fields.
 5. Keep Ghidra renames conservative and per-type until helper behavior, schedule usage, and resource identity agree.
 

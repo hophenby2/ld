@@ -7,6 +7,7 @@ Newer companion notes:
 - `bullet-frame-visual-map.md` / `.csv` maps `Bullet.png` divided frames, globals, and visual selectors from `FUN_140070250`.
 - `projectile-update-helper-semantics.md` records the first deeper pass over the six projectile update helpers using `ProjectileNode` field names.
 - `projectile-visual-pair-coverage.md` / `.csv` joins literal projectile constructor calls to Bullet.png visual shapes, distinguishing movement IDs from visual selectors/subpattern values.
+- `projectile-collision-graze-notes.md` corrects the `ProjectileNode +0x38..+0x44` fields and documents the player-hit/graze walkers.
 
 ## Globals and lists
 
@@ -50,8 +51,8 @@ void spawn_projectile_node(
     uint16_t angle,
     float speed_or_accel_hint,
     double speed,
-    int radius_or_flags,
-    int arg8);
+    int collision_radius,
+    int arg8_or_aux);
 ```
 
 Field mapping for the allocated `0x50`-byte node:
@@ -71,10 +72,10 @@ Field mapping for the allocated `0x50`-byte node:
 | `+0x26` | `prev_angle` | arg5 | Mirrored initial angle. |
 | `+0x28` | `speed` | arg7 | Primary motion speed; update helpers add `cos/sin(angle) * speed`. |
 | `+0x30` | `base_speed` | arg7 | Mirrored, used by acceleration/deceleration variants. |
-| `+0x38` | `scratch_or_phase` | `0` | Update helpers reuse for timing/secondary speed. |
-| `+0x3c` | `radius_or_flags` | arg8 | Passed to draw/collision/update helpers; common values `1`, `0x10`, `0x28`, etc. |
-| `+0x40` | `draw_or_collision_enabled` | constant `1` | Looks like enable flag. |
-| `+0x44` | `arg8` | arg9 | Often zero; sometimes color/resource/owner-like. |
+| `+0x38` | `collision_radius` | arg8 | Radius consumed by player-hit/graze and cancel-object collision walkers. Common values `1`, `0x10`, `0x28`, etc. |
+| `+0x3c` | `graze_or_hit_processed` | `0` | One-shot near-miss/graze flag; player collision code sets it after spawning graze effects. |
+| `+0x40` | `collision_enabled` | constant `1` | Gates graze/cancel collision handling. Some special projectile IDs toggle this during startup windows. |
+| `+0x44` | `arg8_or_aux` | arg9 | Often zero; sometimes color/resource/owner-like. |
 | `+0x48` | `next` | `NULL` | List link. |
 
 Important gate: no node is created unless `DAT_140e445fc - 0x79U > 0x8a`, so projectile creation is suppressed during an early gameplay/startup window, while the count is capped at `0x800`.
@@ -94,10 +95,10 @@ void spawn_projectile_spread(
     uint16_t center_angle,
     float speed_or_accel_hint,
     double speed,
-    int radius_or_flags,
+    int collision_radius,
     uint32_t count,
     int spread_angle,
-    int arg8);
+    int arg8_or_aux);
 ```
 
 Behavior:

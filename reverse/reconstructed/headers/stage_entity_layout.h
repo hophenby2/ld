@@ -55,9 +55,10 @@ struct ProjectileNode {
     FixedAngle16 prev_angle;        // +0x26
     double speed;                   // +0x28
     double base_speed;              // +0x30
-    double scratch_or_phase;        // +0x38
-    int32_t radius_or_flags;        // +0x40
-    int32_t arg8;                   // +0x44
+    int32_t collision_radius;       // +0x38: consumed by player/cancel collision walkers.
+    int32_t graze_or_hit_processed; // +0x3c: one-shot graze/near-miss flag.
+    int32_t collision_enabled;      // +0x40: gates graze/cancel collision handling.
+    int32_t arg8_or_aux;            // +0x44: final constructor arg, helper-specific.
     ProjectileNode* next;           // +0x48
 };
 static_assert(sizeof(ProjectileNode) == 0x50, "ProjectileNode layout size must match allocation");
@@ -91,13 +92,13 @@ static_assert(sizeof(EffectNode) == 0x60, "EffectNode layout size must match all
 void spawn_projectile_node_candidate(int projectile_id, int variant_or_owner,
                                      float x, float y, FixedAngle16 angle,
                                      float speed_or_accel_hint, double speed,
-                                     int radius_or_flags, int arg8);
+                                     int collision_radius, int arg8_or_aux);
 
 void spawn_projectile_spread_candidate(int projectile_id, int variant_or_owner,
                                        float x, float y, FixedAngle16 center_angle,
                                        float speed_or_accel_hint, double speed,
-                                       int radius_or_flags, uint32_t count,
-                                       int spread_angle, int arg8);
+                                       int collision_radius, uint32_t count,
+                                       int spread_angle, int arg8_or_aux);
 
 void spawn_effect_node_candidate(int effect_type, GraphHandle graph_handle,
                                  int frame_or_lifetime, float x, float y,
