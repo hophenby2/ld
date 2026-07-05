@@ -1,0 +1,10 @@
+^E:\FORK\LD\REVERSE\RECONSTRUCTED\PROJECT\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/fork/ld/reverse/reconstructed/project -BE:/fork/ld/reverse/reconstructed/project/build --check-stamp-file E:/fork/ld/reverse/reconstructed/project/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

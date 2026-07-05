@@ -1,0 +1,10 @@
+^E:\FORK\LD\REVERSE\RECONSTRUCTED\PROJECT\BUILD\CMAKEFILES\CE998D952E076D984853955A06EE560D\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/fork/ld/reverse/reconstructed/project -BE:/fork/ld/reverse/reconstructed/project/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file E:/fork/ld/reverse/reconstructed/project/build/LikeDreamerRe.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
