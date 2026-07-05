@@ -15,13 +15,21 @@ bool SaveConfigStore::loadOrCreate() {
         return false;
     }
 
-    return loadOrCreateFile(saveDir / "save.dat", state_.saveDat, SaveConfigState::kSaveDatSize, state_.saveExisted) &&
-           loadOrCreateFile(saveDir / "config.dat", state_.configDat, SaveConfigState::kConfigDatSize, state_.configExisted);
+    const bool ok = loadOrCreateFile(saveDir / "save.dat", state_.saveDat, SaveConfigState::kSaveDatSize,
+                                     state_.saveExisted, state_.diagnostics.saveCreated, state_.diagnostics.saveActualSize) &&
+                    loadOrCreateFile(saveDir / "config.dat", state_.configDat, SaveConfigState::kConfigDatSize,
+                                     state_.configExisted, state_.diagnostics.configCreated, state_.diagnostics.configActualSize);
+    state_.diagnostics.saveExisted = state_.saveExisted;
+    state_.diagnostics.configExisted = state_.configExisted;
+    return ok;
 }
 
-bool SaveConfigStore::loadOrCreateFile(const std::filesystem::path& path, std::vector<std::uint8_t>& bytes, std::size_t size, bool& existed) {
+bool SaveConfigStore::loadOrCreateFile(const std::filesystem::path& path, std::vector<std::uint8_t>& bytes, std::size_t size,
+                                       bool& existed, bool& created, std::uintmax_t& actualSize) {
     bytes.assign(size, 0);
     existed = std::filesystem::exists(path);
+    created = !existed;
+    actualSize = existed ? std::filesystem::file_size(path) : size;
 
     if (existed) {
         std::ifstream in(path, std::ios::binary);

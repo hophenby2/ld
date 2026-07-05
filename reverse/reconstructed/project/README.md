@@ -17,11 +17,11 @@ Build from a Windows Developer PowerShell or Visual Studio command prompt. The t
 
 ```powershell
 cd \\wsl.localhost\Ubuntu\mnt\e\fork\ld\reverse\reconstructed\project
-cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DDXLIB_ROOT="\\wsl.localhost\Ubuntu\home\a\ld\DxLib_VC3_24f\DxLib_VC\僾儘僕僃僋僩偵捛壛偡傋偒僼傽僀儖_VC梡"
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64
 cmake --build build --config Release
 ```
 
-If your Windows CMake cannot read the WSL-style default path, always pass `DXLIB_ROOT` as the UNC path shown above.
+The default `DXLIB_ROOT` points at the verified local VC package: `E:\fork\DxLibVCTest\DxLibVCTest`. Override it with `-DDXLIB_ROOT=...` only if that directory moves.
 
 ## Run smoke test
 
@@ -44,8 +44,18 @@ For DXA mode, run from a directory where `media.dxa` is visible using the same l
 - Steam is stubbed out.
 - `save\save.dat` and `save\config.dat` are byte-buffer stubs with sizes from the decompiled startup (`0x2730` and `0x1c`).
 - Only smoke-test graphics are loaded.
-- Press `ESC` or close the window to exit.
+- Use `F1` for the title smoke screen, `F2` for resource diagnostics, `F3` for text CSV diagnostics, `F4` for save/config diagnostics, and `ESC` or close the window to exit.
 
 ## Legal boundary
 
 Keep reconstructed code and commercial assets local. Do not redistribute the original executable, assets, rebuilt archives, or proprietary reconstructed logic.
+
+## Expanded diagnostics
+
+Load the larger reconstructed graphics table and optional audio smoke-test handles:
+
+```powershell
+.\build\Release\LikeDreamerRe.exe --asset-root "E:\fork\ld" --smoke-test --load-all-graphics --load-audio
+```
+
+The expanded tables are hand-transcribed from `../data-structures/*.md` and the decompiled startup/resource-loader anchors. They are diagnostic coverage, not final gameplay behavior.

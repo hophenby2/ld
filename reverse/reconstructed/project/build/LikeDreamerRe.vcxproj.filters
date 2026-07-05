@@ -13,10 +13,16 @@
     <ClCompile Include="E:\fork\ld\reverse\reconstructed\project\src\resource_manager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="E:\fork\ld\reverse\reconstructed\project\src\resource_tables.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="E:\fork\ld\reverse\reconstructed\project\src\save_config.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="E:\fork\ld\reverse\reconstructed\project\src\steam_stub.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\fork\ld\reverse\reconstructed\project\src\text_database.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

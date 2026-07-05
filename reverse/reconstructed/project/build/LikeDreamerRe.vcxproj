@@ -380,8 +380,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="E:\fork\ld\reverse\reconstructed\project\src\main.cpp" />
     <ClCompile Include="E:\fork\ld\reverse\reconstructed\project\src\path_utils.cpp" />
     <ClCompile Include="E:\fork\ld\reverse\reconstructed\project\src\resource_manager.cpp" />
+    <ClCompile Include="E:\fork\ld\reverse\reconstructed\project\src\resource_tables.cpp" />
     <ClCompile Include="E:\fork\ld\reverse\reconstructed\project\src\save_config.cpp" />
     <ClCompile Include="E:\fork\ld\reverse\reconstructed\project\src\steam_stub.cpp" />
+    <ClCompile Include="E:\fork\ld\reverse\reconstructed\project\src\text_database.cpp" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

@@ -39,6 +39,12 @@ reconstructed::AppOptions parseOptions(const std::vector<std::string>& args) {
         else if (args[i] == "--smoke-test") {
             options.smokeTest = true;
         }
+        else if (args[i] == "--load-all-graphics") {
+            options.loadAllGraphics = true;
+        }
+        else if (args[i] == "--load-audio") {
+            options.loadAudio = true;
+        }
     }
 
     return options;

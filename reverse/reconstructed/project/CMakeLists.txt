@@ -49,8 +49,10 @@ add_executable(LikeDreamerRe WIN32
     src/main.cpp
     src/path_utils.cpp
     src/resource_manager.cpp
+    src/resource_tables.cpp
     src/save_config.cpp
     src/steam_stub.cpp
+    src/text_database.cpp
 )
 
 target_include_directories(LikeDreamerRe PRIVATE
