@@ -33,6 +33,17 @@ struct ReverseTargetFunction {
     const char* nextAction;
 };
 
+struct ProjectileVisualAnnotation {
+    const char* spawnType;
+    const char* semanticLabel;
+    const char* updateHelper;
+    const char* projectilePair;
+    const char* bulletVisual;
+    const char* movementBehavior;
+    const char* interpretation;
+    const char* confidence;
+};
+
 struct DemoProbeSummary {
     std::string id;
     std::string logicalPath;
@@ -57,5 +68,6 @@ const std::vector<StageResourceHint>& stageResourceHints();
 const std::vector<ReplayStageFieldHint>& replayStageFieldHints();
 const std::vector<EntityModelHypothesis>& entityModelHypotheses();
 const std::vector<ReverseTargetFunction>& reverseTargetFunctions();
+const std::vector<ProjectileVisualAnnotation>& projectileVisualAnnotations();
 
 } // namespace reconstructed

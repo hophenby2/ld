@@ -110,6 +110,19 @@ const std::vector<EntityModelHypothesis>& entityModelHypotheses() {
     return hints;
 }
 
+const std::vector<ProjectileVisualAnnotation>& projectileVisualAnnotations() {
+    static const std::vector<ProjectileVisualAnnotation> annotations = {
+        {"0x3f", "stage04_boss_like_multipart_pattern_controller", "FUN_140095130", "id=0x07 selector=0x00", "frame 0 magenta thin oval / small pellet", "common fast aimed/paired shot", "early/medium active boss-like volleys use default magenta pellet despite varied speeds/offsets", "High"},
+        {"0x3f", "stage04_boss_like_multipart_pattern_controller", "FUN_140095130", "id=0x04 selector=0x00", "frame 0 magenta thin oval / small pellet", "common straight/fan child projectile", "later phase/fan child shots remain default magenta pellet", "High"},
+        {"0x4f", "stage05_boss_like_multi_phase_summoner", "FUN_14009b5f0", "id=0x0a selector=0x02", "frame 2 magenta large orb", "common/heavy pattern shot", "first active fan family uses large magenta orbs; high difficulty adds faster duplicate fans", "High"},
+        {"0x4f", "stage05_boss_like_multi_phase_summoner", "FUN_14009b5f0", "id=0x0b selector=0x02", "frame 2 magenta large orb", "delayed-retarget paired shot", "second fan family switches movement behavior while keeping large magenta orb visual", "High"},
+        {"0x76", "stage07_heavy_multipart_pattern_emitter", "FUN_1400a5dd0", "id=0x02 selector=0x07", "frame 7 blue horizontal capsule / bar", "scripted spread/ring projectile", "distinct late/heavy spread uses blue capsule/bar visual, separating it from default-pellet volleys", "High"},
+        {"0xfd", "final_stage_spinning_fan_burster", "FUN_1400b0b70", "id=0x0d selector=0x00", "frame 0 magenta thin oval / small pellet", "common delayed/accelerating fan projectile", "ramping 60-frame fan burst is visually default magenta pellets; complexity comes from count/spread ramp", "High"},
+        {"0x103/0x104", "final_stage_large_rotating_orbit_burst_emitter_pair", "FUN_1400b3540", "id=0x04 selector=0x34", "draw-helper default frame 0 unless arg2 is rewritten", "common straight/fan child projectile with selector-overflow arg2", "four-offset orbit burst likely uses arg2 as subpattern/owner/phase and still draws default pellet", "Medium"},
+    };
+    return annotations;
+}
+
 const std::vector<ReverseTargetFunction>& reverseTargetFunctions() {
     static const std::vector<ReverseTargetFunction> targets = {
         {"main_loop_candidate", "DxLib ProcessMessage/ScreenFlip/ClearDrawScreen call cluster", "xref static-linked DxLib frame calls and identify scene dispatch"},

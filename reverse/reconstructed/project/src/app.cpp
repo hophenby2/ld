@@ -125,13 +125,19 @@ int App::runSmokeTestLoop() {
         else if (CheckHitKey(KEY_INPUT_F5) != 0) {
             diagnosticsPage_ = 5;
         }
+        else if (CheckHitKey(KEY_INPUT_F6) != 0) {
+            diagnosticsPage_ = 6;
+            if (resources_ && !stageRuntime_.initialized()) {
+                stageRuntime_.initialize(*resources_);
+            }
+        }
         drawSmokeTestFrame();
         ScreenFlip();
     }
     return 0;
 }
 
-void App::drawSmokeTestFrame() const {
+void App::drawSmokeTestFrame() {
     ClearDrawScreen();
 
     const int titleBack = resources_ ? resources_->graphHandle("media\\system\\TitleBack.png") : -1;
@@ -154,8 +160,17 @@ void App::drawSmokeTestFrame() const {
     }
 
     DrawString(24, 24, "LikeDreamerRe reconstruction scaffold", GetColor(255, 240, 128));
-    DrawString(24, 48, "F1 title  F2 resources  F3 text CSV  F4 save/config  F5 stage probe  ESC exit", GetColor(255, 255, 255));
-    if (diagnosticsPage_ == 1) {
+    DrawString(24, 48, "F1 title  F2 resources  F3 text CSV  F4 save/config  F5 stage probe  F6 playable stage  ESC exit", GetColor(255, 255, 255));
+    if (diagnosticsPage_ == 6) {
+        if (stageRuntime_.initialized()) {
+            stageRuntime_.update();
+            stageRuntime_.draw();
+        }
+        else {
+            drawStageRuntimeUnavailable();
+        }
+    }
+    else if (diagnosticsPage_ == 1) {
         DrawString(24, 72, "Smoke test: startup/title resource loading only", GetColor(255, 255, 255));
         drawDiagnostics(24, 120);
     }
@@ -240,6 +255,12 @@ void App::drawSaveDiagnostics(int x, int y) const {
     DrawString(x, y + 88, "Evidence: startup candidate reads 0x2730 save bytes and 0x1c config bytes.", GetColor(210, 210, 210));
 }
 
+void App::drawStageRuntimeUnavailable() const {
+    DrawString(24, 84, "Playable Stage 01 runtime is unavailable", GetColor(255, 96, 96));
+    DrawString(24, 112, "Required local resources: Player.png, Enemy_s.png, Bullet.png, StageBack1/2.png", GetColor(255, 255, 255));
+    DrawString(24, 140, "Check --asset-root and extracted re/ asset layout, then press F6 again.", GetColor(210, 210, 210));
+}
+
 void App::drawStageProbe(int x, int y) const {
     DrawString(x, y, "Stage reconstruction probe (evidence only)", GetColor(255, 240, 128));
     int line = y + 28;
@@ -251,7 +272,23 @@ void App::drawStageProbe(int x, int y) const {
         DrawFormatString(x + 20, line, GetColor(210, 210, 210), "S%d %s bg=%s bgm=%s boss=%s",
                          hint.stage, hint.label, hint.backgrounds, hint.stageBgm, hint.bossBgm);
         line += 18;
-        if (++shown >= 5) {
+        if (++shown >= 4) {
+            break;
+        }
+    }
+
+    line += 8;
+    DrawString(x, line, "Projectile visual annotations:", GetColor(255, 255, 255));
+    line += 20;
+    shown = 0;
+    for (const auto& annotation : projectileVisualAnnotations()) {
+        const auto color = annotation.confidence[0] == 'H' ? GetColor(210, 240, 255) : GetColor(210, 210, 210);
+        DrawFormatString(x + 20, line, color, "%s %s %s",
+                         annotation.spawnType, annotation.projectilePair, annotation.bulletVisual);
+        line += 18;
+        DrawFormatString(x + 44, line, GetColor(180, 180, 180), "%.94s", annotation.interpretation);
+        line += 18;
+        if (++shown >= 4) {
             break;
         }
     }
@@ -274,7 +311,7 @@ void App::drawStageProbe(int x, int y) const {
     for (const auto& field : replayStageFieldHints()) {
         DrawFormatString(x + 20, line, GetColor(210, 210, 210), "%s %s - %.62s", field.offset, field.name, field.note);
         line += 18;
-        if (++shown >= 4) {
+        if (++shown >= 3) {
             break;
         }
     }
@@ -285,18 +322,6 @@ void App::drawStageProbe(int x, int y) const {
     for (const auto& entity : entityModelHypotheses()) {
         DrawFormatString(x + 20, line, GetColor(210, 210, 210), "%s: %.84s", entity.kind, entity.resourceEvidence);
         line += 18;
-    }
-
-    line += 8;
-    DrawString(x, line, "Next reverse targets:", GetColor(255, 255, 255));
-    line += 20;
-    shown = 0;
-    for (const auto& target : reverseTargetFunctions()) {
-        DrawFormatString(x + 20, line, GetColor(210, 210, 210), "%s - %.76s", target.name, target.evidence);
-        line += 18;
-        if (++shown >= 5) {
-            break;
-        }
     }
 }
 
