@@ -51,6 +51,7 @@ add_executable(LikeDreamerRe WIN32
     src/resource_manager.cpp
     src/resource_tables.cpp
     src/save_config.cpp
+    src/stage_probe.cpp
     src/steam_stub.cpp
     src/text_database.cpp
 )

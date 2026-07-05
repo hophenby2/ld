@@ -78,6 +78,7 @@ bool App::initialize() {
         resources_->loadSounds(soundResources());
     }
     textDatabase_.load(textResources(), options_.assetRoot, options_.resourceMode);
+    stageProbe_.loadDemoSummaries(options_.assetRoot);
 
     return true;
 }
@@ -121,6 +122,9 @@ int App::runSmokeTestLoop() {
         else if (CheckHitKey(KEY_INPUT_F4) != 0) {
             diagnosticsPage_ = 4;
         }
+        else if (CheckHitKey(KEY_INPUT_F5) != 0) {
+            diagnosticsPage_ = 5;
+        }
         drawSmokeTestFrame();
         ScreenFlip();
     }
@@ -150,7 +154,7 @@ void App::drawSmokeTestFrame() const {
     }
 
     DrawString(24, 24, "LikeDreamerRe reconstruction scaffold", GetColor(255, 240, 128));
-    DrawString(24, 48, "F1 title  F2 resources  F3 text CSV  F4 save/config  ESC exit", GetColor(255, 255, 255));
+    DrawString(24, 48, "F1 title  F2 resources  F3 text CSV  F4 save/config  F5 stage probe  ESC exit", GetColor(255, 255, 255));
     if (diagnosticsPage_ == 1) {
         DrawString(24, 72, "Smoke test: startup/title resource loading only", GetColor(255, 255, 255));
         drawDiagnostics(24, 120);
@@ -161,8 +165,11 @@ void App::drawSmokeTestFrame() const {
     else if (diagnosticsPage_ == 3) {
         drawTextDiagnostics(24, 84);
     }
-    else {
+    else if (diagnosticsPage_ == 4) {
         drawSaveDiagnostics(24, 84);
+    }
+    else {
+        drawStageProbe(24, 84);
     }
 }
 
@@ -231,6 +238,66 @@ void App::drawSaveDiagnostics(int x, int y) const {
                      diag.configExisted ? 1 : 0, diag.configCreated ? 1 : 0,
                      static_cast<unsigned int>(diag.configActualSize), static_cast<unsigned int>(diag.configExpectedSize));
     DrawString(x, y + 88, "Evidence: startup candidate reads 0x2730 save bytes and 0x1c config bytes.", GetColor(210, 210, 210));
+}
+
+void App::drawStageProbe(int x, int y) const {
+    DrawString(x, y, "Stage reconstruction probe (evidence only)", GetColor(255, 240, 128));
+    int line = y + 28;
+
+    DrawString(x, line, "Stage resource hints:", GetColor(255, 255, 255));
+    line += 20;
+    int shown = 0;
+    for (const auto& hint : stageResourceHints()) {
+        DrawFormatString(x + 20, line, GetColor(210, 210, 210), "S%d %s bg=%s bgm=%s boss=%s",
+                         hint.stage, hint.label, hint.backgrounds, hint.stageBgm, hint.bossBgm);
+        line += 18;
+        if (++shown >= 5) {
+            break;
+        }
+    }
+
+    line += 8;
+    DrawString(x, line, "Demo summaries:", GetColor(255, 255, 255));
+    line += 20;
+    for (const auto& demo : stageProbe_.demos()) {
+        const auto color = demo.loaded ? kWhite : kRed;
+        DrawFormatString(x + 20, line, GetColor((color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff),
+                         "%s header=%d inputRecords=%d %s", demo.id.c_str(), demo.headerFieldCount,
+                         demo.inputRecordCount, demo.loaded ? "" : demo.error.c_str());
+        line += 18;
+    }
+
+    line += 8;
+    DrawString(x, line, "Replay stage fields:", GetColor(255, 255, 255));
+    line += 20;
+    shown = 0;
+    for (const auto& field : replayStageFieldHints()) {
+        DrawFormatString(x + 20, line, GetColor(210, 210, 210), "%s %s - %.62s", field.offset, field.name, field.note);
+        line += 18;
+        if (++shown >= 4) {
+            break;
+        }
+    }
+
+    line += 8;
+    DrawString(x, line, "Entity hypotheses:", GetColor(255, 255, 255));
+    line += 20;
+    for (const auto& entity : entityModelHypotheses()) {
+        DrawFormatString(x + 20, line, GetColor(210, 210, 210), "%s: %.84s", entity.kind, entity.resourceEvidence);
+        line += 18;
+    }
+
+    line += 8;
+    DrawString(x, line, "Next reverse targets:", GetColor(255, 255, 255));
+    line += 20;
+    shown = 0;
+    for (const auto& target : reverseTargetFunctions()) {
+        DrawFormatString(x + 20, line, GetColor(210, 210, 210), "%s - %.76s", target.name, target.evidence);
+        line += 18;
+        if (++shown >= 5) {
+            break;
+        }
+    }
 }
 
 void App::drawDiagnostics(int x, int y) const {

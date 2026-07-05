@@ -44,7 +44,7 @@ For DXA mode, run from a directory where `media.dxa` is visible using the same l
 - Steam is stubbed out.
 - `save\save.dat` and `save\config.dat` are byte-buffer stubs with sizes from the decompiled startup (`0x2730` and `0x1c`).
 - Only smoke-test graphics are loaded.
-- Use `F1` for the title smoke screen, `F2` for resource diagnostics, `F3` for text CSV diagnostics, `F4` for save/config diagnostics, and `ESC` or close the window to exit.
+- Use `F1` for the title smoke screen, `F2` for resource diagnostics, `F3` for text CSV diagnostics, `F4` for save/config diagnostics, `F5` for stage reconstruction probes, and `ESC` or close the window to exit.
 
 ## Legal boundary
 
@@ -59,3 +59,7 @@ Load the larger reconstructed graphics table and optional audio smoke-test handl
 ```
 
 The expanded tables are hand-transcribed from `../data-structures/*.md` and the decompiled startup/resource-loader anchors. They are diagnostic coverage, not final gameplay behavior.
+
+## Stage probe
+
+`F5` shows the current stage-reconstruction evidence layer: stage/background/BGM hints, parsed `LD_demo01..03.txt` header/input counts, replay stage-field offsets, entity model hypotheses, and the next reverse targets to locate (`stage_init`, `stage_update`, `spawn_enemy`, `spawn_bullet`, etc.). This page is intentionally diagnostic only; it does not implement playable stage logic yet.
