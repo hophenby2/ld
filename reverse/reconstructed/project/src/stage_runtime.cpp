@@ -5,6 +5,7 @@
 #include <DxLib.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 namespace reconstructed {
@@ -21,7 +22,7 @@ constexpr float kPlayBottom = 700.0f;
 // DAT_140e9fd1c modulo expressions in the decompile are represented by stable
 // deterministic coordinates here; this is a runnable reconstruction probe, not
 // an exact recovered script interpreter.
-constexpr StageRuntime::StageSpawnEvent kStage01Events[] = {
+constexpr std::array<StageRuntime::StageSpawnEvent, 25> kStage01Events{{
     {200, 0x0a, 0x960, 0x1e0, 0x96, "S01 row 1: type 0x0a fixed early entry"},
     {260, 0x0a, 2000, 0x0f0, 200, "S01 row 2: type 0x0a fixed follow-up"},
     {350, 0x0a, 2000, 0x208, 100, "S01 row 3: type 0x0a fixed lane"},
@@ -37,6 +38,8 @@ constexpr StageRuntime::StageSpawnEvent kStage01Events[] = {
     {1380, 0x0b, 500, -20, 180, "S01 row 12: type 0x0b left edge entry"},
     {1460, 0x0b, 500, 740, 220, "S01 row 13: type 0x0b right edge entry"},
     {2200, 0x0f, 8000, 0x348, 0x96, "S01 row 14: type 0x0f side setpiece"},
+    {2500, 0x0d, 700, -20, 290, "S01 row 15: type 0x0d left entry burst"},
+    {2650, 0x0b, 400, 0x260, -20, "S01 row 16: type 0x0b top burst"},
     {2780, 0x10, 40000, 0x168, 0x50, "S01 row 17: type 0x10 long setpiece"},
     {3600, 0x0c, 400, 0x180, -20, "S01 row 18: later type 0x0c top entry"},
     {3600, 0x0e, 7000, 0x1cc, 0, "S01 row 19: later type 0x0e setpiece"},
@@ -45,7 +48,43 @@ constexpr StageRuntime::StageSpawnEvent kStage01Events[] = {
     {4200, 0x0e, 7000, 0x1cc, 0, "S01 row 22: later type 0x0e setpiece"},
     {4360, 0x0f, 8000, -120, 100, "S01 row 23: later type 0x0f side setpiece"},
     {5100, 0x08, 5000, 0x104, 0, "S01 row 27: common marker/emitter"},
-};
+}};
+
+// First-pass Stage 02 slice: a deterministic subset of the stage 02 schedule that
+// preserves the observed timing/type block (0x19..0x20 plus common 0x0b/0x0d).
+// It is intentionally sparse enough to be inspectable in the current runtime.
+constexpr std::array<StageRuntime::StageSpawnEvent, 30> kStage02Events{{
+    {120, 0x19, 800, -0x398, -20, "S02 row 1: type 0x19 patterned top lane"},
+    {150, 0x19, 800, -0x2f8, -20, "S02 row 1 repeat: type 0x19 patterned top lane"},
+    {180, 0x19, 800, -0x258, -20, "S02 row 1 repeat: type 0x19 patterned top lane"},
+    {260, 0x1a, 300, 0x160, -20, "S02 row 2: type 0x1a randomized top entry"},
+    {280, 0x1a, 300, 0x240, -20, "S02 row 2 repeat: type 0x1a randomized top entry"},
+    {700, 0x07, 5000, 0x104, 0, "S02 row 3: common marker/emitter"},
+    {1020, 0x1d, 0x6a4, 0x120, 0x80, "S02 row 4: type 0x1d fixed path point"},
+    {1120, 0x1d, 0x6a4, 0x240, 0x90, "S02 row 4 repeat: type 0x1d fixed path point"},
+    {1240, 0x1e, 0x834, 0x180, 0x60, "S02 row 5: type 0x1e path point"},
+    {1400, 0x1f, 11000, 0x1e4, -0xdbe, "S02 row 6: type 0x1f long setpiece"},
+    {1700, 0x0b, 400, 740, 180, "S02 row 7: reused common side entry"},
+    {1760, 0x0b, 400, 740, 260, "S02 row 7 repeat: reused common side entry"},
+    {1900, 0x1b, 0x1130, 0x104, 0, "S02 row 8: type 0x1b long anchor"},
+    {2000, 0x1b, 0x1130, 0x1cc, 0, "S02 row 9: type 0x1b long anchor"},
+    {2250, 0x0d, 400, -20, 0x96, "S02 row 10: reused common left/top entry"},
+    {2420, 0x19, 500, 0x1d0, -20, "S02 row 11: type 0x19 top random entry"},
+    {2560, 0x1a, 300, 0x220, -20, "S02 row 12: type 0x1a top random entry"},
+    {2670, 0x1b, 0x1130, 0xf0, 0, "S02 row 13: type 0x1b anchor"},
+    {2820, 0x0b, 400, 740, 180, "S02 row 14: common right entry"},
+    {3000, 0x0b, 400, -20, 180, "S02 row 15: common left entry"},
+    {3200, 0x1c, 6000, 0x348, 0x32, "S02 row 16: type 0x1c side setpiece"},
+    {3500, 0x1a, 300, 0x1a0, -20, "S02 row 17: type 0x1a burst"},
+    {3650, 0x1c, 6000, -120, 100, "S02 row 18: type 0x1c side setpiece"},
+    {3900, 0x0b, 400, 0x220, -20, "S02 row 19: common top burst"},
+    {4200, 0x19, 700, 0x1b0, -20, "S02 row 20: type 0x19 burst"},
+    {4500, 0x1b, 4000, 0x168, 0, "S02 row 21: type 0x1b paired anchor"},
+    {4580, 0x1b, 4000, 0x1fe, 0, "S02 row 22: type 0x1b paired anchor"},
+    {4900, 0x1a, 300, 0x1e0, -20, "S02 row 23: type 0x1a top burst"},
+    {5200, 0x1c, 0x1068, 0x348, 0x50, "S02 row 24: type 0x1c right-side setpiece"},
+    {5600, 0x20, 0x2b5c, 0x168, -500, "S02 row 25: type 0x20 long stage-end setpiece"},
+}};
 
 float clampFloat(float value, float low, float high) {
     return std::max(low, std::min(value, high));
@@ -59,7 +98,16 @@ float distanceSquared(float ax, float ay, float bx, float by) {
 
 } // namespace
 
-bool StageRuntime::initialize(ResourceManager& resources) {
+const StageRuntime::StageSpawnEvent* StageRuntime::eventsForStage(int stage, std::size_t& count) {
+    if (stage == 2) {
+        count = kStage02Events.size();
+        return kStage02Events.data();
+    }
+    count = kStage01Events.size();
+    return kStage01Events.data();
+}
+
+bool StageRuntime::initialize(ResourceManager& resources, int stage) {
     playerFrames_ = resources.loadDivGraph("media\\player\\Player.png", 0x78, 0xf, 8, 0x50, 0x50);
     enemySmallFrames_ = resources.loadDivGraph("media\\stage\\Enemy_s.png", 0xaa, 10, 0x11, 100, 100);
     enemyMediumFrames_ = resources.loadDivGraph("media\\stage\\Enemy_m.png", 0xe6, 10, 0x17, 200, 200);
@@ -67,11 +115,20 @@ bool StageRuntime::initialize(ResourceManager& resources) {
     stageBack1Frames_ = resources.loadDivGraph("media\\stage\\StageBack1.png", 10, 10, 1, 0x2d0, 0xa00);
     stageBack2Frames_ = resources.loadDivGraph("media\\stage\\StageBack2.png", 10, 10, 1, 0x2d0, 0x2d0);
 
+    selectedStage_ = stage == 2 ? 2 : 1;
     initialized_ = !playerFrames_.empty() && playerFrames_.front() != -1 &&
                    !enemySmallFrames_.empty() && enemySmallFrames_.front() != -1 &&
                    !bulletFrames_.empty() && bulletFrames_.front() != -1;
     reset();
     return initialized_;
+}
+
+void StageRuntime::setStage(int stage) {
+    const int normalized = stage == 2 ? 2 : 1;
+    if (selectedStage_ != normalized) {
+        selectedStage_ = normalized;
+        reset();
+    }
 }
 
 void StageRuntime::reset() {
@@ -130,7 +187,10 @@ int StageRuntime::enemyProjectilesAlive() const {
 }
 
 void StageRuntime::spawnDueEvents() {
-    for (const auto& event : kStage01Events) {
+    std::size_t eventCount = 0;
+    const StageSpawnEvent* events = eventsForStage(selectedStage_, eventCount);
+    for (std::size_t i = 0; i < eventCount; ++i) {
+        const auto& event = events[i];
         if (event.frame == frame_) {
             spawnEnemy(event);
         }
@@ -146,6 +206,14 @@ void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
     enemy.angle = aimAtPlayer(enemy.x, enemy.y);
 
     switch (event.spawnType) {
+    case 0x06:
+    case 0x07:
+    case 0x08:
+        enemy.hp = 28;
+        enemy.radius = 40;
+        enemy.visualFrame = 88;
+        enemy.vy = 0.25f;
+        break;
     case 0x0a:
         enemy.hp = 20;
         enemy.radius = 34;
@@ -172,6 +240,34 @@ void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
         enemy.radius = 48;
         enemy.visualFrame = 96;
         enemy.vy = 0.25f;
+        break;
+    case 0x19:
+    case 0x1a:
+        enemy.hp = 12;
+        enemy.radius = 26;
+        enemy.visualFrame = 34 + (event.spawnType - 0x19) * 4;
+        enemy.speed = event.spawnType == 0x19 ? 1.35f : 1.75f;
+        break;
+    case 0x1b:
+    case 0x1c:
+        enemy.hp = 32;
+        enemy.radius = 44;
+        enemy.visualFrame = 108 + (event.spawnType - 0x1b) * 3;
+        enemy.vy = 0.18f;
+        break;
+    case 0x1d:
+    case 0x1e:
+        enemy.hp = 18;
+        enemy.radius = 32;
+        enemy.visualFrame = 46 + (event.spawnType - 0x1d) * 6;
+        enemy.speed = 1.15f;
+        break;
+    case 0x1f:
+    case 0x20:
+        enemy.hp = 48;
+        enemy.radius = 58;
+        enemy.visualFrame = 132;
+        enemy.vy = 0.35f;
         break;
     default:
         enemy.hp = 12;
@@ -216,13 +312,15 @@ void StageRuntime::updatePlayer() {
 void StageRuntime::updateEnemies() {
     for (auto& enemy : enemies_) {
         ++enemy.age;
-        if ((enemy.spawnType == 0x0b || enemy.spawnType == 0x0c || enemy.spawnType == 0x0d) && enemy.age < 220) {
+        if ((enemy.spawnType == 0x0b || enemy.spawnType == 0x0c || enemy.spawnType == 0x0d ||
+             enemy.spawnType == 0x19 || enemy.spawnType == 0x1a || enemy.spawnType == 0x1d || enemy.spawnType == 0x1e) && enemy.age < 220) {
             const float desired = aimAtPlayer(enemy.x, enemy.y);
             enemy.angle = enemy.angle * 0.94f + desired * 0.06f;
             enemy.vx = std::cos(enemy.angle) * enemy.speed;
             enemy.vy = std::sin(enemy.angle) * enemy.speed;
         }
-        else if (enemy.spawnType == 0x0e || enemy.spawnType == 0x0f || enemy.spawnType == 0x10) {
+        else if (enemy.spawnType == 0x0e || enemy.spawnType == 0x0f || enemy.spawnType == 0x10 ||
+                 enemy.spawnType == 0x1b || enemy.spawnType == 0x1c || enemy.spawnType == 0x1f || enemy.spawnType == 0x20) {
             enemy.vx = std::sin((enemy.age + enemy.spawnType * 17) * 0.025f) * 1.1f;
         }
 
@@ -230,13 +328,19 @@ void StageRuntime::updateEnemies() {
         enemy.y += enemy.vy;
 
         if (enemy.age > 30 && enemy.age % 70 == 0) {
-            spawnProjectileNode(0, 0, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 3.0f, 6);
+            const int selector = (enemy.spawnType >= 0x19 && enemy.spawnType <= 0x20) ? 1 : 0;
+            spawnProjectileNode(0, selector, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 3.0f, 6);
         }
-        if ((enemy.spawnType == 0x0c || enemy.spawnType == 0x0d) && enemy.age > 80 && enemy.age % 120 == 0) {
-            spawnProjectileSpread(enemy.spawnType == 0x0c ? 3 : 5, 0, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.6f, 6, 5, kPi / 5.0f);
+        if ((enemy.spawnType == 0x0c || enemy.spawnType == 0x0d || enemy.spawnType == 0x19 || enemy.spawnType == 0x1a) &&
+            enemy.age > 80 && enemy.age % 120 == 0) {
+            const int count = (enemy.spawnType == 0x0c || enemy.spawnType == 0x19) ? 3 : 5;
+            spawnProjectileSpread(count, 0, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.6f, 6, count, kPi / 5.0f);
         }
-        if ((enemy.spawnType == 0x0e || enemy.spawnType == 0x0f || enemy.spawnType == 0x10) && enemy.age > 120 && enemy.age % 180 == 0) {
-            spawnProjectileSpread(2, 2, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.2f, 8, 12, kTau);
+        if ((enemy.spawnType == 0x0e || enemy.spawnType == 0x0f || enemy.spawnType == 0x10 ||
+             enemy.spawnType == 0x1b || enemy.spawnType == 0x1c || enemy.spawnType == 0x1f || enemy.spawnType == 0x20) &&
+            enemy.age > 120 && enemy.age % 180 == 0) {
+            const int selector = enemy.spawnType >= 0x19 ? 3 : 2;
+            spawnProjectileSpread(2, selector, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.2f, 8, 12, kTau);
         }
     }
 }
@@ -359,11 +463,11 @@ void StageRuntime::drawPlayer() const {
 
 void StageRuntime::drawEnemies() const {
     for (const auto& enemy : enemies_) {
-        const auto& frames = enemy.spawnType >= 0x0e ? enemyMediumFrames_ : enemySmallFrames_;
+        const auto& frames = (enemy.spawnType >= 0x0e && enemy.spawnType <= 0x10) || enemy.spawnType >= 0x1b ? enemyMediumFrames_ : enemySmallFrames_;
         const int index = frames.empty() ? -1 : std::min(enemy.visualFrame, static_cast<int>(frames.size()) - 1);
         const int handle = index < 0 ? -1 : frames[static_cast<std::size_t>(index)];
         if (handle != -1) {
-            const double scale = enemy.spawnType >= 0x0e ? 0.42 : 0.55;
+            const double scale = ((enemy.spawnType >= 0x0e && enemy.spawnType <= 0x10) || enemy.spawnType >= 0x1b) ? 0.42 : 0.55;
             DrawRotaGraphF(enemy.x, enemy.y, scale, enemy.angle + kPi * 0.5f, handle, TRUE);
         }
         else {
@@ -404,13 +508,13 @@ void StageRuntime::drawPlayerShots() const {
 }
 
 void StageRuntime::drawOverlay() const {
-    DrawFormatString(24, 24, GetColor(255, 240, 128), "Playable reconstruction Stage 01  frame=%d", frame_);
-    DrawFormatString(24, 48, GetColor(255, 255, 255), "Arrows move  Shift focus  Z shot  R reset  F1-F5 diagnostics  ESC exit");
+    DrawFormatString(24, 24, GetColor(255, 240, 128), "Playable reconstruction Stage %02d  frame=%d", selectedStage_, frame_);
+    DrawFormatString(24, 48, GetColor(255, 255, 255), "Arrows move  Shift focus  Z shot  R reset  1/2 stage slice  F1-F5 diagnostics  ESC exit");
     DrawFormatString(24, 72, GetColor(210, 210, 210), "enemies=%d enemyBullets=%d shots=%d lives=%d",
                      static_cast<int>(enemies_.size()), static_cast<int>(enemyProjectiles_.size()),
                      static_cast<int>(playerShots_.size()), player_.lives);
     DrawString(24, notes::kScreenHeight - 44,
-               "Evidence slice: Stage 01 schedule + common projectile/spread semantics; behavior is simplified pending helper-by-helper reconstruction.",
+               "Evidence slice: selected stage schedule + common projectile/spread semantics; behavior is simplified pending helper-by-helper reconstruction.",
                GetColor(210, 210, 210));
 }
 

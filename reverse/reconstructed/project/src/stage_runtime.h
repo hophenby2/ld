@@ -3,6 +3,7 @@
 #include "resource_manager.h"
 
 #include <cstdint>
+#include <cstddef>
 #include <vector>
 
 namespace reconstructed {
@@ -18,12 +19,14 @@ public:
         const char* sourceNote = nullptr;
     };
 
-    bool initialize(ResourceManager& resources);
+    bool initialize(ResourceManager& resources, int stage = 1);
+    void setStage(int stage);
     void reset();
     void update();
     void draw() const;
 
     bool initialized() const { return initialized_; }
+    int selectedStage() const { return selectedStage_; }
     int frame() const { return frame_; }
     int enemiesAlive() const;
     int enemyProjectilesAlive() const;
@@ -74,6 +77,7 @@ private:
         bool active = true;
     };
 
+    static const StageSpawnEvent* eventsForStage(int stage, std::size_t& count);
     void spawnDueEvents();
     void spawnEnemy(const StageSpawnEvent& event);
     void updatePlayer();
@@ -95,6 +99,7 @@ private:
     static bool offscreen(float x, float y, float margin);
 
     bool initialized_ = false;
+    int selectedStage_ = 1;
     int frame_ = 0;
     PlayerState player_;
     std::vector<int> playerFrames_;

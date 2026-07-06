@@ -131,6 +131,12 @@ int App::runSmokeTestLoop() {
                 stageRuntime_.initialize(*resources_);
             }
         }
+        else if (diagnosticsPage_ == 6 && CheckHitKey(KEY_INPUT_1) != 0) {
+            stageRuntime_.setStage(1);
+        }
+        else if (diagnosticsPage_ == 6 && CheckHitKey(KEY_INPUT_2) != 0) {
+            stageRuntime_.setStage(2);
+        }
         drawSmokeTestFrame();
         ScreenFlip();
     }
@@ -160,7 +166,7 @@ void App::drawSmokeTestFrame() {
     }
 
     DrawString(24, 24, "LikeDreamerRe reconstruction scaffold", GetColor(255, 240, 128));
-    DrawString(24, 48, "F1 title  F2 resources  F3 text CSV  F4 save/config  F5 stage probe  F6 playable stage  ESC exit", GetColor(255, 255, 255));
+    DrawString(24, 48, "F1 title  F2 resources  F3 text CSV  F4 save/config  F5 stage probe  F6 playable stage (1/2 slice)  ESC exit", GetColor(255, 255, 255));
     if (diagnosticsPage_ == 6) {
         if (stageRuntime_.initialized()) {
             stageRuntime_.update();
