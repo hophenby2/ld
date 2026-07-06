@@ -59,18 +59,26 @@ private:
     };
 
     struct StageProjectile {
-        int projectileId = 0;
-        int visualSelector = 0;
+        bool active = true;
         int age = 0;
+        int visualSelector = 0;
+        int projectileId = 0;
         float x = 0.0f;
         float y = 0.0f;
-        float vx = 0.0f;
-        float vy = 0.0f;
+        float prevX = 0.0f;
+        float prevY = 0.0f;
+        float speedOrAccelHint = 0.0f;
+        std::uint16_t angle16 = 0;
+        std::uint16_t prevAngle16 = 0;
         float angle = 0.0f;
         float speed = 0.0f;
         float baseSpeed = 0.0f;
         int radius = 5;
-        bool active = true;
+        bool grazeOrHitProcessed = false;
+        bool collisionEnabled = true;
+        int arg8OrAux = 0;
+        float vx = 0.0f;
+        float vy = 0.0f;
     };
 
     struct PlayerShot {
@@ -83,6 +91,7 @@ private:
 
     static const StageSpawnEvent* eventsForStage(int stage, std::size_t& count);
     void spawnDueEvents();
+    void spawnStage04OriginalSchedule();
     void spawnEnemy(const StageSpawnEvent& event);
     void updatePlayer();
     void updateEnemies();
@@ -91,11 +100,19 @@ private:
     void updateGenericEnemy(StageEnemy& enemy, int activeAge);
     void emitGenericProjectiles(StageEnemy& enemy, int activeAge);
     void updateProjectiles();
+    void updateProjectileCommonMotion(StageProjectile& projectile);
+    void updateProjectileReflectOnBoundary(StageProjectile& projectile);
+    void updateProjectileHomingSteering(StageProjectile& projectile);
+    void updateProjectileScriptedEmitter(StageProjectile& projectile);
+    void updateProjectileOrbitArcPair(StageProjectile& projectile);
+    void updateProjectileExpandingSpiralPair(StageProjectile& projectile);
     static void updateProjectileVelocity(StageProjectile& projectile);
     void updatePlayerShots();
     void handleCollisions();
     void spawnProjectileNode(int projectileId, int visualSelector, float x, float y, float angle, float speed, int radius);
+    void spawnProjectileNode(int projectileId, int visualSelector, float x, float y, std::uint16_t angle16, float speedOrAccelHint, float speed, int radius, int arg8OrAux);
     void spawnProjectileSpread(int projectileId, int visualSelector, float x, float y, float centerAngle, float speed, int radius, int count, float spreadRadians);
+    void spawnProjectileSpread(int projectileId, int visualSelector, float x, float y, std::uint16_t centerAngle16, float speedOrAccelHint, float speed, int radius, int count, int spreadAngle16, int arg8OrAux);
     void drawBackground() const;
     void drawPlayer() const;
     void drawEnemies() const;

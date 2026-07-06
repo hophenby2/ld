@@ -13,6 +13,8 @@ namespace {
 
 constexpr float kPi = 3.14159265358979323846f;
 constexpr float kTau = kPi * 2.0f;
+constexpr int kFixedAngleFullCircle = 0x10000;
+constexpr int kProjectileCap = 0x800;
 constexpr float kPlayLeft = 80.0f;
 constexpr float kPlayRight = 720.0f;
 constexpr float kPlayTop = 20.0f;
@@ -201,6 +203,27 @@ float projectileScaleForVisualSelector(int visualSelector) {
     }
 }
 
+std::uint16_t normalizeAngle16(int angle) {
+    return static_cast<std::uint16_t>(angle & 0xffff);
+}
+
+float fixedAngleToRadians(std::uint16_t angle) {
+    return static_cast<float>(angle) * kTau / static_cast<float>(kFixedAngleFullCircle);
+}
+
+std::uint16_t radiansToFixedAngle(float radians) {
+    const int angle = static_cast<int>(std::lround(radians * static_cast<float>(kFixedAngleFullCircle) / kTau));
+    return normalizeAngle16(angle);
+}
+
+std::uint16_t approachAngle16(std::uint16_t current, std::uint16_t target, int maxStep) {
+    int delta = static_cast<int>(target) - static_cast<int>(current);
+    if (delta > 0x8000) delta -= 0x10000;
+    if (delta < -0x8000) delta += 0x10000;
+    delta = std::max(-maxStep, std::min(maxStep, delta));
+    return normalizeAngle16(static_cast<int>(current) + delta);
+}
+
 } // namespace
 
 const StageRuntime::StageSpawnEvent* StageRuntime::eventsForStage(int stage, std::size_t& count) {
@@ -306,6 +329,11 @@ int StageRuntime::enemyProjectilesAlive() const {
 }
 
 void StageRuntime::spawnDueEvents() {
+    if (selectedStage_ == 4) {
+        spawnStage04OriginalSchedule();
+        return;
+    }
+
     std::size_t eventCount = 0;
     const StageSpawnEvent* events = eventsForStage(selectedStage_, eventCount);
     for (std::size_t i = 0; i < eventCount; ++i) {
@@ -314,6 +342,113 @@ void StageRuntime::spawnDueEvents() {
             spawnEnemy(event);
         }
     }
+}
+
+void StageRuntime::spawnStage04OriginalSchedule() {
+    const int f = frame_;
+    auto spawn = [this](int type, int lifetime, int x, int y, const char* note) {
+        spawnEnemy({frame_, type, lifetime, x, y, note});
+    };
+    auto spawnEvery = [&](int start, int duration, int step, int type, int lifetime, int x, int y, const char* note) {
+        const int local = f - start;
+        if (local >= 0 && local < duration && local % step == 0) {
+            spawn(type, lifetime, x, y, note);
+        }
+    };
+    auto stageRand = [](int seed, int salt) -> std::uint32_t {
+        std::uint32_t u = (static_cast<std::uint32_t>(seed) >> 30 ^ static_cast<std::uint32_t>(seed)) * 0x6c078965u + 1u + static_cast<std::uint32_t>(salt);
+        std::uint32_t a = (u >> 30 ^ u) * 0x6c078965u + 2u;
+        std::uint32_t b = (a >> 30 ^ a) * 0x6c078965u + 3u;
+        std::uint32_t c = (b >> 30 ^ b) * 0x6c078965u + 4u;
+        std::uint32_t mixed = u * 0x800u ^ u;
+        return (mixed ^ (c >> 11)) >> 8 ^ mixed ^ c;
+    };
+    auto randX = [&](int modulus, int base, int salt = 0) { return static_cast<int>(stageRand(f, salt) % static_cast<std::uint32_t>(modulus)) + base; };
+    auto randY = [&](int modulus, int base, int salt = 9) { return static_cast<int>(stageRand(f, salt) % static_cast<std::uint32_t>(modulus)) + base; };
+    auto spawn37 = [&](int modulusX, int baseX, const char* note) {
+        spawn(0x37, 500, randX(modulusX, baseX), randY(0x97, 400), note);
+    };
+    auto spawn36Left = [&](const char* note) { spawn(0x36, 400, -20, randX(0xc9, 300, 3), note); };
+    auto spawn36Right = [&](const char* note) { spawn(0x36, 400, 0x2e4, randX(0xc9, 300, 5), note); };
+    auto spawn0bTop = [&](int lifetime, int modulus, int base, const char* note) { spawn(0x0b, lifetime, randX(modulus, base, 7), -20, note); };
+    auto spawn0bLeft = [&](int lifetime, int modulus, int base, const char* note) { spawn(0x0b, lifetime, -20, randX(modulus, base, 11), note); };
+    auto spawn0bRight = [&](int lifetime, int modulus, int base, const char* note) { spawn(0x0b, lifetime, 0x2e4, randX(modulus, base, 13), note); };
+
+    // Stage 04 schedule transcribed from stage_04_gameplay_update_candidate. Random expressions use a deterministic stand-in for DAT_140e9fd1c/DAT_140e9fd18 until the RNG update globals are fully ported.
+    if (f >= 0x96 && f < 0x96 + 0x15e && (f - 0x96) % 0x14 == 0) spawn37(0x191, 0xa0, "S04 original row 33: 0x37 random drifter");
+    spawnEvery(700, 100, 8, 0x35, 0xfa, 0x2e4, 0x96, "S04 original row 45: 0x35 right wave");
+    if (f == 800) spawn(0x38, 5000, 0x1e0, 0, "S04 original row 50: 0x38 center heavy");
+    spawnEvery(900, 100, 8, 0x35, 0xfa, -20, 0x96, "S04 original row 60: 0x35 left wave");
+    if (f == 1000) spawn(0x38, 5000, 0xf0, 0, "S04 original row 65: 0x38 left heavy");
+    spawnEvery(0x44c, 100, 8, 0x35, 0xfa, 0x2e4, 400, "S04 original row 75: 0x35 right lower wave");
+    spawnEvery(0x4d8, 100, 8, 0x35, 0xfa, -20, 400, "S04 original row 86: 0x35 left lower wave");
+    if (f >= 0x4d8 && f < 0x4d8 + 0x50 && (f - 0x4d8) % 0x10 == 0) spawn37(0x191, 0xa0, "S04 original row 104: 0x37 drifter refresh");
+    if (f == 0x578) spawn(7, 5000, 0x1cc, 0, "S04 original row 111: common marker");
+    if (f == 0x60e) spawn(0x3d, 9000, -200, 0x96, "S04 original row 115: 0x3d left anchor");
+    if (f >= 0x6d6 && f < 0x6d6 + 0x226 && (f - 0x6d6) % 0x78 == 0) spawn36Left("S04 original row 126: 0x36 left timed");
+    if (f >= 0x712 && f < 0x712 + 0x1ea && (f - 0x712) % 0x78 == 0) spawn36Right("S04 original row 137: 0x36 right timed");
+    if (f == 0x708) spawn(0x38, 4000, 500, 0, "S04 original row 141: 0x38 heavy slot");
+    if (f == 0x76c) spawn(0x38, 4000, 0xdc, 0, "S04 original row 145: 0x38 heavy slot");
+    if (f == 0x834) spawn(0x3d, 7000, 0x398, 0x96, "S04 original row 149: 0x3d right anchor");
+    if (f == 0x8fc) spawn(0x38, 0x1194, 0xf0, 0, "S04 original row 153: 0x38 long left");
+    if (f == 0x960) spawn(0x38, 0x1194, 0x1e0, 0, "S04 original row 157: 0x38 long center");
+    spawnEvery(0x99c, 0x50, 8, 0x35, 0xfa, -20, 0x78, "S04 original row 167: 0x35 left high wave");
+    if (f == 0xa5a) spawn(0x3a, 10000, -80, 200, "S04 original row 172: 0x3a carrier");
+    if (f == 0xb22) spawn(0x39, 8000, 0x262, -80, "S04 original row 176: 0x39 carrier");
+    if (f == 0xbea) spawn(0x39, 8000, 0x6e, -80, "S04 original row 180: 0x39 carrier");
+    if (f == 0xcb2) spawn(0x3a, 8000, 800, 200, "S04 original row 184: 0x3a carrier");
+    for (int base = 0xaf0; base < 0xaf0 + 600; base += 200) if (f >= base && f < base + 0x3c && (f - base) % 0x1e == 0) spawn0bTop(400, 0xf1, 0x168, "S04 original row 196: common top burst A");
+    for (int base = 0xb54; base < 0xb54 + 500; base += 200) if (f >= base && f < base + 0x3c && (f - base) % 0x1e == 0) spawn0bTop(400, 0xf1, 0x78, "S04 original row 208: common top burst B");
+    if (f >= 0xd34 && f < 0xd34 + 0x46 && (f - 0xd34) % 0x14 == 0) spawn36Left("S04 original row 219: 0x36 late left");
+    if (f >= 0xd3e && f < 0xd3e + 0x3c && (f - 0xd3e) % 0x14 == 0) spawn36Right("S04 original row 230: 0x36 late right");
+    if (f == 0xe10) spawn(0x3f, 48000, 0x167, 0, "S04 original row 235: 0x3f controller");
+    spawnEvery(0xe74, 999, 8, 0x35, 200, 0x2e4, 0x8c, "S04 original row 256: 0x35 boss-side right");
+    spawnEvery(0xe74, 999, 8, 0x35, 200, -20, 0x8c, "S04 original row 257: 0x35 boss-side left");
+    if (f == 0x125c) spawn(0x3d, 9000, -200, 0x96, "S04 original row 262: 0x3d refresh");
+    if (f >= 0x12f2 && f < 0x12f2 + 100 && (f - 0x12f2) % 0x0c == 0) spawn0bTop(0xfa, 0xf1, 0x168, "S04 original row 273: 0x0b short top");
+    if (f >= 5000 && f < 5300 && (f - 5000) % 0x12 == 0) spawn37(0x1e1, 0x78, "S04 original row 285: 0x37 late drifter");
+    if (f == 0x157c) spawn(0x38, 6000, 0x1cc, 0, "S04 original row 291: 0x38 late");
+    if (f == 0x15ae) spawn(0x38, 6000, 0x104, 0, "S04 original row 295: 0x38 late");
+    spawnEvery(0x1644, 100, 8, 0x35, 0xfa, 0x2e4, 400, "S04 original row 305: 0x35 right lower");
+    if (f == 0x16a8) spawn(0x38, 5000, 0x1fe, 0, "S04 original row 310: 0x38 late heavy");
+    spawnEvery(0x16f8, 100, 8, 0x35, 0xfa, -20, 400, "S04 original row 320: 0x35 left lower");
+    if (f == 0x175c) spawn(0x38, 5000, 0xd2, 0, "S04 original row 325: 0x38 late heavy");
+    spawnEvery(0x17ac, 0x6e, 8, 0x35, 0xfa, 0x2e4, 0x96, "S04 original row 335: 0x35 right mid");
+    spawnEvery(0x1824, 0x6e, 8, 0x35, 0xfa, -20, 0x96, "S04 original row 346: 0x35 left mid");
+    spawnEvery(0x189c, 100, 8, 0x35, 0xfa, 0x2e4, 0x15e, "S04 original row 357: 0x35 right low");
+    if (f == 0x1900) { spawn(0x38, 4000, 0x1e0, 0, "S04 original row 362: 0x38 pair center"); spawn(0x38, 4000, 0xf0, 0, "S04 original row 363: 0x38 pair left"); }
+    if (f == 0x1964 || f == 0x1bbc) spawn(0x39, 6000, 0x6e, -80, "S04 original row 367: 0x39 repeated carrier");
+    if (f == 0x19fa || f == 0x1c52) spawn(0x39, 6000, 0x262, -80, "S04 original row 371: 0x39 repeated carrier");
+    if (f == 0x1a90 || f == 0x1ce8) spawn(0x3a, 6000, -80, 200, "S04 original row 375: 0x3a repeated carrier");
+    if (f == 0x1b26 || f == 0x1d7e) spawn(0x3a, 6000, 800, 200, "S04 original row 379: 0x3a repeated carrier");
+    if (f >= 0x1996 && f < 0x1996 + 0x47e && (f - 0x1996) % 0x4b == 0) spawn37(0x1e1, 0x78, "S04 original row 391: 0x37 long wave");
+    if (f >= 0x1e78 && f < 0x1e78 + 0x3c && (f - 0x1e78) % 0x10 == 0) spawn36Left("S04 original row 409: 0x36 left burst");
+    if (f >= 0x1eb4 && f < 0x1eb4 + 0x3c && (f - 0x1eb4) % 10 == 0) spawn0bLeft(0xfa, 0x97, 0x96, "S04 original row 421: 0x0b left burst");
+    if (f >= 0x1f18 && f < 0x1f18 + 0x3c && (f - 0x1f18) % 0x10 == 0) spawn36Right("S04 original row 437: 0x36 right burst");
+    if (f >= 0x1f54 && f < 0x1f54 + 0x3c && (f - 0x1f54) % 10 == 0) spawn0bRight(0xfa, 0x97, 0x96, "S04 original row 449: 0x0b right burst");
+    if (f == 0x2008) spawn(0x38, 5000, 0xdc, 0, "S04 original row 453: 0x38 final block");
+    if (f == 0x203a) spawn(0x38, 5000, 500, 0, "S04 original row 457: 0x38 final block");
+    spawnEvery(0x20d0, 0x96, 8, 0x35, 200, 0x2e4, 0x96, "S04 original row 467: 0x35 paired right");
+    spawnEvery(0x20d0, 0x96, 8, 0x35, 200, -20, 0x96, "S04 original row 468: 0x35 paired left");
+    if (f == 0x2198) spawn(0x3d, 7000, 0x398, 0x78, "S04 original row 473: 0x3d right high");
+    if (f >= 0x21e8 && f < 0x21e8 + 0x50 && (f - 0x21e8) % 10 == 0) spawn0bLeft(0xfa, 0x97, 100, "S04 original row 484: 0x0b left top");
+    if (f == 0x2260) spawn(0x3d, 7000, -200, 0x96, "S04 original row 488: 0x3d left");
+    if (f >= 0x22b0 && f < 0x22b0 + 0x50 && (f - 0x22b0) % 10 == 0) spawn0bRight(0xfa, 0x97, 100, "S04 original row 499: 0x0b right top");
+    if (f == 9000) spawn(0x3d, 7000, 0x398, 0xb4, "S04 original row 503: 0x3d right low");
+    if (f == 0x238c) spawn(0x38, 5000, 200, 0, "S04 original row 507: 0x38 final source");
+    spawnEvery(0x23dc, 100, 8, 0x35, 0xfa, 0x2e4, 0xb4, "S04 original row 517: 0x35 right final");
+    if (f == 0x2454) spawn(0x3d, 7000, 0x398, 0x96, "S04 original row 522: 0x3d right final");
+    spawnEvery(0x24a4, 100, 8, 0x35, 0xfa, -20, 0x15e, "S04 original row 532: 0x35 left final");
+    if (f == 0x251c) spawn(0x3d, 7000, -200, 0x78, "S04 original row 537: 0x3d left high");
+    if (f == 0x2580) spawn(0x39, 6000, 0x262, -80, "S04 original row 541: 0x39 final carrier");
+    if (f >= 0x25d0 && f < 0x25d0 + 0x50 && (f - 0x25d0) % 10 == 0) spawn0bTop(0xfa, 0x259, 0x3c, "S04 original row 552: 0x0b wide top");
+    if (f == 0x2648) spawn(0x3f, 44000, 0x169, 0, "S04 original row 556: 0x3f second controller");
+    if (f >= 0x28a0 && f < 0x28a0 + 300 && (f - 0x28a0) % 0x28 == 0) spawn0bTop(300, 0x1e1, 0x78, "S04 original row 568: 0x0b late wide");
+    if (f >= 0x2648 && f - 0x2648 < 0x385 && (f - 0x2648) % 100 == 0) spawn(0x38, 5000, randX(0x169, 0xb4, 19), 0, "S04 original row 580: 0x38 random late");
+    if (f == 0x2a30) { spawn(0x38, 4000, 0x1e0, 0, "S04 original row 584: 0x38 end pair"); spawn(0x38, 4000, 0xf0, 0, "S04 original row 585: 0x38 end pair"); }
+    spawnEvery(0x2a94, 0x5a, 8, 0x35, 200, 0x2e4, 0x78, "S04 original row 594: 0x35 ending right");
+    spawnEvery(0x2aee, 0x5a, 8, 0x35, 200, -20, 0x96, "S04 original row 604: 0x35 ending left");
+    if (f == 0x2b5c) spawn(8, 5000, 0x104, 0, "S04 original row 609: ending marker");
 }
 
 void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
@@ -648,96 +783,296 @@ void StageRuntime::emitGenericProjectiles(StageEnemy& enemy, int activeAge) {
 }
 
 void StageRuntime::updateProjectiles() {
-    for (auto& projectile : enemyProjectiles_) {
+    const std::size_t initialCount = enemyProjectiles_.size();
+    for (std::size_t i = 0; i < initialCount && i < enemyProjectiles_.size(); ++i) {
+        auto& projectile = enemyProjectiles_[i];
+        if (!projectile.active) {
+            continue;
+        }
         ++projectile.age;
         switch (projectile.projectileId) {
-        case 0x02:
-            if (projectile.age > 18) {
-                projectile.speed = std::min(projectile.baseSpeed * 1.35f, projectile.speed + 0.018f);
-                updateProjectileVelocity(projectile);
-            }
-            break;
-        case 0x03:
-            if (projectile.age < 30) {
-                projectile.speed = std::max(0.25f, projectile.speed * 0.98f);
-            }
-            else {
-                projectile.speed = std::min(projectile.baseSpeed * 1.45f, projectile.speed + 0.035f);
-            }
-            updateProjectileVelocity(projectile);
-            break;
-        case 0x04:
-            if (projectile.age > 12) {
-                projectile.speed = std::min(projectile.baseSpeed * 1.35f, projectile.speed + 0.030f);
-                updateProjectileVelocity(projectile);
-            }
-            break;
-        case 0x05:
-            if (projectile.age < 60) {
-                projectile.speed = std::max(projectile.baseSpeed * 0.45f, projectile.speed * 0.985f);
-            }
-            else {
-                projectile.speed = std::min(projectile.baseSpeed * 1.25f, projectile.speed + 0.022f);
-            }
-            updateProjectileVelocity(projectile);
-            break;
-        case 0x06:
-            if (projectile.age < 30) {
-                projectile.speed = std::max(projectile.baseSpeed * 0.45f, projectile.speed - 0.045f);
-                updateProjectileVelocity(projectile);
-            }
-            break;
-        case 0x07:
-            if (projectile.age < 40) {
-                projectile.speed = std::max(projectile.baseSpeed * 0.35f, projectile.speed - 0.04f);
-            }
-            else if (projectile.age < 100) {
-                projectile.speed = std::min(projectile.baseSpeed * 1.3f, projectile.speed + 0.035f);
-            }
-            updateProjectileVelocity(projectile);
-            break;
-        case 0x08: {
-            bool reflected = false;
-            if ((projectile.x < kPlayLeft && projectile.vx < 0.0f) || (projectile.x > kPlayRight && projectile.vx > 0.0f)) {
-                projectile.vx = -projectile.vx;
-                reflected = true;
-            }
-            if ((projectile.y < kPlayTop && projectile.vy < 0.0f) || (projectile.y > kPlayBottom && projectile.vy > 0.0f)) {
-                projectile.vy = -projectile.vy;
-                reflected = true;
-            }
-            if (reflected) {
-                projectile.angle = std::atan2(projectile.vy, projectile.vx);
-                projectile.speed = std::sqrt(projectile.vx * projectile.vx + projectile.vy * projectile.vy);
-            }
-            break;
-        }
-        case 0x09:
-            if (projectile.age == 45) {
-                projectile.angle = aimAtPlayer(projectile.x, projectile.y);
-                projectile.speed = std::max(projectile.speed, projectile.baseSpeed * 0.8f);
-                updateProjectileVelocity(projectile);
-            }
-            break;
-        case 0x0b:
-            if (projectile.age == 50) {
-                projectile.angle = std::atan2(player_.y + 24.0f - projectile.y, player_.x - projectile.x);
-                projectile.speed = std::max(projectile.speed, projectile.baseSpeed * 0.85f);
-                updateProjectileVelocity(projectile);
-            }
+        case 0x08:
+            updateProjectileReflectOnBoundary(projectile);
             break;
         case 0x0c:
         case 0x0e:
-            projectile.angle = approachAngle(projectile.angle, aimAtPlayer(projectile.x, projectile.y), projectile.projectileId == 0x0c ? 0.035f : 0.022f);
-            projectile.speed = std::min(projectile.baseSpeed * 1.35f, projectile.speed + 0.006f);
-            updateProjectileVelocity(projectile);
+        case 0x23:
+        case 0x24:
+        case 0x25:
+        case 0x26:
+        case 0x27:
+        case 0x2c:
+        case 0x2d:
+        case 0x35:
+        case 0x36:
+            updateProjectileHomingSteering(projectile);
+            break;
+        case 0x17:
+        case 0x18:
+        case 0x19:
+        case 0x1a:
+        case 0x1b:
+        case 0x1c:
+        case 0x1d:
+        case 0x1e:
+        case 0x21:
+        case 0x22:
+        case 0x28:
+        case 0x29:
+        case 0x2a:
+        case 0x2b:
+        case 0x2e:
+        case 0x2f:
+        case 0x30:
+        case 0x31:
+        case 0x32:
+        case 0x33:
+        case 0x34:
+        case 0x37:
+        case 0x38:
+        case 0x39:
+        case 0x3c:
+            updateProjectileScriptedEmitter(projectile);
+            break;
+        case 0x1f:
+        case 0x20:
+            updateProjectileOrbitArcPair(projectile);
+            break;
+        case 0x3a:
+        case 0x3b:
+            updateProjectileExpandingSpiralPair(projectile);
             break;
         default:
+            updateProjectileCommonMotion(projectile);
             break;
         }
-        projectile.x += projectile.vx;
-        projectile.y += projectile.vy;
     }
+}
+
+void StageRuntime::updateProjectileCommonMotion(StageProjectile& projectile) {
+    switch (projectile.projectileId) {
+    case 0x01:
+        projectile.speed += 0.010f;
+        break;
+    case 0x02:
+        if (projectile.age > 18) {
+            projectile.speed = std::min(projectile.baseSpeed * 1.35f, projectile.speed + projectile.baseSpeed / 90.0f);
+        }
+        break;
+    case 0x03:
+        if (projectile.age == 1) projectile.speed = 0.10f;
+        if (projectile.age > 30) projectile.speed = std::min(projectile.baseSpeed, projectile.speed + projectile.baseSpeed / 70.0f);
+        break;
+    case 0x04:
+        if (projectile.age == 1) projectile.speed = std::max(0.10f, projectile.baseSpeed * 0.20f);
+        if (projectile.age > 12) projectile.speed = std::min(projectile.baseSpeed, projectile.speed + projectile.baseSpeed / 45.0f);
+        break;
+    case 0x05:
+        if (projectile.age < 60) projectile.speed = std::max(projectile.baseSpeed * 0.45f, projectile.speed * 0.985f);
+        else projectile.speed = std::min(projectile.baseSpeed * 1.25f, projectile.speed + projectile.baseSpeed / 80.0f);
+        break;
+    case 0x06:
+        if (projectile.age < 30) projectile.speed = std::max(projectile.baseSpeed * 0.45f, projectile.speed - projectile.baseSpeed / 60.0f);
+        break;
+    case 0x07:
+        if (projectile.age < 40) projectile.speed = std::max(projectile.baseSpeed * 0.35f, projectile.speed - projectile.baseSpeed / 75.0f);
+        else if (projectile.age < 100) projectile.speed = std::min(projectile.baseSpeed * 1.30f, projectile.speed + projectile.baseSpeed / 80.0f);
+        break;
+    case 0x09:
+        if (projectile.age == 30 || projectile.age == 45) {
+            projectile.angle16 = radiansToFixedAngle(aimAtPlayer(projectile.x, projectile.y));
+            projectile.prevAngle16 = projectile.angle16;
+            projectile.speedOrAccelHint = 0.0f;
+            projectile.speed = std::max(projectile.speed, projectile.baseSpeed * 0.8f);
+        }
+        break;
+    case 0x0a:
+        if (projectile.age == 40) {
+            projectile.angle16 = radiansToFixedAngle(aimAtPlayer(projectile.prevX, projectile.prevY));
+            projectile.prevAngle16 = projectile.angle16;
+        }
+        break;
+    case 0x0b:
+        if (projectile.age == 50) {
+            projectile.angle16 = radiansToFixedAngle(std::atan2(player_.y + 24.0f - projectile.y, player_.x - projectile.x));
+            projectile.prevAngle16 = projectile.angle16;
+            projectile.speed = std::max(projectile.baseSpeed * 0.85f, projectile.speed);
+        }
+        break;
+    case 0x0d:
+        if (projectile.age > 24) {
+            projectile.speed = std::min(projectile.baseSpeed * 1.4f, projectile.speed + projectile.baseSpeed / 90.0f);
+            if (projectile.age % 10 == 0) {
+                spawnProjectileNode(4, 0x0f, projectile.x, projectile.y, projectile.angle16, 0.0f, 0.45f, 3, 0);
+            }
+        }
+        break;
+    case 0x0f:
+        if (projectile.age > 20) projectile.active = false;
+        break;
+    case 0x10:
+        if (projectile.age > 40) projectile.active = false;
+        break;
+    case 0x11:
+        if (projectile.age > 10) projectile.active = false;
+        break;
+    case 0x12:
+        if (projectile.age > 60) projectile.active = false;
+        break;
+    default:
+        break;
+    }
+    if (!projectile.active) {
+        return;
+    }
+    updateProjectileVelocity(projectile);
+    projectile.prevX = projectile.x;
+    projectile.prevY = projectile.y;
+    projectile.x += projectile.vx;
+    projectile.y += projectile.vy;
+}
+
+void StageRuntime::updateProjectileReflectOnBoundary(StageProjectile& projectile) {
+    updateProjectileVelocity(projectile);
+    projectile.prevX = projectile.x;
+    projectile.prevY = projectile.y;
+    projectile.x += projectile.vx;
+    projectile.y += projectile.vy;
+
+    int reflectedAngle = projectile.angle16;
+    bool reflected = false;
+    if ((projectile.x < kPlayLeft && projectile.vx < 0.0f) || (projectile.x > kPlayRight && projectile.vx > 0.0f)) {
+        reflectedAngle = -0x8000 - static_cast<int>(projectile.angle16);
+        projectile.x = clampFloat(projectile.x, kPlayLeft, kPlayRight);
+        reflected = true;
+    }
+    if ((projectile.y < kPlayTop && projectile.vy < 0.0f) || (projectile.y > kPlayBottom && projectile.vy > 0.0f)) {
+        reflectedAngle = -static_cast<int>(projectile.angle16);
+        projectile.y = clampFloat(projectile.y, kPlayTop, kPlayBottom);
+        reflected = true;
+    }
+    if (reflected) {
+        const auto angle = normalizeAngle16(reflectedAngle);
+        spawnProjectileNode(projectile.projectileId, projectile.visualSelector, projectile.x, projectile.y, angle,
+                            projectile.speedOrAccelHint, projectile.speed, projectile.radius, projectile.arg8OrAux);
+        projectile.active = false;
+    }
+}
+
+void StageRuntime::updateProjectileHomingSteering(StageProjectile& projectile) {
+    const std::uint16_t target = radiansToFixedAngle(aimAtPlayer(projectile.x, projectile.y));
+    int turnStep = projectile.projectileId == 0x0c ? 0x180 : 0x100;
+    if (projectile.projectileId >= 0x23) turnStep = 0xc0;
+    projectile.angle16 = approachAngle16(projectile.angle16, target, turnStep);
+
+    if (projectile.projectileId == 0x0c) {
+        if (projectile.age < 60) projectile.speed = std::max(projectile.baseSpeed * 0.35f, projectile.speed - 0.035f);
+        else projectile.speed = std::min(projectile.baseSpeed * 1.4f, projectile.speed + 0.035f);
+        if (projectile.age > 60 && projectile.age % 12 == 0) {
+            spawnProjectileNode(4, 0x0f, projectile.x, projectile.y, projectile.angle16, 0.0f, 0.55f, 3, 0);
+        }
+    }
+    else if (projectile.projectileId == 0x0e) {
+        projectile.speed = projectile.baseSpeed * (0.85f + std::sin(projectile.age * 0.06f) * 0.25f);
+        if (projectile.age % 14 == 0) {
+            spawnProjectileNode(5, 0x0f, projectile.x, projectile.y, projectile.angle16, 0.0f, 0.45f, 3, 0);
+        }
+    }
+    else {
+        projectile.speed = std::min(projectile.baseSpeed * 1.25f, projectile.speed + 0.006f);
+    }
+
+    updateProjectileVelocity(projectile);
+    projectile.prevX = projectile.x;
+    projectile.prevY = projectile.y;
+    projectile.x += projectile.vx;
+    projectile.y += projectile.vy;
+}
+
+void StageRuntime::updateProjectileScriptedEmitter(StageProjectile& projectile) {
+    updateProjectileVelocity(projectile);
+    projectile.prevX = projectile.x;
+    projectile.prevY = projectile.y;
+    projectile.x += projectile.vx;
+    projectile.y += projectile.vy;
+
+    switch (projectile.projectileId) {
+    case 0x17:
+        if (projectile.age == 25) {
+            spawnProjectileNode(3, 1, projectile.x, projectile.y, radiansToFixedAngle(aimAtPlayer(projectile.x, projectile.y)), 0.0f, projectile.baseSpeed, 5, 0);
+            projectile.active = false;
+        }
+        break;
+    case 0x18:
+    case 0x19:
+        if (projectile.age % 24 == 0 && projectile.age < 96) {
+            const int childId = projectile.projectileId == 0x18 ? 0x0c : 0x0d;
+            spawnProjectileSpread(childId, projectile.visualSelector, projectile.x, projectile.y, projectile.angle16, 0.0f, projectile.baseSpeed, 5, 3, 0x3000, 0);
+        }
+        if (projectile.age > 120) projectile.active = false;
+        break;
+    case 0x1a:
+    case 0x1b:
+        if (projectile.age % 36 == 0) {
+            const int childId = projectile.projectileId == 0x1a ? 8 : 9;
+            spawnProjectileSpread(childId, projectile.visualSelector, projectile.x, projectile.y, projectile.angle16, 0.0f, projectile.baseSpeed, 5, 2, 0x4000, 0);
+        }
+        break;
+    case 0x21:
+    case 0x22:
+        if (projectile.age == 36) {
+            const int offset = projectile.projectileId == 0x21 ? 0x1800 : -0x1800;
+            spawnProjectileNode(2, 4, projectile.x, projectile.y, normalizeAngle16(projectile.angle16 + offset), 0.0f, projectile.baseSpeed, 5, 0);
+            projectile.active = false;
+        }
+        break;
+    case 0x39:
+        if (projectile.age == 30) {
+            spawnProjectileSpread(2, 2, projectile.x, projectile.y, projectile.angle16, 0.0f, projectile.baseSpeed, 5, 2, 0x4000, 0);
+            projectile.active = false;
+        }
+        break;
+    case 0x3c:
+        if (projectile.age % 3 == 0) {
+            spawnProjectileNode(4, 0x11, projectile.x + deterministicUnit(projectile.age, projectile.arg8OrAux) * 12.0f - 6.0f,
+                                projectile.y + deterministicUnit(projectile.age, projectile.arg8OrAux + 7) * 12.0f - 6.0f,
+                                projectile.angle16, 0.0f, 0.35f, 2, 0);
+        }
+        projectile.speed = std::min(projectile.baseSpeed * 1.2f, projectile.speed + 0.006f);
+        break;
+    default:
+        break;
+    }
+}
+
+void StageRuntime::updateProjectileOrbitArcPair(StageProjectile& projectile) {
+    const float radius = projectile.speedOrAccelHint + std::min(projectile.age, 40) * 2.0f;
+    const float angle = fixedAngleToRadians(projectile.angle16);
+    projectile.x = projectile.prevX + std::cos(angle) * radius;
+    projectile.y = projectile.prevY + std::sin(angle) * radius * 0.6f;
+    if (projectile.age == 40) {
+        projectile.prevAngle16 = radiansToFixedAngle(aimAtPlayer(projectile.prevX, projectile.prevY));
+    }
+    if (projectile.age > 40) {
+        projectile.prevX += std::cos(fixedAngleToRadians(projectile.prevAngle16)) * (projectile.speed + projectile.age * 0.004f);
+        projectile.prevY += std::sin(fixedAngleToRadians(projectile.prevAngle16)) * (projectile.speed + projectile.age * 0.004f);
+    }
+    const int direction = projectile.projectileId == 0x1f ? 0x70 : -0x70;
+    projectile.angle16 = normalizeAngle16(projectile.angle16 + direction);
+}
+
+void StageRuntime::updateProjectileExpandingSpiralPair(StageProjectile& projectile) {
+    if (projectile.age == 1) {
+        projectile.prevX = projectile.speedOrAccelHint;
+    }
+    const float radius = projectile.prevX * std::min(1.0f, projectile.age / 10.0f);
+    const float centerSpeed = projectile.speed + projectile.age * 0.006f - projectile.baseSpeed * 0.25f;
+    projectile.x += std::cos(fixedAngleToRadians(projectile.angle16)) * centerSpeed;
+    projectile.y += std::sin(fixedAngleToRadians(projectile.angle16)) * centerSpeed;
+    const int direction = projectile.projectileId == 0x3a ? 0x1bc : -0x1bc;
+    projectile.angle16 = normalizeAngle16(projectile.angle16 + direction);
+    projectile.prevY = projectile.y + std::sin(fixedAngleToRadians(projectile.angle16)) * radius;
+    projectile.prevX = projectile.x + std::cos(fixedAngleToRadians(projectile.angle16)) * radius;
 }
 
 void StageRuntime::updatePlayerShots() {
@@ -787,39 +1122,63 @@ void StageRuntime::handleCollisions() {
 }
 
 void StageRuntime::spawnProjectileNode(int projectileId, int visualSelector, float x, float y, float angle, float speed, int radius) {
+    spawnProjectileNode(projectileId, visualSelector, x, y, radiansToFixedAngle(angle), 0.0f, speed, radius, 0);
+}
+
+void StageRuntime::spawnProjectileNode(int projectileId, int visualSelector, float x, float y, std::uint16_t angle16, float speedOrAccelHint, float speed, int radius, int arg8OrAux) {
+    if (enemyProjectiles_.size() >= kProjectileCap) {
+        return;
+    }
     StageProjectile projectile;
     projectile.projectileId = projectileId;
     projectile.visualSelector = visualSelector;
     projectile.x = x;
     projectile.y = y;
-    projectile.angle = angle;
+    projectile.prevX = x;
+    projectile.prevY = y;
+    projectile.speedOrAccelHint = speedOrAccelHint;
+    projectile.angle16 = angle16;
+    projectile.prevAngle16 = angle16;
+    projectile.angle = fixedAngleToRadians(angle16);
     projectile.speed = speed;
     projectile.baseSpeed = speed;
     projectile.radius = radius;
+    projectile.arg8OrAux = arg8OrAux;
+    projectile.collisionEnabled = true;
     updateProjectileVelocity(projectile);
     enemyProjectiles_.push_back(projectile);
 }
 
 void StageRuntime::updateProjectileVelocity(StageProjectile& projectile) {
-    projectile.vx = std::cos(projectile.angle) * projectile.speed;
-    projectile.vy = std::sin(projectile.angle) * projectile.speed;
+    projectile.angle = fixedAngleToRadians(projectile.angle16);
+    const float movementSpeed = projectile.speed + projectile.speedOrAccelHint;
+    projectile.vx = std::cos(projectile.angle) * movementSpeed;
+    projectile.vy = std::sin(projectile.angle) * movementSpeed;
 }
 
 void StageRuntime::spawnProjectileSpread(int projectileId, int visualSelector, float x, float y, float centerAngle, float speed, int radius, int count, float spreadRadians) {
+    const int spreadAngle16 = spreadRadians >= kTau - 0.001f
+                                  ? kFixedAngleFullCircle
+                                  : static_cast<int>(std::lround(spreadRadians * static_cast<float>(kFixedAngleFullCircle) / kTau));
+    spawnProjectileSpread(projectileId, visualSelector, x, y, radiansToFixedAngle(centerAngle), 0.0f, speed, radius, count, spreadAngle16, 0);
+}
+
+void StageRuntime::spawnProjectileSpread(int projectileId, int visualSelector, float x, float y, std::uint16_t centerAngle16, float speedOrAccelHint, float speed, int radius, int count, int spreadAngle16, int arg8OrAux) {
     if (count <= 1) {
-        spawnProjectileNode(projectileId, visualSelector, x, y, centerAngle, speed, radius);
+        spawnProjectileNode(projectileId, visualSelector, x, y, centerAngle16, speedOrAccelHint, speed, radius, arg8OrAux);
         return;
     }
-    if (spreadRadians >= kTau - 0.001f) {
+    if (spreadAngle16 == kFixedAngleFullCircle) {
+        const int step = kFixedAngleFullCircle / count;
         for (int i = 0; i < count; ++i) {
-            spawnProjectileNode(projectileId, visualSelector, x, y, centerAngle + kTau * static_cast<float>(i) / static_cast<float>(count), speed, radius);
+            spawnProjectileNode(projectileId, visualSelector, x, y, normalizeAngle16(centerAngle16 + i * step), speedOrAccelHint, speed, radius, arg8OrAux);
         }
         return;
     }
-    const float start = centerAngle - spreadRadians * 0.5f;
-    const float step = spreadRadians / static_cast<float>(count - 1);
+    const int start = static_cast<int>(centerAngle16) - spreadAngle16 / 2;
+    const int step = spreadAngle16 / (count - 1);
     for (int i = 0; i < count; ++i) {
-        spawnProjectileNode(projectileId, visualSelector, x, y, start + step * static_cast<float>(i), speed, radius);
+        spawnProjectileNode(projectileId, visualSelector, x, y, normalizeAngle16(start + i * step), speedOrAccelHint, speed, radius, arg8OrAux);
     }
 }
 
