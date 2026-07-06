@@ -287,35 +287,57 @@ void FrontendRuntime::drawTitleMenu(const ResourceManager& resources) const {
     else {
         DrawBox(0, 0, notes::kScreenWidth, notes::kScreenHeight, GetColor(18, 22, 42), TRUE);
     }
+
+    // Original state 0x02 queues TitleLogo through FUN_1400c8410 with an x
+    // anchor at the screen center constant. DrawGraph uses top-left coords, so
+    // this centers the 500x320 logo while keeping the decompiled y intro motion
+    // approximated by a short sine settle during the first 60 frames.
     if (titleLogo != -1) {
-        DrawGraph(260, 72, titleLogo, TRUE);
+        const double intro = frame_ < 60 ? std::sin(static_cast<double>(frame_) * kPi / 120.0) : 1.0;
+        const int logoY = 44 + static_cast<int>((1.0 - intro) * 36.0);
+        DrawGraph(390, logoY, titleLogo, TRUE);
     }
 
-    const int baseX = 660;
-    const int baseY = 270;
-    for (int i = 0; i < kTitleMenuCount; ++i) {
-        const int handle = resources.graphFrameById("GFX_system_TitleMenu", i);
-        const int y = baseY + (i - cursor_) * 44;
-        const bool selected = i == cursor_;
-        const int x = baseX + (selected ? -24 : 0);
+    // Original title menu draws the selected TitleMenu frame plus two wrapped
+    // neighbours in each direction. Neighbour alpha follows (3-distance)*0x40;
+    // the selected frame uses the unlock/transition-dependent alpha.
+    constexpr int centerX = 370; // 640 - TitleMenu frame width / 2.
+    constexpr int centerY = 420;
+    for (int distance = 2; distance >= -2; --distance) {
+        const int index = (cursor_ + distance + kTitleMenuCount) % kTitleMenuCount;
+        const int handle = resources.graphFrameById("GFX_system_TitleMenu", index);
+        const bool selected = distance == 0;
+        int alpha = selected ? 255 : (3 - std::abs(distance)) * 0x40;
+        if (transitionTimer_ != 0 && selected) {
+            alpha = 0x60;
+        }
+        const int x = centerX + distance * 20;
+        const int y = centerY + distance * 66;
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
         if (handle != -1) {
             DrawGraph(x, y, handle, TRUE);
         }
         else {
-            DrawFormatString(x, y, selected ? GetColor(255, 240, 128) : GetColor(180, 180, 180), "%s", titleRowLabel(i));
+            DrawFormatString(x, y + 18, GetColor(255, 255, 255), "%s", titleRowLabel(index));
         }
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
         if (selected) {
-            DrawFormatString(x - 28, y + 16, GetColor(255, 240, 128), ">");
+            const int sub = resources.graphFrameById("GFX_system_TitleMenu2", index);
+            if (sub != -1) {
+                SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+                DrawGraph(490, y + 68, sub, TRUE);
+                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            }
         }
     }
-
-    DrawFormatString(24, notes::kScreenHeight - 52, GetColor(210, 210, 210),
-                     "State %s cursor=%d  Z/Enter confirm  X/Back cancel", stateName(state_), cursor_);
 }
 
 void FrontendRuntime::drawStageSetup(const ResourceManager& resources) const {
     drawTitleMenu(resources);
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, 192);
     DrawBox(120, 128, 1160, 620, GetColor(0, 0, 0), TRUE);
+    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     DrawString(148, 150, "Stage setup candidate (state 0x03)", GetColor(255, 240, 128));
     constexpr std::array<const char*, kStageSetupRows> rows{{
         "Route/mode", "Stage group", "Stage", "Player option", "Difficulty/sub option", "Confirm options", "Start",
@@ -337,7 +359,9 @@ void FrontendRuntime::drawStageSelect(const ResourceManager& resources) const {
     else {
         DrawBox(0, 0, notes::kScreenWidth, notes::kScreenHeight, GetColor(12, 16, 34), TRUE);
     }
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, 192);
     DrawBox(160, 130, 1120, 590, GetColor(0, 0, 0), TRUE);
+    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     DrawString(190, 160, "Stage select candidate (state 0x04)", GetColor(255, 240, 128));
     DrawFormatString(220, 250, GetColor(255, 255, 255), "Selected Stage: %02d", selectedStage_);
     DrawString(220, 300, "Left/Right changes currently reconstructed slices: 01 / 02 / 04", GetColor(210, 210, 210));
@@ -347,7 +371,9 @@ void FrontendRuntime::drawStageSelect(const ResourceManager& resources) const {
 
 void FrontendRuntime::drawAlternateSetup(const ResourceManager& resources) const {
     drawTitleMenu(resources);
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, 192);
     DrawBox(140, 120, 1140, 620, GetColor(0, 0, 0), TRUE);
+    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     DrawString(170, 145, "Alternate setup candidate (state 0x05)", GetColor(255, 240, 128));
     for (int i = 0; i < kAlternateRows; ++i) {
         const int color = i == cursor_ ? GetColor(255, 240, 128) : GetColor(230, 230, 230);
@@ -359,7 +385,9 @@ void FrontendRuntime::drawAlternateSetup(const ResourceManager& resources) const
 
 void FrontendRuntime::drawOptions(const ResourceManager& resources) const {
     drawTitleMenu(resources);
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, 192);
     DrawBox(140, 120, 1140, 620, GetColor(0, 0, 0), TRUE);
+    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     DrawString(170, 145, "Options candidate (state 0x0a)", GetColor(255, 240, 128));
     constexpr std::array<const char*, kOptionsRows> rows{{
         "BGM volume", "SE volume", "Language", "Toggle", "Submenu A", "Config", "Key config", "Start shortcut", "Back",
@@ -381,8 +409,17 @@ void FrontendRuntime::drawTransitionOverlay(const ResourceManager&) const {
     if (transitionTimer_ == 0) {
         return;
     }
-    const int amount = std::min(kTransitionFrames, std::abs(transitionTimer_));
-    const int alpha = amount * 180 / kTransitionFrames;
+
+    // Title state 0x02 starts the outgoing tile wipe after transitionTimer > 0x13
+    // and commits at 0x3c. Use the same timing window here; the exact tile-grid
+    // helper is still represented by a fade approximation until FUN_1400d3fd0 is
+    // fully transcribed.
+    const int raw = std::abs(transitionTimer_);
+    const int delayed = std::max(0, raw - 0x14);
+    if (delayed == 0) {
+        return;
+    }
+    const int alpha = std::min(220, delayed * 220 / (kTransitionFrames - 0x14));
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
     DrawBox(0, 0, notes::kScreenWidth, notes::kScreenHeight, GetColor(255, 255, 255), TRUE);
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);

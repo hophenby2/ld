@@ -7,6 +7,7 @@
 #include <DxLib.h>
 #include <Windows.h>
 
+#include <cmath>
 #include <string>
 #include <utility>
 
@@ -129,7 +130,7 @@ void App::drawLoadingFrame(int frame) const {
     const int nowLoading = resources_ ? resources_->graphHandleById("GFX_system_NowLoading") : -1;
 
     if (starting != -1) {
-        DrawGraph(0, 0, starting, TRUE);
+        DrawGraph(0, 0, starting, FALSE);
     }
     else if (whiteBack != -1) {
         DrawGraph(0, 0, whiteBack, TRUE);
@@ -139,9 +140,13 @@ void App::drawLoadingFrame(int frame) const {
     }
 
     if (nowLoading != -1) {
-        const int cycle = frame % 120;
-        const int offset = cycle < 60 ? cycle / 3 : (120 - cycle) / 3;
-        DrawGraph(24 + offset, notes::kScreenHeight - 64, nowLoading, TRUE);
+        const int phase60 = frame % 60;
+        const double wave = std::sin(static_cast<double>(phase60) * 3.14159265358979323846 / 120.0);
+        const int x = (frame % 240 < 120) ? (480 + frame) : (720 - (frame % 120));
+        const int y = 640 - static_cast<int>(wave * 32.0);
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 160 - static_cast<int>(wave * 64.0));
+        DrawGraph(x, y, nowLoading, TRUE);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     }
     DrawString(24, notes::kScreenHeight - 28, "Loading reconstructed frontend resources...", GetColor(80, 80, 80));
 }
@@ -203,7 +208,6 @@ void App::drawSmokeTestFrame() {
 
     if (diagnosticsPage_ == 0 && resources_) {
         frontendRuntime_.draw(*resources_);
-        DrawString(24, 24, "F1-F5 diagnostics  F6 playable stage shortcut  ESC exit", GetColor(255, 255, 255));
         return;
     }
 
