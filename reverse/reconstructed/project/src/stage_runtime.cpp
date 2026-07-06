@@ -203,6 +203,28 @@ float projectileScaleForVisualSelector(int visualSelector) {
     }
 }
 
+int projectileAgeSpinStepForVisualSelector(int visualSelector) {
+    switch (visualSelector) {
+    case 0x00:
+    case 0x01:
+        return 2000;
+    case 0x02:
+    case 0x03:
+    case 0x0e:
+    case 0x0f:
+        return 999;
+    case 0x04:
+    case 0x05:
+    case 0x11:
+    case 0x12:
+    case 0x13:
+    case 0x14:
+        return 0x682;
+    default:
+        return 0;
+    }
+}
+
 std::uint16_t normalizeAngle16(int angle) {
     return static_cast<std::uint16_t>(angle & 0xffff);
 }
@@ -214,6 +236,16 @@ float fixedAngleToRadians(std::uint16_t angle) {
 std::uint16_t radiansToFixedAngle(float radians) {
     const int angle = static_cast<int>(std::lround(radians * static_cast<float>(kFixedAngleFullCircle) / kTau));
     return normalizeAngle16(angle);
+}
+
+float projectileDrawRotationForVisualSelector(int visualSelector, int age, std::uint16_t angle16) {
+    // FUN_140070250 is selector-driven: some visuals preserve projectile angle,
+    // while pellets/orbs/beads/diamonds overwrite it with age-based spin.
+    const int ageSpinStep = projectileAgeSpinStepForVisualSelector(visualSelector);
+    if (ageSpinStep != 0) {
+        return fixedAngleToRadians(normalizeAngle16(age * ageSpinStep));
+    }
+    return fixedAngleToRadians(angle16);
 }
 
 std::uint16_t approachAngle16(std::uint16_t current, std::uint16_t target, int maxStep) {
@@ -1247,7 +1279,7 @@ void StageRuntime::drawProjectiles() const {
     for (const auto& projectile : enemyProjectiles_) {
         const int frameIndex = bulletFrameForVisualSelector(projectile.visualSelector);
         const int handle = bulletFrames_.empty() || frameIndex >= static_cast<int>(bulletFrames_.size()) ? -1 : bulletFrames_[static_cast<std::size_t>(frameIndex)];
-        const float angle = std::atan2(projectile.vy, projectile.vx) + kPi * 0.5f;
+        const float angle = projectileDrawRotationForVisualSelector(projectile.visualSelector, projectile.age, projectile.angle16);
         if (handle != -1) {
             // Selectors 0x11..0x14 also add overlays/effects in FUN_140070250; this runtime maps them to base bead frames until effect nodes are reconstructed.
             DrawRotaGraphF(projectile.x, projectile.y, projectileScaleForVisualSelector(projectile.visualSelector), angle, handle, TRUE);
