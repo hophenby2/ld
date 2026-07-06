@@ -188,11 +188,18 @@ int App::runSmokeTestLoop() {
             frontendRuntime_.update(*resources_);
             const auto request = frontendRuntime_.consumeGameplayRequest();
             if (request.requested) {
+                StageRuntime::StageRuntimeConfig config;
+                config.stage = request.stage;
+                config.routeMode = request.routeMode;
+                config.playerOption = request.playerOption;
+                config.subOption = request.subOption;
+                config.loadoutId = request.loadoutId;
+                config.optionSlots = request.optionSlots;
                 if (!stageRuntime_.initialized()) {
-                    stageRuntime_.initialize(*resources_, request.stage);
+                    stageRuntime_.initialize(*resources_, config);
                 }
                 else {
-                    stageRuntime_.setStage(request.stage);
+                    stageRuntime_.setConfig(config);
                 }
                 diagnosticsPage_ = 6;
             }

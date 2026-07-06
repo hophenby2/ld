@@ -15,21 +15,19 @@ constexpr float kPi = 3.14159265358979323846f;
 constexpr float kTau = kPi * 2.0f;
 constexpr int kFixedAngleFullCircle = 0x10000;
 constexpr int kProjectileCap = 0x800;
-constexpr float kPlayLeft = 80.0f;
-constexpr float kPlayRight = 720.0f;
-constexpr float kPlayTop = 20.0f;
-constexpr float kPlayBottom = 700.0f;
-constexpr int kHudX = 1040;
-constexpr int kHudNumberRight = 1230;
-constexpr int kHudScoreY = 450;
-constexpr int kHudBaseValueY = 500;
-constexpr int kHudGaugeY = 530;
-constexpr int kHudTokenY = 580;
-constexpr int kHudStageY = 610;
-constexpr int kHudStockY = 650;
-constexpr int kHudPipStartX = 1037;
-constexpr int kHudPipStep = 27;
-constexpr int kHudMaxTokens = 9;
+constexpr int kPlayerSideObjectCap = 0x100;
+constexpr float kPlayLeft = static_cast<float>(notes::gameplay_layout::kPlayLocalRect.x);
+constexpr float kPlayRight = static_cast<float>(notes::gameplay_layout::kPlayLocalRect.right());
+constexpr float kPlayTop = static_cast<float>(notes::gameplay_layout::kPlayLocalRect.y);
+constexpr float kPlayBottom = static_cast<float>(notes::gameplay_layout::kPlayLocalRect.bottom());
+
+float screenX(float localX) {
+    return localX + static_cast<float>(notes::gameplay_layout::kPlayScreenOrigin.x);
+}
+
+float screenY(float localY) {
+    return localY + static_cast<float>(notes::gameplay_layout::kPlayScreenOrigin.y);
+}
 
 // Hand-transcribed Stage 01 slice from stage-spawn-schedule.csv. Rows that used
 // DAT_140e9fd1c modulo expressions in the decompile are represented by stable
@@ -272,6 +270,12 @@ const StageRuntime::StageSpawnEvent* StageRuntime::eventsForStage(int stage, std
 }
 
 bool StageRuntime::initialize(ResourceManager& resources, int stage) {
+    StageRuntimeConfig config;
+    config.stage = stage;
+    return initialize(resources, config);
+}
+
+bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConfig& config) {
     playerFrames_ = resources.loadDivGraph("media\\player\\Player.png", 0x78, 0xf, 8, 0x50, 0x50);
     enemySmallFrames_ = resources.loadDivGraph("media\\stage\\Enemy_s.png", 0xaa, 10, 0x11, 100, 100);
     enemyMediumFrames_ = resources.loadDivGraph("media\\stage\\Enemy_m.png", 0xe6, 10, 0x17, 200, 200);
@@ -289,7 +293,9 @@ bool StageRuntime::initialize(ResourceManager& resources, int stage) {
     stateFrames_ = resources.loadDivGraph("media\\player\\State.png", 0x20, 1, 0x20, 200, 0x28);
     dreamGaugeFrames_ = resources.loadDivGraph("media\\player\\DreamGauge.png", 2, 2, 1, 0xa0, 0xa0);
 
-    selectedStage_ = (stage == 2 || stage == 4) ? stage : 1;
+    config_ = config;
+    selectedStage_ = (config.stage == 2 || config.stage == 4) ? config.stage : 1;
+    config_.stage = selectedStage_;
     initialized_ = !playerFrames_.empty() && playerFrames_.front() != -1 &&
                    !enemySmallFrames_.empty() && enemySmallFrames_.front() != -1 &&
                    !bulletFrames_.empty() && bulletFrames_.front() != -1;
@@ -298,8 +304,20 @@ bool StageRuntime::initialize(ResourceManager& resources, int stage) {
 }
 
 void StageRuntime::setStage(int stage) {
-    const int normalized = (stage == 2 || stage == 4) ? stage : 1;
-    if (selectedStage_ != normalized) {
+    auto next = config_;
+    next.stage = stage;
+    setConfig(next);
+}
+
+void StageRuntime::setConfig(const StageRuntimeConfig& config) {
+    auto next = config;
+    const int normalized = (next.stage == 2 || next.stage == 4) ? next.stage : 1;
+    next.stage = normalized;
+    const bool changed = selectedStage_ != normalized || config_.routeMode != next.routeMode ||
+                         config_.playerOption != next.playerOption || config_.subOption != next.subOption ||
+                         config_.loadoutId != next.loadoutId || config_.optionSlots != next.optionSlots;
+    config_ = next;
+    if (changed) {
         selectedStage_ = normalized;
         reset();
     }
@@ -310,6 +328,7 @@ void StageRuntime::reset() {
     player_ = {};
     enemies_.clear();
     enemyProjectiles_.clear();
+    playerSideObjects_.clear();
     playerShots_.clear();
 }
 
@@ -318,6 +337,8 @@ void StageRuntime::update() {
         return;
     }
 
+    updateLayoutGuideToggle();
+
     if (CheckHitKey(KEY_INPUT_R) != 0) {
         reset();
         return;
@@ -325,17 +346,21 @@ void StageRuntime::update() {
 
     spawnDueEvents();
     updatePlayer();
+    updatePlayerSideObjects();
     updatePlayerShots();
     updateEnemies();
     updateProjectiles();
     handleCollisions();
 
     enemies_.erase(std::remove_if(enemies_.begin(), enemies_.end(), [](const StageEnemy& enemy) {
-                       return !enemy.active || offscreen(enemy.x, enemy.y, 180.0f) || enemy.age > enemy.lifetime;
+                       return !enemy.active || offscreen(enemy.x, enemy.y, 360.0f) || enemy.age > enemy.lifetime;
                    }), enemies_.end());
     enemyProjectiles_.erase(std::remove_if(enemyProjectiles_.begin(), enemyProjectiles_.end(), [](const StageProjectile& projectile) {
                                 return !projectile.active || offscreen(projectile.x, projectile.y, 80.0f);
                             }), enemyProjectiles_.end());
+    playerSideObjects_.erase(std::remove_if(playerSideObjects_.begin(), playerSideObjects_.end(), [](const PlayerSideObject& object) {
+                                 return !object.active || offscreen(object.x, object.y, 80.0f);
+                             }), playerSideObjects_.end());
     playerShots_.erase(std::remove_if(playerShots_.begin(), playerShots_.end(), [](const PlayerShot& shot) {
                            return !shot.active || shot.y < -40.0f;
                        }), playerShots_.end());
@@ -345,6 +370,7 @@ void StageRuntime::update() {
 
 void StageRuntime::draw() const {
     drawBackground();
+    drawPlayerSideObjects();
     drawPlayerShots();
     drawEnemies();
     drawProjectiles();
@@ -625,16 +651,17 @@ void StageRuntime::updatePlayer() {
     player_.x = clampFloat(player_.x + dx * speed, kPlayLeft, kPlayRight);
     player_.y = clampFloat(player_.y + dy * speed, kPlayTop, kPlayBottom);
 
-    if (player_.shotCooldown > 0) {
-        --player_.shotCooldown;
-    }
     if (player_.invulnerableFrames > 0) {
         --player_.invulnerableFrames;
     }
-    if (CheckHitKey(KEY_INPUT_Z) != 0 && player_.shotCooldown == 0) {
-        playerShots_.push_back({player_.x - 10.0f, player_.y - 22.0f});
-        playerShots_.push_back({player_.x + 10.0f, player_.y - 22.0f});
-        player_.shotCooldown = player_.focused ? 5 : 4;
+    if (CheckHitKey(KEY_INPUT_Z) != 0) {
+        ++player_.shotTimer;
+        if (player_.shotTimer % 5 == 1) {
+            emitPlayerNormalShot();
+        }
+    }
+    else {
+        player_.shotTimer = 0;
     }
 }
 
@@ -1107,6 +1134,102 @@ void StageRuntime::updateProjectileExpandingSpiralPair(StageProjectile& projecti
     projectile.prevX = projectile.x + std::cos(fixedAngleToRadians(projectile.angle16)) * radius;
 }
 
+void StageRuntime::updatePlayerSideObjects() {
+    for (auto& object : playerSideObjects_) {
+        if (!object.active) {
+            continue;
+        }
+        ++object.age;
+        if (object.type >= 0 && object.type <= 0x0a) {
+            const float angle = fixedAngleToRadians(object.angle16);
+            object.x += std::cos(angle) * object.speedOrScale;
+            object.y += std::sin(angle) * object.speedOrScale;
+        }
+        if (object.age > object.alphaOrLifetime && object.alphaOrLifetime > 0) {
+            object.active = false;
+        }
+    }
+}
+
+void StageRuntime::emitPlayerNormalShot() {
+    const std::uint16_t up = radiansToFixedAngle(-kPi * 0.5f);
+    const int mainType = player_.shotVariant != 0 || player_.specialGauge >= 50000 ? 1 : 0;
+    spawnPlayerSideObject(mainType, player_.x - 10.0f, player_.y - 22.0f, 13.5f, up, 0x82, 8);
+    spawnPlayerSideObject(mainType, player_.x + 10.0f, player_.y - 22.0f, 13.5f, up, 0x82, 8);
+
+    constexpr std::array<std::array<float, 2>, 4> kSpreadAnchors{{
+        std::array<float, 2>{-44.0f, -12.0f}, std::array<float, 2>{44.0f, -12.0f},
+        std::array<float, 2>{-24.0f, -40.0f}, std::array<float, 2>{24.0f, -40.0f},
+    }};
+    constexpr std::array<std::array<float, 2>, 4> kFocusedAnchors{{
+        std::array<float, 2>{-26.0f, -18.0f}, std::array<float, 2>{26.0f, -18.0f},
+        std::array<float, 2>{-14.0f, -44.0f}, std::array<float, 2>{14.0f, -44.0f},
+    }};
+    const auto& anchors = player_.focused ? kFocusedAnchors : kSpreadAnchors;
+    for (int i = 0; i < static_cast<int>(anchors.size()); ++i) {
+        const int type = optionShotTypeForSlot(i);
+        const float angleOffset = (i == 0 ? -0.10f : (i == 1 ? 0.10f : (i == 2 ? -0.04f : 0.04f)));
+        const float subOptionSpeed = config_.subOption == 0 ? 0.0f : 0.8f;
+        spawnPlayerSideObject(type, player_.x + anchors[static_cast<std::size_t>(i)][0],
+                              player_.y + anchors[static_cast<std::size_t>(i)][1],
+                              10.5f + subOptionSpeed, radiansToFixedAngle(-kPi * 0.5f + angleOffset), 0x46, 6);
+    }
+}
+
+void StageRuntime::spawnPlayerSideObject(int type, float x, float y, float speedOrScale, std::uint16_t angle16, int radiusOrLifetime, int auxRadiusOrScale) {
+    if (playerSideObjects_.size() >= kPlayerSideObjectCap) {
+        return;
+    }
+    PlayerSideObject object;
+    object.type = type;
+    object.x = x;
+    object.y = y;
+    object.originX = x;
+    object.originY = y;
+    object.angle16 = angle16;
+    object.speedOrScale = speedOrScale;
+    object.alphaOrLifetime = 180;
+    object.radiusOrScale = radiusOrLifetime;
+    object.auxRadiusOrScale = auxRadiusOrScale;
+    playerSideObjects_.push_back(object);
+}
+
+int StageRuntime::baseOptionShotTypeForConfig() const {
+    const int route = std::max(0, std::min(config_.routeMode, 2));
+    const int loadoutBand = std::max(0, std::min(config_.loadoutId / 3, 2));
+    return std::min(10, 2 + route * 2 + loadoutBand * 2);
+}
+
+int StageRuntime::optionShotTypeForSlot(int slot) const {
+    const int base = baseOptionShotTypeForConfig();
+    const int optionShift = config_.playerOption != 0 && slot >= 2 ? 1 : 0;
+    return std::max(2, std::min(10, base + (slot % 2) + optionShift));
+}
+
+int StageRuntime::playerSideObjectVisualFrame(const PlayerSideObject& object) const {
+    switch (object.type) {
+    case 0: return 0x19;
+    case 1: return 0x1e;
+    case 2:
+    case 3: return 0x23;
+    case 4:
+    case 5: return 0x2d;
+    case 6: return 0x36;
+    case 7: return 0x3c;
+    case 8: return 0x3f;
+    case 9:
+    case 10: return 0x46;
+    default: return 0x19;
+    }
+}
+
+bool StageRuntime::playerSideObjectCanHitEnemy(const PlayerSideObject& object) const {
+    return object.active && object.type >= 0 && object.type <= 0x0a;
+}
+
+int StageRuntime::playerSideObjectDamage(const PlayerSideObject& object) const {
+    return object.type <= 1 ? 2 : 1;
+}
 void StageRuntime::updatePlayerShots() {
     for (auto& shot : playerShots_) {
         shot.y += shot.vy;
@@ -1114,6 +1237,26 @@ void StageRuntime::updatePlayerShots() {
 }
 
 void StageRuntime::handleCollisions() {
+    for (auto& object : playerSideObjects_) {
+        if (!playerSideObjectCanHitEnemy(object)) {
+            continue;
+        }
+        for (auto& enemy : enemies_) {
+            if (!enemy.active) {
+                continue;
+            }
+            const int radius = object.auxRadiusOrScale + enemy.radius;
+            if (distanceSquared(object.x, object.y, enemy.x, enemy.y) <= static_cast<float>(radius * radius)) {
+                object.active = false;
+                enemy.hp -= playerSideObjectDamage(object);
+                if (enemy.hp <= 0) {
+                    enemy.active = false;
+                }
+                break;
+            }
+        }
+    }
+
     for (auto& shot : playerShots_) {
         if (!shot.active) {
             continue;
@@ -1141,8 +1284,8 @@ void StageRuntime::handleCollisions() {
                 projectile.active = false;
                 --player_.lives;
                 player_.invulnerableFrames = 180;
-                player_.x = 640.0f;
-                player_.y = 620.0f;
+                player_.x = static_cast<float>(notes::gameplay_layout::kPlayerStart.x);
+                player_.y = static_cast<float>(notes::gameplay_layout::kPlayerStart.y);
                 if (player_.lives < 0) {
                     player_.lives = 3;
                     reset();
@@ -1218,29 +1361,49 @@ void StageRuntime::drawBackground() const {
     DrawBox(0, 0, notes::kScreenWidth, notes::kScreenHeight, GetColor(10, 14, 28), TRUE);
     const int scroll = frame_ % 720;
     if (!stageBack2Frames_.empty() && stageBack2Frames_.front() != -1) {
-        DrawGraph(40, scroll - 720, stageBack2Frames_.front(), TRUE);
-        DrawGraph(40, scroll, stageBack2Frames_.front(), TRUE);
+        DrawGraph(notes::gameplay_layout::kStageBackOrigin.x, scroll - 720, stageBack2Frames_.front(), TRUE);
+        DrawGraph(notes::gameplay_layout::kStageBackOrigin.x, scroll, stageBack2Frames_.front(), TRUE);
     }
     if (!stageBack1Frames_.empty() && stageBack1Frames_.front() != -1) {
         const int slowScroll = (frame_ / 2) % 720;
-        DrawGraph(40, slowScroll - 720, stageBack1Frames_.front(), TRUE);
-        DrawGraph(40, slowScroll, stageBack1Frames_.front(), TRUE);
+        DrawGraph(notes::gameplay_layout::kStageBackOrigin.x, slowScroll - 720, stageBack1Frames_.front(), TRUE);
+        DrawGraph(notes::gameplay_layout::kStageBackOrigin.x, slowScroll, stageBack1Frames_.front(), TRUE);
     }
     if (!stageFrameFrames_.empty() && stageFrameFrames_.front() != -1) {
-        DrawGraph(40, 0, stageFrameFrames_.front(), TRUE);
+        DrawGraph(notes::gameplay_layout::kStageFrameRect.x, notes::gameplay_layout::kStageFrameRect.y, stageFrameFrames_.front(), TRUE);
     }
     else {
-        DrawBox(static_cast<int>(kPlayLeft), 0, static_cast<int>(kPlayRight), notes::kScreenHeight, GetColor(12, 12, 28), FALSE);
+        DrawBox(notes::gameplay_layout::kStageFrameRect.x, notes::gameplay_layout::kStageFrameRect.y,
+                notes::gameplay_layout::kStageFrameRect.right(), notes::gameplay_layout::kStageFrameRect.bottom(),
+                GetColor(12, 12, 28), FALSE);
+    }
+}
+
+void StageRuntime::drawPlayerSideObjects() const {
+    for (const auto& object : playerSideObjects_) {
+        const int frameIndex = playerSideObjectVisualFrame(object);
+        const int handle = playerFrames_.empty() || frameIndex >= static_cast<int>(playerFrames_.size()) ? -1 : playerFrames_[static_cast<std::size_t>(frameIndex)];
+        const float x = screenX(object.x);
+        const float y = screenY(object.y);
+        if (handle != -1) {
+            DrawRotaGraphF(x, y, 0.55, fixedAngleToRadians(object.angle16) + kPi * 0.5f, handle, TRUE);
+        }
+        else {
+            const int color = object.type <= 1 ? GetColor(120, 220, 255) : GetColor(180, 255, 180);
+            DrawCircle(static_cast<int>(x), static_cast<int>(y), std::max(3, object.auxRadiusOrScale), color, TRUE);
+        }
     }
 }
 
 void StageRuntime::drawPlayer() const {
+    const float x = screenX(player_.x);
+    const float y = screenY(player_.y);
     const int frame = playerFrames_.empty() ? -1 : playerFrames_[0];
     if (frame != -1 && (player_.invulnerableFrames / 6) % 2 == 0) {
-        DrawRotaGraphF(player_.x, player_.y, 0.7, 0.0, frame, TRUE);
+        DrawRotaGraphF(x, y, 0.7, 0.0, frame, TRUE);
     }
     const int color = player_.focused ? GetColor(128, 220, 255) : GetColor(255, 255, 255);
-    DrawCircle(static_cast<int>(player_.x), static_cast<int>(player_.y), player_.focused ? 3 : 5, color, FALSE);
+    DrawCircle(static_cast<int>(x), static_cast<int>(y), player_.focused ? 3 : 5, color, FALSE);
 }
 
 void StageRuntime::drawEnemies() const {
@@ -1248,29 +1411,31 @@ void StageRuntime::drawEnemies() const {
         const auto& frames = stageUsesMediumFrame(enemy.spawnType) ? enemyMediumFrames_ : enemySmallFrames_;
         const int index = frames.empty() ? -1 : std::min(enemy.visualFrame, static_cast<int>(frames.size()) - 1);
         const int handle = index < 0 ? -1 : frames[static_cast<std::size_t>(index)];
+        const float x = screenX(enemy.x);
+        const float y = screenY(enemy.y);
         if (handle != -1) {
             const double scale = stageUsesMediumFrame(enemy.spawnType) ? 0.42 : 0.55;
             if (enemy.spawnType == 0x35) {
                 SetDrawBlendMode(DX_BLENDMODE_ALPHA, 110);
-                DrawRotaGraphF(enemy.x, enemy.y, scale * 0.92, enemy.angle + kPi * 0.5f + kTau / 3.0f, handle, TRUE);
-                DrawRotaGraphF(enemy.x, enemy.y, scale * 0.92, enemy.angle + kPi * 0.5f - kTau / 3.0f, handle, TRUE);
+                DrawRotaGraphF(x, y, scale * 0.92, enemy.angle + kPi * 0.5f + kTau / 3.0f, handle, TRUE);
+                DrawRotaGraphF(x, y, scale * 0.92, enemy.angle + kPi * 0.5f - kTau / 3.0f, handle, TRUE);
                 SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
             }
-            DrawRotaGraphF(enemy.x, enemy.y, scale, enemy.angle + kPi * 0.5f, handle, TRUE);
+            DrawRotaGraphF(x, y, scale, enemy.angle + kPi * 0.5f, handle, TRUE);
             if (enemy.spawnType == 0x3d) {
                 for (float offset : {-80.0f, 0.0f, 80.0f}) {
-                    DrawCircle(static_cast<int>(enemy.x + offset), static_cast<int>(enemy.y), 8, GetColor(120, 190, 255), FALSE);
+                    DrawCircle(static_cast<int>(x + offset), static_cast<int>(y), 8, GetColor(120, 190, 255), FALSE);
                 }
             }
             if (enemy.spawnType == 0x3f) {
                 SetDrawBlendMode(DX_BLENDMODE_ALPHA, 150);
-                DrawRotaGraphF(enemy.x - 48.0f, enemy.y + 18.0f, scale * 0.55, enemy.angle, handle, TRUE);
-                DrawRotaGraphF(enemy.x + 48.0f, enemy.y + 18.0f, scale * 0.55, enemy.angle, handle, TRUE);
+                DrawRotaGraphF(x - 48.0f, y + 18.0f, scale * 0.55, enemy.angle, handle, TRUE);
+                DrawRotaGraphF(x + 48.0f, y + 18.0f, scale * 0.55, enemy.angle, handle, TRUE);
                 SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
             }
         }
         else {
-            DrawCircle(static_cast<int>(enemy.x), static_cast<int>(enemy.y), enemy.radius, GetColor(255, 96, 160), TRUE);
+            DrawCircle(static_cast<int>(x), static_cast<int>(y), enemy.radius, GetColor(255, 96, 160), TRUE);
         }
     }
 }
@@ -1280,25 +1445,32 @@ void StageRuntime::drawProjectiles() const {
         const int frameIndex = bulletFrameForVisualSelector(projectile.visualSelector);
         const int handle = bulletFrames_.empty() || frameIndex >= static_cast<int>(bulletFrames_.size()) ? -1 : bulletFrames_[static_cast<std::size_t>(frameIndex)];
         const float angle = projectileDrawRotationForVisualSelector(projectile.visualSelector, projectile.age, projectile.angle16);
+        const float x = screenX(projectile.x);
+        const float y = screenY(projectile.y);
         if (handle != -1) {
             // Selectors 0x11..0x14 also add overlays/effects in FUN_140070250; this runtime maps them to base bead frames until effect nodes are reconstructed.
-            DrawRotaGraphF(projectile.x, projectile.y, projectileScaleForVisualSelector(projectile.visualSelector), angle, handle, TRUE);
+            DrawRotaGraphF(x, y, projectileScaleForVisualSelector(projectile.visualSelector), angle, handle, TRUE);
         }
         else {
-            DrawCircle(static_cast<int>(projectile.x), static_cast<int>(projectile.y), projectile.radius, GetColor(255, 80, 180), TRUE);
+            DrawCircle(static_cast<int>(x), static_cast<int>(y), projectile.radius, GetColor(255, 80, 180), TRUE);
         }
     }
 }
 
 void StageRuntime::drawPlayerShots() const {
     for (const auto& shot : playerShots_) {
-        DrawBox(static_cast<int>(shot.x - 2), static_cast<int>(shot.y - 12),
-                static_cast<int>(shot.x + 2), static_cast<int>(shot.y + 8), GetColor(120, 220, 255), TRUE);
+        const float x = screenX(shot.x);
+        const float y = screenY(shot.y);
+        DrawBox(static_cast<int>(x - 2), static_cast<int>(y - 12),
+                static_cast<int>(x + 2), static_cast<int>(y + 8), GetColor(120, 220, 255), TRUE);
     }
 }
 
 void StageRuntime::drawOverlay() const {
     drawHudSidebar();
+    if (showLayoutGuides_) {
+        drawLayoutGuides();
+    }
     drawDebugOverlay();
 }
 
@@ -1311,41 +1483,95 @@ void StageRuntime::drawHudSidebar() const {
     constexpr int specialGaugeMax = 50000;
     constexpr int tokenStock = 2;
 
-    if (dataWindowHandle_ != -1) {
-        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 210);
-        DrawGraph(940, 340, dataWindowHandle_, TRUE);
-        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    if (timeWindowHandle_ != -1) {
+        DrawGraph(notes::hud_layout::kTimeWindowRect.x, notes::hud_layout::kTimeWindowRect.y, timeWindowHandle_, TRUE);
     }
     else {
-        DrawBox(960, 340, notes::kScreenWidth - 16, notes::kScreenHeight - 20, GetColor(18, 20, 36), TRUE);
-        DrawBox(960, 340, notes::kScreenWidth - 16, notes::kScreenHeight - 20, GetColor(70, 80, 120), FALSE);
+        DrawBox(notes::hud_layout::kTimeWindowRect.x, notes::hud_layout::kTimeWindowRect.y,
+                notes::hud_layout::kTimeWindowRect.right(), notes::hud_layout::kTimeWindowRect.bottom(),
+                GetColor(18, 20, 36), TRUE);
+        DrawBox(notes::hud_layout::kTimeWindowRect.x, notes::hud_layout::kTimeWindowRect.y,
+                notes::hud_layout::kTimeWindowRect.right(), notes::hud_layout::kTimeWindowRect.bottom(),
+                GetColor(70, 80, 120), FALSE);
     }
 
-    DrawString(kHudX, kHudScoreY - 20, "SCORE", GetColor(180, 210, 255));
-    drawHudNumber(kHudNumberRight, kHudScoreY, runScore, numSmallFrames_, 20, 30, 0.9);
+    if (dataWindowHandle_ != -1) {
+        DrawGraph(notes::hud_layout::kDataWindowRect.x, notes::hud_layout::kDataWindowRect.y, dataWindowHandle_, TRUE);
+    }
+    else {
+        DrawBox(notes::hud_layout::kDataWindowRect.x, notes::hud_layout::kDataWindowRect.y,
+                notes::hud_layout::kDataWindowRect.right(), notes::hud_layout::kDataWindowRect.bottom(),
+                GetColor(18, 20, 36), TRUE);
+        DrawBox(notes::hud_layout::kDataWindowRect.x, notes::hud_layout::kDataWindowRect.y,
+                notes::hud_layout::kDataWindowRect.right(), notes::hud_layout::kDataWindowRect.bottom(),
+                GetColor(70, 80, 120), FALSE);
+    }
 
-    DrawString(kHudX, kHudBaseValueY - 18, "VALUE", GetColor(180, 210, 255));
-    drawHudNumber(kHudNumberRight, kHudBaseValueY, scoreItemBaseValue, numSmallFrames_, 20, 30, 0.85);
+    DrawString(notes::hud_layout::kLabelX, notes::hud_layout::kScoreY - 20, "SCORE", GetColor(180, 210, 255));
+    drawHudNumber(notes::hud_layout::kNumberRightX, notes::hud_layout::kScoreY, runScore, numSmallFrames_, 20, 30, 0.9);
 
-    DrawString(kHudX, kHudGaugeY - 18, "DREAM", GetColor(180, 210, 255));
-    drawHudGauge(kHudX, kHudGaugeY, specialGauge, specialGaugeMax);
+    DrawString(notes::hud_layout::kLabelX, notes::hud_layout::kBaseValueY - 18, "VALUE", GetColor(180, 210, 255));
+    drawHudNumber(notes::hud_layout::kNumberRightX, notes::hud_layout::kBaseValueY, scoreItemBaseValue, numSmallFrames_, 20, 30, 0.85);
 
-    DrawString(kHudX, kHudTokenY - 18, "TOKEN", GetColor(180, 210, 255));
-    drawHudTokenPips(kHudPipStartX, kHudTokenY, tokenStock, kHudMaxTokens);
+    DrawString(notes::hud_layout::kLabelX, notes::hud_layout::kGaugeY - 18, "DREAM", GetColor(180, 210, 255));
+    drawHudGauge(notes::hud_layout::kLabelX, notes::hud_layout::kGaugeY, specialGauge, specialGaugeMax);
 
-    DrawString(kHudX, kHudStageY - 18, "STAGE", GetColor(180, 210, 255));
-    drawHudNumber(kHudNumberRight, kHudStageY, selectedStage_, numSmallFrames_, 20, 30, 0.85);
+    DrawString(notes::hud_layout::kLabelX, notes::hud_layout::kTokenY - 18, "TOKEN", GetColor(180, 210, 255));
+    drawHudTokenPips(notes::hud_layout::kPipStartX, notes::hud_layout::kTokenY, tokenStock, notes::hud_layout::kMaxTokens);
 
-    DrawString(kHudX, kHudStockY - 18, "STOCK", GetColor(180, 210, 255));
-    DrawString(kHudNumberRight - 48, kHudStockY, "x", GetColor(235, 235, 255));
-    drawHudNumber(kHudNumberRight, kHudStockY, std::max(0, player_.lives), numSmallFrames_, 20, 30, 0.85);
+    DrawString(notes::hud_layout::kLabelX, notes::hud_layout::kStageY - 18, "STAGE", GetColor(180, 210, 255));
+    drawHudNumber(notes::hud_layout::kNumberRightX, notes::hud_layout::kStageY, selectedStage_, numSmallFrames_, 20, 30, 0.85);
+
+    DrawString(notes::hud_layout::kLabelX, notes::hud_layout::kStockY - 18, "STOCK", GetColor(180, 210, 255));
+    DrawString(notes::hud_layout::kNumberRightX - 48, notes::hud_layout::kStockY, "x", GetColor(235, 235, 255));
+    drawHudNumber(notes::hud_layout::kNumberRightX, notes::hud_layout::kStockY, std::max(0, player_.lives), numSmallFrames_, 20, 30, 0.85);
+}
+
+void StageRuntime::drawLayoutGuides() const {
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, 120);
+    DrawBox(notes::gameplay_layout::kStageBackRect.x, notes::gameplay_layout::kStageBackRect.y,
+            notes::gameplay_layout::kStageBackRect.right(), notes::gameplay_layout::kStageBackRect.bottom(),
+            GetColor(80, 120, 255), FALSE);
+    DrawBox(notes::gameplay_layout::kStageFrameRect.x, notes::gameplay_layout::kStageFrameRect.y,
+            notes::gameplay_layout::kStageFrameRect.right(), notes::gameplay_layout::kStageFrameRect.bottom(),
+            GetColor(80, 255, 160), FALSE);
+    DrawBox(static_cast<int>(screenX(kPlayLeft)), static_cast<int>(screenY(kPlayTop)),
+            static_cast<int>(screenX(kPlayRight)), static_cast<int>(screenY(kPlayBottom)),
+            GetColor(255, 220, 80), FALSE);
+    DrawBox(notes::hud_layout::kTimeWindowRect.x, notes::hud_layout::kTimeWindowRect.y,
+            notes::hud_layout::kTimeWindowRect.right(), notes::hud_layout::kTimeWindowRect.bottom(),
+            GetColor(255, 120, 80), FALSE);
+    DrawBox(notes::hud_layout::kDataWindowRect.x, notes::hud_layout::kDataWindowRect.y,
+            notes::hud_layout::kDataWindowRect.right(), notes::hud_layout::kDataWindowRect.bottom(),
+            GetColor(255, 120, 200), FALSE);
+    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
+    const int lineColor = GetColor(180, 220, 255);
+    for (int y : {notes::hud_layout::kScoreY, notes::hud_layout::kBaseValueY, notes::hud_layout::kGaugeY,
+                  notes::hud_layout::kTokenY, notes::hud_layout::kStageY, notes::hud_layout::kStockY}) {
+        DrawLine(notes::hud_layout::kDataWindowRect.x, y, notes::hud_layout::kDataWindowRect.right(), y, lineColor);
+    }
+    for (int i = 0; i < notes::hud_layout::kMaxTokens; ++i) {
+        const int x = notes::hud_layout::kPipStartX + i * notes::hud_layout::kPipStep;
+        DrawLine(x, notes::hud_layout::kTokenY - 10, x, notes::hud_layout::kTokenY + 26, GetColor(180, 255, 220));
+    }
+    DrawFormatString(56, 20, GetColor(255, 245, 160),
+                     "F7 layout guides  player local=(%.1f, %.1f) screen=(%.1f, %.1f)",
+                     player_.x, player_.y, screenX(player_.x), screenY(player_.y));
+    DrawString(56, 42, "blue=StageBack  green=StageFrame  yellow=600x720 playfield  red/pink=HUD windows", GetColor(210, 220, 240));
 }
 
 void StageRuntime::drawDebugOverlay() const {
-    DrawFormatString(24, notes::kScreenHeight - 28, GetColor(150, 160, 180),
-                     "reconstruction probe  stage=%02d frame=%d enemies=%d bullets=%d shots=%d lives=%d",
+    DrawFormatString(24, notes::kScreenHeight - 48, GetColor(150, 160, 180),
+                     "reconstruction probe  stage=%02d frame=%d enemies=%d bullets=%d side=%d shots=%d lives=%d",
                      selectedStage_, frame_, static_cast<int>(enemies_.size()),
-                     static_cast<int>(enemyProjectiles_.size()), static_cast<int>(playerShots_.size()), player_.lives);
+                     static_cast<int>(enemyProjectiles_.size()), static_cast<int>(playerSideObjects_.size()),
+                     static_cast<int>(playerShots_.size()), player_.lives);
+    DrawFormatString(24, notes::kScreenHeight - 26, GetColor(150, 180, 210),
+                     "loadout route=%d playerOpt=%d sub=%d loadout=%d shotTimer=%d focus=%d slots=[%d %d %d %d]",
+                     config_.routeMode, config_.playerOption, config_.subOption, config_.loadoutId,
+                     player_.shotTimer, player_.focused ? 1 : 0,
+                     config_.optionSlots[0], config_.optionSlots[1], config_.optionSlots[2], config_.optionSlots[3]);
 }
 
 void StageRuntime::drawHudNumber(int rightX, int y, int value, const std::vector<int>& digitFrames, int digitWidth, int digitHeight, double scale) const {
@@ -1379,12 +1605,14 @@ void StageRuntime::drawHudNumber(int rightX, int y, int value, const std::vector
 }
 
 void StageRuntime::drawHudGauge(int x, int y, int value, int maxValue) const {
-    const int width = 160;
-    const int height = 12;
+    const int width = notes::hud_layout::kGaugeBarWidth;
+    const int height = notes::hud_layout::kGaugeBarHeight;
     const float ratio = maxValue <= 0 ? 0.0f : clampFloat(static_cast<float>(value) / static_cast<float>(maxValue), 0.0f, 1.0f);
     if (!dreamGaugeFrames_.empty() && dreamGaugeFrames_.front() != -1) {
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, 95);
-        DrawRotaGraphF(static_cast<float>(x + 80), static_cast<float>(y + 8), 0.28, 0.0, dreamGaugeFrames_.front(), TRUE);
+        DrawRotaGraphF(static_cast<float>(x + notes::hud_layout::kDreamGaugePreviewCenterOffsetX),
+                       static_cast<float>(y + notes::hud_layout::kDreamGaugePreviewCenterOffsetY),
+                       notes::hud_layout::kDreamGaugePreviewScale, 0.0, dreamGaugeFrames_.front(), TRUE);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     }
     DrawBox(x, y, x + width, y + height, GetColor(32, 36, 64), TRUE);
@@ -1396,11 +1624,19 @@ void StageRuntime::drawHudTokenPips(int x, int y, int activeCount, int maxCount)
     activeCount = std::max(0, std::min(activeCount, maxCount));
     for (int i = 0; i < maxCount; ++i) {
         const bool active = i < activeCount;
-        const int cx = x + i * kHudPipStep;
+        const int cx = x + i * notes::hud_layout::kPipStep;
         const int color = active ? GetColor(150, 235, 255) : GetColor(60, 68, 88);
         DrawCircle(cx, y + 8, 7, color, TRUE);
         DrawCircle(cx, y + 8, 7, GetColor(150, 170, 210), FALSE);
     }
+}
+
+void StageRuntime::updateLayoutGuideToggle() {
+    const bool down = CheckHitKey(KEY_INPUT_F7) != 0;
+    if (down && !prevLayoutGuideToggle_) {
+        showLayoutGuides_ = !showLayoutGuides_;
+    }
+    prevLayoutGuideToggle_ = down;
 }
 
 float StageRuntime::aimAtPlayer(float x, float y) const {
@@ -1414,7 +1650,7 @@ float StageRuntime::deterministicUnit(int frame, int salt) {
 }
 
 bool StageRuntime::offscreen(float x, float y, float margin) {
-    return x < -margin || x > notes::kScreenWidth + margin || y < -margin || y > notes::kScreenHeight + margin;
+    return x < kPlayLeft - margin || x > kPlayRight + margin || y < kPlayTop - margin || y > kPlayBottom + margin;
 }
 
 } // namespace reconstructed

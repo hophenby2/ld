@@ -110,6 +110,10 @@ FrontendRuntime::InputSnapshot FrontendRuntime::readInput() {
     return input;
 }
 
+void FrontendRuntime::refreshOptionSlots() {
+    optionSlots_ = {{routeMode_, playerOption_, subOption_, loadoutId_}};
+}
+
 bool FrontendRuntime::keyPressed(int key, bool& previous) const {
     const bool down = CheckHitKey(key) != 0;
     const bool pressed = down && !previous;
@@ -173,11 +177,28 @@ void FrontendRuntime::updateStageSetup(ResourceManager& resources, const InputSn
         stageSetupRow_ = cursor_;
     }
     if (input.left || input.right) {
+        const int delta = input.right ? 1 : -1;
         if (cursor_ == 0) {
             routeMode_ = (routeMode_ + (input.right ? 1 : 2)) % 3;
+            refreshOptionSlots();
+            playSound(resources, "SE_se_Switch");
+        }
+        else if (cursor_ == 1) {
+            playerOption_ = playerOption_ == 0 ? 1 : 0;
+            refreshOptionSlots();
             playSound(resources, "SE_se_Switch");
         }
         else if (cursor_ == 2) {
+            subOption_ = subOption_ == 0 ? 1 : 0;
+            refreshOptionSlots();
+            playSound(resources, "SE_se_Switch");
+        }
+        else if (cursor_ == 3) {
+            loadoutId_ = (loadoutId_ + delta + 7) % 7;
+            refreshOptionSlots();
+            playSound(resources, "SE_se_Switch");
+        }
+        else if (cursor_ == 4) {
             auto it = std::find(kSelectableStages.begin(), kSelectableStages.end(), selectedStage_);
             int index = it == kSelectableStages.end() ? 0 : static_cast<int>(it - kSelectableStages.begin());
             index = (index + (input.right ? 1 : static_cast<int>(kSelectableStages.size()) - 1)) % static_cast<int>(kSelectableStages.size());
@@ -205,6 +226,7 @@ void FrontendRuntime::updateStageSetup(ResourceManager& resources, const InputSn
             playSound(resources, "SE_se_Enter");
         }
         else {
+            refreshOptionSlots();
             playSound(resources, "SE_se_Enter");
             beginConfirmTransition(routeMode_ == 2 ? MainState::AlternateSetup : MainState::StageSelect);
         }
@@ -270,7 +292,7 @@ void FrontendRuntime::updateTransition(ResourceManager&) {
         const auto target = pendingState_;
         setState(target, 0);
         if (target == MainState::Gameplay) {
-            gameplayRequest_ = {true, selectedStage_, routeMode_};
+            gameplayRequest_ = {true, selectedStage_, routeMode_, playerOption_, subOption_, loadoutId_, optionSlots_};
         }
     }
     else if (transitionDirection_ < 0 && transitionTimer_ <= -kTransitionFrames) {
@@ -294,15 +316,15 @@ void FrontendRuntime::drawTitleMenu(const ResourceManager& resources) const {
     // approximated by a short sine settle during the first 60 frames.
     if (titleLogo != -1) {
         const double intro = frame_ < 60 ? std::sin(static_cast<double>(frame_) * kPi / 120.0) : 1.0;
-        const int logoY = 44 + static_cast<int>((1.0 - intro) * 36.0);
-        DrawGraph(390, logoY, titleLogo, TRUE);
+        const int logoY = notes::title_layout::kLogoBaseY + static_cast<int>((1.0 - intro) * 36.0);
+        DrawGraph(notes::title_layout::kLogoX, logoY, titleLogo, TRUE);
     }
 
     // Original title menu draws the selected TitleMenu frame plus two wrapped
     // neighbours in each direction. Neighbour alpha follows (3-distance)*0x40;
     // the selected frame uses the unlock/transition-dependent alpha.
-    constexpr int centerX = 370; // 640 - TitleMenu frame width / 2.
-    constexpr int centerY = 420;
+    constexpr int centerX = notes::title_layout::kMenuSelectedX;
+    constexpr int centerY = notes::title_layout::kMenuSelectedY;
     for (int distance = 2; distance >= -2; --distance) {
         const int index = (cursor_ + distance + kTitleMenuCount) % kTitleMenuCount;
         const int handle = resources.graphFrameById("GFX_system_TitleMenu", index);
@@ -311,8 +333,8 @@ void FrontendRuntime::drawTitleMenu(const ResourceManager& resources) const {
         if (transitionTimer_ != 0 && selected) {
             alpha = 0x60;
         }
-        const int x = centerX + distance * 20;
-        const int y = centerY + distance * 66;
+        const int x = centerX + distance * notes::title_layout::kMenuNeighborStepX;
+        const int y = centerY + distance * notes::title_layout::kMenuNeighborStepY;
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
         if (handle != -1) {
             DrawGraph(x, y, handle, TRUE);
@@ -326,7 +348,7 @@ void FrontendRuntime::drawTitleMenu(const ResourceManager& resources) const {
             const int sub = resources.graphFrameById("GFX_system_TitleMenu2", index);
             if (sub != -1) {
                 SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
-                DrawGraph(490, y + 68, sub, TRUE);
+                DrawGraph(notes::title_layout::kMenu2X, y + notes::title_layout::kMenu2YOffset, sub, TRUE);
                 SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
             }
         }
@@ -338,17 +360,22 @@ void FrontendRuntime::drawStageSetup(const ResourceManager& resources) const {
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 192);
     DrawBox(120, 128, 1160, 620, GetColor(0, 0, 0), TRUE);
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-    DrawString(148, 150, "Stage setup candidate (state 0x03)", GetColor(255, 240, 128));
+    DrawString(148, 150, "Stage setup/loadout candidate (state 0x03)", GetColor(255, 240, 128));
     constexpr std::array<const char*, kStageSetupRows> rows{{
-        "Route/mode", "Stage group", "Stage", "Player option", "Difficulty/sub option", "Confirm options", "Start",
+        "Route / player group", "Player option/type", "Suboption", "Loadout / shot id", "Stage", "Option slots preview", "Start",
     }};
     for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
         const int color = i == cursor_ ? GetColor(255, 240, 128) : GetColor(230, 230, 230);
         DrawFormatString(180, 205 + i * 44, color, "%s%s", i == cursor_ ? "> " : "  ", rows[static_cast<std::size_t>(i)]);
     }
     DrawFormatString(560, 205, GetColor(210, 210, 210), "%d", routeMode_);
-    DrawFormatString(560, 205 + 2 * 44, GetColor(210, 210, 210), "%02d", selectedStage_);
-    DrawString(148, 560, "Evidence: state 0x03 advances setup rows, cancel backs out, final confirm enters 0x04/0x05.", GetColor(180, 180, 180));
+    DrawFormatString(560, 205 + 44, GetColor(210, 210, 210), "%d", playerOption_);
+    DrawFormatString(560, 205 + 2 * 44, GetColor(210, 210, 210), "%d", subOption_);
+    DrawFormatString(560, 205 + 3 * 44, GetColor(210, 210, 210), "%d", loadoutId_);
+    DrawFormatString(560, 205 + 4 * 44, GetColor(210, 210, 210), "%02d", selectedStage_);
+    DrawFormatString(560, 205 + 5 * 44, GetColor(210, 210, 210), "[%d %d %d %d]",
+                     optionSlots_[0], optionSlots_[1], optionSlots_[2], optionSlots_[3]);
+    DrawString(148, 560, "Evidence: route/player/sub/loadout fields mirror DAT_140e445c0, DAT_140e44194, DAT_140e41b70, DAT_140e44198.", GetColor(180, 180, 180));
 }
 
 void FrontendRuntime::drawStageSelect(const ResourceManager& resources) const {

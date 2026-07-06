@@ -2,6 +2,8 @@
 
 #include "resource_manager.h"
 
+#include <array>
+
 namespace reconstructed {
 
 class FrontendRuntime {
@@ -19,6 +21,10 @@ public:
         bool requested = false;
         int stage = 1;
         int routeMode = 0;
+        int playerOption = 0;
+        int subOption = 0;
+        int loadoutId = 0;
+        std::array<int, 4> optionSlots{{0, 0, 0, 0}};
     };
 
     void initialize(ResourceManager& resources);
@@ -65,6 +71,7 @@ private:
     void beginConfirmTransition(MainState target);
     void beginCancelTransition(MainState target);
     void moveCursor(ResourceManager& resources, int delta, int count);
+    void refreshOptionSlots();
 
     MainState state_ = MainState::TitleMenu;
     MainState pendingState_ = MainState::TitleMenu;
@@ -74,6 +81,10 @@ private:
     int transitionDirection_ = 0;
     int selectionDirtyTimer_ = 0;
     int routeMode_ = 0;
+    int playerOption_ = 0;
+    int subOption_ = 0;
+    int loadoutId_ = 0;
+    std::array<int, 4> optionSlots_{{0, 0, 0, 0}};
     int selectedStage_ = 1;
     int stageSetupRow_ = 0;
     bool titleBgmStarted_ = false;

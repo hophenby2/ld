@@ -2,6 +2,7 @@
 
 #include "resource_manager.h"
 
+#include <array>
 #include <cstdint>
 #include <cstddef>
 #include <vector>
@@ -10,6 +11,15 @@ namespace reconstructed {
 
 class StageRuntime {
 public:
+    struct StageRuntimeConfig {
+        int stage = 1;
+        int routeMode = 0;
+        int playerOption = 0;
+        int subOption = 0;
+        int loadoutId = 0;
+        std::array<int, 4> optionSlots{{0, 0, 0, 0}};
+    };
+
     struct StageSpawnEvent {
         int frame = 0;
         int spawnType = 0;
@@ -20,7 +30,9 @@ public:
     };
 
     bool initialize(ResourceManager& resources, int stage = 1);
+    bool initialize(ResourceManager& resources, const StageRuntimeConfig& config);
     void setStage(int stage);
+    void setConfig(const StageRuntimeConfig& config);
     void reset();
     void update();
     void draw() const;
@@ -33,9 +45,11 @@ public:
 
 private:
     struct PlayerState {
-        float x = 640.0f;
+        float x = 300.0f;
         float y = 620.0f;
-        int shotCooldown = 0;
+        int shotTimer = 0;
+        int shotVariant = 0;
+        int specialGauge = 0;
         int invulnerableFrames = 0;
         int lives = 3;
         bool focused = false;
@@ -81,6 +95,22 @@ private:
         float vy = 0.0f;
     };
 
+    struct PlayerSideObject {
+        bool active = true;
+        int age = 0;
+        int type = 0;
+        float x = 0.0f;
+        float y = 0.0f;
+        float originX = 0.0f;
+        float originY = 0.0f;
+        std::uint16_t angle16 = 0;
+        float speedOrScale = 0.0f;
+        int alphaOrLifetime = 0;
+        int radiusOrScale = 0;
+        int auxRadiusOrScale = 0;
+        int next = -1;
+    };
+
     struct PlayerShot {
         float x = 0.0f;
         float y = 0.0f;
@@ -107,30 +137,42 @@ private:
     void updateProjectileOrbitArcPair(StageProjectile& projectile);
     void updateProjectileExpandingSpiralPair(StageProjectile& projectile);
     static void updateProjectileVelocity(StageProjectile& projectile);
+    void updatePlayerSideObjects();
     void updatePlayerShots();
     void handleCollisions();
+    void emitPlayerNormalShot();
+    void spawnPlayerSideObject(int type, float x, float y, float speedOrScale, std::uint16_t angle16, int radiusOrLifetime, int auxRadiusOrScale);
+    int baseOptionShotTypeForConfig() const;
+    int optionShotTypeForSlot(int slot) const;
+    int playerSideObjectVisualFrame(const PlayerSideObject& object) const;
+    bool playerSideObjectCanHitEnemy(const PlayerSideObject& object) const;
+    int playerSideObjectDamage(const PlayerSideObject& object) const;
     void spawnProjectileNode(int projectileId, int visualSelector, float x, float y, float angle, float speed, int radius);
     void spawnProjectileNode(int projectileId, int visualSelector, float x, float y, std::uint16_t angle16, float speedOrAccelHint, float speed, int radius, int arg8OrAux);
     void spawnProjectileSpread(int projectileId, int visualSelector, float x, float y, float centerAngle, float speed, int radius, int count, float spreadRadians);
     void spawnProjectileSpread(int projectileId, int visualSelector, float x, float y, std::uint16_t centerAngle16, float speedOrAccelHint, float speed, int radius, int count, int spreadAngle16, int arg8OrAux);
     void drawBackground() const;
+    void drawPlayerSideObjects() const;
     void drawPlayer() const;
     void drawEnemies() const;
     void drawProjectiles() const;
     void drawPlayerShots() const;
     void drawOverlay() const;
     void drawHudSidebar() const;
+    void drawLayoutGuides() const;
     void drawDebugOverlay() const;
     void drawHudNumber(int rightX, int y, int value, const std::vector<int>& digitFrames, int digitWidth, int digitHeight, double scale = 1.0) const;
     void drawHudGauge(int x, int y, int value, int maxValue) const;
     void drawHudTokenPips(int x, int y, int activeCount, int maxCount) const;
 
+    void updateLayoutGuideToggle();
     float aimAtPlayer(float x, float y) const;
     static float deterministicUnit(int frame, int salt);
     static bool offscreen(float x, float y, float margin);
 
     bool initialized_ = false;
     int selectedStage_ = 1;
+    StageRuntimeConfig config_;
     int frame_ = 0;
     PlayerState player_;
     std::vector<int> playerFrames_;
@@ -150,7 +192,10 @@ private:
     std::vector<int> dreamGaugeFrames_;
     std::vector<StageEnemy> enemies_;
     std::vector<StageProjectile> enemyProjectiles_;
+    std::vector<PlayerSideObject> playerSideObjects_;
     std::vector<PlayerShot> playerShots_;
+    bool showLayoutGuides_ = false;
+    bool prevLayoutGuideToggle_ = false;
 };
 
 } // namespace reconstructed
