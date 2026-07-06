@@ -69,16 +69,30 @@ bool App::initialize() {
     if (!resources_->loadStartupResources()) {
         // Continue into the diagnostic window if DxLib itself is alive; the first
         // scaffold is useful even when it reports missing path/library setup.
-        OutputDebugString("[LikeDreamerRe] One or more smoke-test resources failed to load.\n");
+        OutputDebugString("[LikeDreamerRe] One or more startup resources failed to load.\n");
     }
+
+    drawLoadingFrame(0);
+    ScreenFlip();
+
+    resources_->loadGraphs(frontendGraphResources());
+    resources_->loadSounds(soundResources());
+
+    for (int frame = 1; frame < 60 && ProcessMessage() == 0; ++frame) {
+        drawLoadingFrame(frame);
+        ScreenFlip();
+    }
+
     if (options_.loadAllGraphics) {
         resources_->loadGraphs(expandedGraphResources());
     }
     if (options_.loadAudio) {
-        resources_->loadSounds(soundResources());
+        // Frontend/menu sounds are loaded by default above; this option is kept
+        // for compatibility with older smoke-test command lines.
     }
     textDatabase_.load(textResources(), options_.assetRoot, options_.resourceMode);
     stageProbe_.loadDemoSummaries(options_.assetRoot);
+    frontendRuntime_.initialize(*resources_);
 
     return true;
 }
@@ -106,6 +120,30 @@ void App::loadFonts() {
     const int addedNyashi = AddFontResourceExA(nyashi.c_str(), FR_PRIVATE, nullptr);
     const int addedChill = AddFontResourceExA(chill.c_str(), FR_PRIVATE, nullptr);
     fontsLoaded_ = addedNyashi > 0 || addedChill > 0;
+}
+
+void App::drawLoadingFrame(int frame) const {
+    ClearDrawScreen();
+    const int starting = resources_ ? resources_->graphHandleById("GFX_system_starting") : -1;
+    const int whiteBack = resources_ ? resources_->graphHandleById("GFX_system_WhiteBack") : -1;
+    const int nowLoading = resources_ ? resources_->graphHandleById("GFX_system_NowLoading") : -1;
+
+    if (starting != -1) {
+        DrawGraph(0, 0, starting, TRUE);
+    }
+    else if (whiteBack != -1) {
+        DrawGraph(0, 0, whiteBack, TRUE);
+    }
+    else {
+        DrawBox(0, 0, notes::kScreenWidth, notes::kScreenHeight, GetColor(245, 245, 245), TRUE);
+    }
+
+    if (nowLoading != -1) {
+        const int cycle = frame % 120;
+        const int offset = cycle < 60 ? cycle / 3 : (120 - cycle) / 3;
+        DrawGraph(24 + offset, notes::kScreenHeight - 64, nowLoading, TRUE);
+    }
+    DrawString(24, notes::kScreenHeight - 28, "Loading reconstructed frontend resources...", GetColor(80, 80, 80));
 }
 
 int App::runSmokeTestLoop() {
@@ -137,6 +175,23 @@ int App::runSmokeTestLoop() {
         else if (diagnosticsPage_ == 6 && CheckHitKey(KEY_INPUT_2) != 0) {
             stageRuntime_.setStage(2);
         }
+        else if (diagnosticsPage_ == 6 && CheckHitKey(KEY_INPUT_4) != 0) {
+            stageRuntime_.setStage(4);
+        }
+
+        if (diagnosticsPage_ == 0 && resources_) {
+            frontendRuntime_.update(*resources_);
+            const auto request = frontendRuntime_.consumeGameplayRequest();
+            if (request.requested) {
+                if (!stageRuntime_.initialized()) {
+                    stageRuntime_.initialize(*resources_, request.stage);
+                }
+                else {
+                    stageRuntime_.setStage(request.stage);
+                }
+                diagnosticsPage_ = 6;
+            }
+        }
         drawSmokeTestFrame();
         ScreenFlip();
     }
@@ -145,6 +200,12 @@ int App::runSmokeTestLoop() {
 
 void App::drawSmokeTestFrame() {
     ClearDrawScreen();
+
+    if (diagnosticsPage_ == 0 && resources_) {
+        frontendRuntime_.draw(*resources_);
+        DrawString(24, 24, "F1-F5 diagnostics  F6 playable stage shortcut  ESC exit", GetColor(255, 255, 255));
+        return;
+    }
 
     const int titleBack = resources_ ? resources_->graphHandle("media\\system\\TitleBack.png") : -1;
     const int titleLogo = resources_ ? resources_->graphHandle("media\\system\\TitleLogo.png") : -1;
@@ -166,7 +227,7 @@ void App::drawSmokeTestFrame() {
     }
 
     DrawString(24, 24, "LikeDreamerRe reconstruction scaffold", GetColor(255, 240, 128));
-    DrawString(24, 48, "F1 title  F2 resources  F3 text CSV  F4 save/config  F5 stage probe  F6 playable stage (1/2 slice)  ESC exit", GetColor(255, 255, 255));
+    DrawString(24, 48, "F1 title  F2 resources  F3 text CSV  F4 save/config  F5 stage probe  F6 playable stage (1/2/4 slice)  ESC exit", GetColor(255, 255, 255));
     if (diagnosticsPage_ == 6) {
         if (stageRuntime_.initialized()) {
             stageRuntime_.update();

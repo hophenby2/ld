@@ -86,6 +86,37 @@ constexpr std::array<StageRuntime::StageSpawnEvent, 30> kStage02Events{{
     {5600, 0x20, 0x2b5c, 0x168, -500, "S02 row 25: type 0x20 long stage-end setpiece"},
 }};
 
+// First-pass Stage 04 slice: sparse anchors from the Stage 04 schedule and
+// reviewed helper notes. This gives the runtime a body-after-marker type (0x35),
+// drifting emitter (0x37), heavy multipart source (0x38), child-carrier pair
+// (0x39/0x3a), anchor spread emitter (0x3d), and boss-like controller (0x3f).
+constexpr std::array<StageRuntime::StageSpawnEvent, 24> kStage04Events{{
+    {0, 0x37, 500, 0x1c0, 420, "S04 row 1: type 0x37 random drifting emitter"},
+    {80, 0x35, 0xfa, 0x2e4, 0x96, "S04 row 2: type 0x35 right-entry tri-afterimage"},
+    {180, 0x38, 5000, 0x1e0, 0, "S04 row 3: type 0x38 long multipart source"},
+    {260, 0x35, 0xfa, -20, 0x96, "S04 row 4: type 0x35 left-entry tri-afterimage"},
+    {400, 0x38, 5000, 0xf0, 0, "S04 row 5: type 0x38 long multipart source"},
+    {700, 0x07, 5000, 0x1cc, 0, "S04 row 9: common marker/emitter"},
+    {820, 0x3d, 9000, -200, 0x96, "S04 row 10: type 0x3d three-anchor spread emitter"},
+    {980, 0x36, 400, -20, 300, "S04 row 11: type 0x36 side curving spread emitter"},
+    {1100, 0x36, 400, 740, 300, "S04 row 12: type 0x36 mirrored side curving spread emitter"},
+    {1280, 0x38, 4000, 500, 0, "S04 row 13: type 0x38 fixed heavy source"},
+    {1380, 0x38, 4000, 0xdc, 0, "S04 row 14: type 0x38 fixed heavy source"},
+    {1540, 0x3d, 7000, 0x398, 0x96, "S04 row 15: type 0x3d right anchor emitter"},
+    {1780, 0x39, 8000, 0x262, -80, "S04 row 20: type 0x39 directional child carrier"},
+    {1900, 0x39, 8000, 0x6e, -80, "S04 row 21: type 0x39 directional child carrier"},
+    {2050, 0x3a, 8000, 800, 200, "S04 row 22: type 0x3a mirrored child carrier"},
+    {2300, 0x0b, 400, 0x210, -20, "S04 row 23: reused common top burst"},
+    {2500, 0x36, 400, -20, 360, "S04 row 25: type 0x36 late left burst"},
+    {2600, 0x36, 400, 740, 360, "S04 row 26: type 0x36 late right burst"},
+    {3600, 0x3f, 48000, 0x167, 0, "S04 row 27: boss-like multipart pattern controller"},
+    {4500, 0x35, 200, 0x2e4, 0x8c, "S04 row 28: fast right tri-afterimage pair"},
+    {4500, 0x35, 200, -20, 0x8c, "S04 row 29: fast left tri-afterimage pair"},
+    {4700, 0x3d, 9000, -200, 0x96, "S04 row 30: type 0x3d anchor refresh"},
+    {5480, 0x37, 500, 0x220, 430, "S04 row 32: late type 0x37 drifting wave"},
+    {5600, 0x38, 6000, 0x1cc, 0, "S04 row 33: late heavy source"},
+}};
+
 float clampFloat(float value, float low, float high) {
     return std::max(low, std::min(value, high));
 }
@@ -96,12 +127,22 @@ float distanceSquared(float ax, float ay, float bx, float by) {
     return dx * dx + dy * dy;
 }
 
+bool stageUsesMediumFrame(int spawnType) {
+    return (spawnType >= 0x0e && spawnType <= 0x10) ||
+           (spawnType >= 0x1b && spawnType <= 0x20) ||
+           spawnType == 0x38 || spawnType == 0x3d || spawnType == 0x3f;
+}
+
 } // namespace
 
 const StageRuntime::StageSpawnEvent* StageRuntime::eventsForStage(int stage, std::size_t& count) {
     if (stage == 2) {
         count = kStage02Events.size();
         return kStage02Events.data();
+    }
+    if (stage == 4) {
+        count = kStage04Events.size();
+        return kStage04Events.data();
     }
     count = kStage01Events.size();
     return kStage01Events.data();
@@ -115,7 +156,7 @@ bool StageRuntime::initialize(ResourceManager& resources, int stage) {
     stageBack1Frames_ = resources.loadDivGraph("media\\stage\\StageBack1.png", 10, 10, 1, 0x2d0, 0xa00);
     stageBack2Frames_ = resources.loadDivGraph("media\\stage\\StageBack2.png", 10, 10, 1, 0x2d0, 0x2d0);
 
-    selectedStage_ = stage == 2 ? 2 : 1;
+    selectedStage_ = (stage == 2 || stage == 4) ? stage : 1;
     initialized_ = !playerFrames_.empty() && playerFrames_.front() != -1 &&
                    !enemySmallFrames_.empty() && enemySmallFrames_.front() != -1 &&
                    !bulletFrames_.empty() && bulletFrames_.front() != -1;
@@ -124,7 +165,7 @@ bool StageRuntime::initialize(ResourceManager& resources, int stage) {
 }
 
 void StageRuntime::setStage(int stage) {
-    const int normalized = stage == 2 ? 2 : 1;
+    const int normalized = (stage == 2 || stage == 4) ? stage : 1;
     if (selectedStage_ != normalized) {
         selectedStage_ = normalized;
         reset();
@@ -269,6 +310,44 @@ void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
         enemy.visualFrame = 132;
         enemy.vy = 0.35f;
         break;
+    case 0x35:
+        enemy.hp = 18;
+        enemy.radius = 28;
+        enemy.visualFrame = 34;
+        enemy.speed = 5.0f;
+        break;
+    case 0x36:
+    case 0x37:
+        enemy.hp = 14;
+        enemy.radius = 26;
+        enemy.visualFrame = event.spawnType == 0x36 ? 36 : 40;
+        enemy.speed = event.spawnType == 0x36 ? 3.2f : 1.7f;
+        break;
+    case 0x38:
+        enemy.hp = 80;
+        enemy.radius = 56;
+        enemy.visualFrame = 120;
+        enemy.vy = 0.2f;
+        break;
+    case 0x39:
+    case 0x3a:
+        enemy.hp = 50;
+        enemy.radius = 44;
+        enemy.visualFrame = event.spawnType == 0x39 ? 124 : 128;
+        enemy.speed = 1.1f;
+        break;
+    case 0x3d:
+        enemy.hp = 64;
+        enemy.radius = 48;
+        enemy.visualFrame = 134;
+        enemy.vy = 0.16f;
+        break;
+    case 0x3f:
+        enemy.hp = 240;
+        enemy.radius = 70;
+        enemy.visualFrame = 138;
+        enemy.vy = 0.1f;
+        break;
     default:
         enemy.hp = 12;
         enemy.radius = 28;
@@ -312,7 +391,46 @@ void StageRuntime::updatePlayer() {
 void StageRuntime::updateEnemies() {
     for (auto& enemy : enemies_) {
         ++enemy.age;
-        if ((enemy.spawnType == 0x0b || enemy.spawnType == 0x0c || enemy.spawnType == 0x0d ||
+        if (enemy.age <= enemy.activationDelay) {
+            enemy.vx *= 0.92f;
+            enemy.vy *= 0.92f;
+            continue;
+        }
+        const int activeAge = enemy.age - enemy.activationDelay;
+        if (enemy.spawnType == 0x35) {
+            const float desired = aimAtPlayer(enemy.x, enemy.y + 48.0f);
+            const float turn = activeAge < 100 ? 0.12f : 0.025f;
+            enemy.angle = enemy.angle * (1.0f - turn) + desired * turn;
+            enemy.vx = std::cos(enemy.angle) * enemy.speed;
+            enemy.vy = std::sin(enemy.angle) * enemy.speed;
+            if (activeAge > 100) {
+                enemy.speed = std::max(1.4f, enemy.speed - 0.035f);
+            }
+        }
+        else if (enemy.spawnType == 0x36) {
+            const float desired = aimAtPlayer(enemy.x, enemy.y);
+            enemy.angle = enemy.angle * 0.92f + desired * 0.08f;
+            enemy.vx = std::cos(enemy.angle) * enemy.speed;
+            enemy.vy = std::sin(enemy.angle) * enemy.speed;
+        }
+        else if (enemy.spawnType == 0x37) {
+            const float wobble = std::sin((enemy.age + enemy.spawnType * 11) * 0.06f);
+            enemy.angle = enemy.angle * 0.97f + aimAtPlayer(enemy.x, enemy.y) * 0.03f;
+            enemy.vx = std::cos(enemy.angle) * enemy.speed + wobble * 0.9f;
+            enemy.vy = std::sin(enemy.angle) * enemy.speed;
+        }
+        else if (enemy.spawnType == 0x38 || enemy.spawnType == 0x3d || enemy.spawnType == 0x3f) {
+            enemy.vx = std::sin((enemy.age + enemy.spawnType * 17) * 0.02f) * (enemy.spawnType == 0x3f ? 1.4f : 0.9f);
+            if (enemy.spawnType == 0x3f && activeAge > 180) {
+                enemy.vy = std::sin(activeAge * 0.018f) * 0.45f;
+            }
+        }
+        else if (enemy.spawnType == 0x39 || enemy.spawnType == 0x3a) {
+            const float sign = enemy.spawnType == 0x39 ? 1.0f : -1.0f;
+            enemy.vx = sign * std::sin(activeAge * 0.025f) * 1.8f;
+            enemy.vy = 0.55f + std::cos(activeAge * 0.03f) * 0.45f;
+        }
+        else if ((enemy.spawnType == 0x0b || enemy.spawnType == 0x0c || enemy.spawnType == 0x0d ||
              enemy.spawnType == 0x19 || enemy.spawnType == 0x1a || enemy.spawnType == 0x1d || enemy.spawnType == 0x1e) && enemy.age < 220) {
             const float desired = aimAtPlayer(enemy.x, enemy.y);
             enemy.angle = enemy.angle * 0.94f + desired * 0.06f;
@@ -327,18 +445,42 @@ void StageRuntime::updateEnemies() {
         enemy.x += enemy.vx;
         enemy.y += enemy.vy;
 
-        if (enemy.age > 30 && enemy.age % 70 == 0) {
+        if (activeAge > 30 && activeAge % 70 == 0) {
             const int selector = (enemy.spawnType >= 0x19 && enemy.spawnType <= 0x20) ? 1 : 0;
             spawnProjectileNode(0, selector, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 3.0f, 6);
         }
+        if (enemy.spawnType == 0x35 && activeAge > 40 && activeAge % 42 == 0) {
+            spawnProjectileSpread(6, 0, enemy.x, enemy.y + 48.0f, aimAtPlayer(enemy.x, enemy.y), 2.8f, 6, 3, kPi / 7.0f);
+        }
+        if (enemy.spawnType == 0x36 && activeAge > 50 && activeAge % 72 == 0) {
+            spawnProjectileSpread(4, 0, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.9f, 6, 5, kPi / 5.0f);
+        }
+        if (enemy.spawnType == 0x37 && activeAge > 70 && activeAge % 64 == 0) {
+            spawnProjectileNode(0, 0, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 3.2f, 5);
+        }
+        if (enemy.spawnType == 0x38 && activeAge > 100 && activeAge % 96 == 0) {
+            spawnProjectileSpread(9, 2, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.3f, 8, 10, kTau);
+        }
+        if ((enemy.spawnType == 0x39 || enemy.spawnType == 0x3a) && activeAge > 80 && activeAge % 120 == 0) {
+            spawnProjectileSpread(3, 3, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.5f, 7, 7, kPi * 0.85f);
+        }
+        if (enemy.spawnType == 0x3d && activeAge > 70 && activeAge % 130 == 0) {
+            for (float offset : {-80.0f, 0.0f, 80.0f}) {
+                spawnProjectileSpread(5, 2, enemy.x + offset, enemy.y, aimAtPlayer(enemy.x + offset, enemy.y), 2.4f, 8, 5, kPi / 3.0f);
+            }
+        }
+        if (enemy.spawnType == 0x3f && activeAge > 90 && activeAge % 75 == 0) {
+            spawnProjectileSpread(7, 0, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.6f, 7, 14, kTau);
+            spawnProjectileSpread(2, 2, enemy.x, enemy.y + 32.0f, aimAtPlayer(enemy.x, enemy.y), 2.0f, 9, 8, kPi);
+        }
         if ((enemy.spawnType == 0x0c || enemy.spawnType == 0x0d || enemy.spawnType == 0x19 || enemy.spawnType == 0x1a) &&
-            enemy.age > 80 && enemy.age % 120 == 0) {
+            activeAge > 80 && activeAge % 120 == 0) {
             const int count = (enemy.spawnType == 0x0c || enemy.spawnType == 0x19) ? 3 : 5;
             spawnProjectileSpread(count, 0, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.6f, 6, count, kPi / 5.0f);
         }
         if ((enemy.spawnType == 0x0e || enemy.spawnType == 0x0f || enemy.spawnType == 0x10 ||
              enemy.spawnType == 0x1b || enemy.spawnType == 0x1c || enemy.spawnType == 0x1f || enemy.spawnType == 0x20) &&
-            enemy.age > 120 && enemy.age % 180 == 0) {
+            activeAge > 120 && activeAge % 180 == 0) {
             const int selector = enemy.spawnType >= 0x19 ? 3 : 2;
             spawnProjectileSpread(2, selector, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.2f, 8, 12, kTau);
         }
@@ -463,11 +605,11 @@ void StageRuntime::drawPlayer() const {
 
 void StageRuntime::drawEnemies() const {
     for (const auto& enemy : enemies_) {
-        const auto& frames = (enemy.spawnType >= 0x0e && enemy.spawnType <= 0x10) || enemy.spawnType >= 0x1b ? enemyMediumFrames_ : enemySmallFrames_;
+        const auto& frames = stageUsesMediumFrame(enemy.spawnType) ? enemyMediumFrames_ : enemySmallFrames_;
         const int index = frames.empty() ? -1 : std::min(enemy.visualFrame, static_cast<int>(frames.size()) - 1);
         const int handle = index < 0 ? -1 : frames[static_cast<std::size_t>(index)];
         if (handle != -1) {
-            const double scale = ((enemy.spawnType >= 0x0e && enemy.spawnType <= 0x10) || enemy.spawnType >= 0x1b) ? 0.42 : 0.55;
+            const double scale = stageUsesMediumFrame(enemy.spawnType) ? 0.42 : 0.55;
             DrawRotaGraphF(enemy.x, enemy.y, scale, enemy.angle + kPi * 0.5f, handle, TRUE);
         }
         else {
@@ -509,7 +651,7 @@ void StageRuntime::drawPlayerShots() const {
 
 void StageRuntime::drawOverlay() const {
     DrawFormatString(24, 24, GetColor(255, 240, 128), "Playable reconstruction Stage %02d  frame=%d", selectedStage_, frame_);
-    DrawFormatString(24, 48, GetColor(255, 255, 255), "Arrows move  Shift focus  Z shot  R reset  1/2 stage slice  F1-F5 diagnostics  ESC exit");
+    DrawFormatString(24, 48, GetColor(255, 255, 255), "Arrows move  Shift focus  Z shot  R reset  1/2/4 stage slice  F1-F5 diagnostics  ESC exit");
     DrawFormatString(24, 72, GetColor(210, 210, 210), "enemies=%d enemyBullets=%d shots=%d lives=%d",
                      static_cast<int>(enemies_.size()), static_cast<int>(enemyProjectiles_.size()),
                      static_cast<int>(playerShots_.size()), player_.lives);

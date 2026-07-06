@@ -5,9 +5,23 @@
 #include <DxLib.h>
 
 #include <algorithm>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 namespace reconstructed {
+namespace {
+
+int countValidHandles(const std::vector<int>& handles) {
+    return static_cast<int>(std::count_if(handles.begin(), handles.end(), [](int value) { return value != -1; }));
+}
+
+int firstValidHandle(const std::vector<int>& handles) {
+    const auto it = std::find_if(handles.begin(), handles.end(), [](int value) { return value != -1; });
+    return it == handles.end() ? -1 : *it;
+}
+
+} // namespace
 
 ResourceManager::ResourceManager(std::filesystem::path assetRoot, ResourceMode mode)
     : assetRoot_(std::move(assetRoot)), mode_(mode) {}
@@ -25,20 +39,24 @@ bool ResourceManager::loadGraphs(std::span<const GraphResourceSpec> specs) {
     for (const auto& spec : specs) {
         ++summary_.graphAttempts;
         int handle = -1;
+        std::vector<int> handles;
         int handleCount = 0;
         const auto resolved = resolvePath(spec.logicalPath);
 
         if (spec.loadKind == GraphLoadKind::Div) {
             const int xSize = spec.xSize == 0 ? 1 : spec.xSize;
             const int ySize = spec.ySize == 0 ? 1 : spec.ySize;
-            std::vector<int> handles(static_cast<std::size_t>(spec.allNum), -1);
+            handles.assign(static_cast<std::size_t>(spec.allNum), -1);
             if (LoadDivGraph(resolved.c_str(), spec.allNum, spec.xNum, spec.yNum, xSize, ySize, handles.data()) != -1) {
-                handle = handles.empty() ? -1 : handles.front();
-                handleCount = static_cast<int>(std::count_if(handles.begin(), handles.end(), [](int value) { return value != -1; }));
+                handle = firstValidHandle(handles);
+                handleCount = countValidHandles(handles);
             }
         }
         else {
             handle = LoadGraph(resolved.c_str());
+            if (handle != -1) {
+                handles.push_back(handle);
+            }
             handleCount = handle == -1 ? 0 : 1;
         }
 
@@ -48,7 +66,7 @@ bool ResourceManager::loadGraphs(std::span<const GraphResourceSpec> specs) {
         else {
             ok = false;
         }
-        graphs_.push_back({spec.id, spec.logicalPath, resolved, spec.source, spec.loadKind, handle, handleCount});
+        graphs_.push_back({spec.id, spec.logicalPath, resolved, spec.source, spec.loadKind, handle, handleCount, std::move(handles)});
     }
     return ok;
 }
@@ -73,7 +91,11 @@ bool ResourceManager::loadSounds(std::span<const SoundResourceSpec> specs) {
 int ResourceManager::loadGraph(const std::string& logicalPath) {
     const auto resolved = resolvePath(logicalPath);
     const int handle = LoadGraph(resolved.c_str());
-    graphs_.push_back({logicalPath, logicalPath, resolved, ResourceSource::Startup, GraphLoadKind::Single, handle, handle == -1 ? 0 : 1});
+    std::vector<int> handles;
+    if (handle != -1) {
+        handles.push_back(handle);
+    }
+    graphs_.push_back({logicalPath, logicalPath, resolved, ResourceSource::Startup, GraphLoadKind::Single, handle, handle == -1 ? 0 : 1, std::move(handles)});
     ++summary_.graphAttempts;
     if (handle != -1) {
         ++summary_.graphSuccesses;
@@ -87,9 +109,9 @@ std::vector<int> ResourceManager::loadDivGraph(const std::string& logicalPath, i
     if (LoadDivGraph(resolved.c_str(), allNum, xNum, yNum, xSize, ySize, handles.data()) == -1) {
         std::fill(handles.begin(), handles.end(), -1);
     }
-    const int handleCount = static_cast<int>(std::count_if(handles.begin(), handles.end(), [](int value) { return value != -1; }));
+    const int handleCount = countValidHandles(handles);
     graphs_.push_back({logicalPath, logicalPath, resolved, ResourceSource::Primary, GraphLoadKind::Div,
-                       handles.empty() ? -1 : handles.front(), handleCount});
+                       firstValidHandle(handles), handleCount, handles});
     ++summary_.graphAttempts;
     if (handleCount > 0) {
         ++summary_.graphSuccesses;
@@ -109,9 +131,18 @@ int ResourceManager::loadSound(const std::string& logicalPath, int bufferNum) {
 }
 
 void ResourceManager::releaseAll() {
+    std::vector<int> deletedGraphs;
     for (const auto& graph : graphs_) {
-        if (graph.handle != -1) {
+        for (const int handle : graph.handles) {
+            if (handle != -1 && std::find(deletedGraphs.begin(), deletedGraphs.end(), handle) == deletedGraphs.end()) {
+                DeleteGraph(handle);
+                deletedGraphs.push_back(handle);
+            }
+        }
+        if (graph.handles.empty() && graph.handle != -1 &&
+            std::find(deletedGraphs.begin(), deletedGraphs.end(), graph.handle) == deletedGraphs.end()) {
             DeleteGraph(graph.handle);
+            deletedGraphs.push_back(graph.handle);
         }
     }
     graphs_.clear();
@@ -126,10 +157,51 @@ void ResourceManager::releaseAll() {
 }
 
 int ResourceManager::graphHandle(const std::string& logicalPath) const {
+    return graphFrame(logicalPath, 0);
+}
+
+int ResourceManager::graphFrame(std::string_view logicalPath, int frame) const {
     const auto it = std::find_if(graphs_.begin(), graphs_.end(), [&](const LoadedGraph& graph) {
         return graph.logicalPath == logicalPath;
     });
-    return it == graphs_.end() ? -1 : it->handle;
+    if (it == graphs_.end()) {
+        return -1;
+    }
+    if (frame >= 0 && frame < static_cast<int>(it->handles.size())) {
+        return it->handles[static_cast<std::size_t>(frame)];
+    }
+    return frame == 0 ? it->handle : -1;
+}
+
+int ResourceManager::graphHandleById(std::string_view id) const {
+    return graphFrameById(id, 0);
+}
+
+int ResourceManager::graphFrameById(std::string_view id, int frame) const {
+    const auto it = std::find_if(graphs_.begin(), graphs_.end(), [&](const LoadedGraph& graph) {
+        return graph.id == id;
+    });
+    if (it == graphs_.end()) {
+        return -1;
+    }
+    if (frame >= 0 && frame < static_cast<int>(it->handles.size())) {
+        return it->handles[static_cast<std::size_t>(frame)];
+    }
+    return frame == 0 ? it->handle : -1;
+}
+
+int ResourceManager::soundHandle(std::string_view logicalPath) const {
+    const auto it = std::find_if(sounds_.begin(), sounds_.end(), [&](const LoadedSound& sound) {
+        return sound.logicalPath == logicalPath;
+    });
+    return it == sounds_.end() ? -1 : it->handle;
+}
+
+int ResourceManager::soundHandleById(std::string_view id) const {
+    const auto it = std::find_if(sounds_.begin(), sounds_.end(), [&](const LoadedSound& sound) {
+        return sound.id == id;
+    });
+    return it == sounds_.end() ? -1 : it->handle;
 }
 
 std::string ResourceManager::resolvePath(const std::string& logicalPath) const {

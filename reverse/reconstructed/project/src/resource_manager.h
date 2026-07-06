@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace reconstructed {
@@ -17,6 +18,7 @@ struct LoadedGraph {
     GraphLoadKind loadKind = GraphLoadKind::Single;
     int handle = -1;
     int handleCount = 0;
+    std::vector<int> handles;
 };
 
 struct LoadedSound {
@@ -54,6 +56,11 @@ public:
     const std::vector<LoadedSound>& sounds() const { return sounds_; }
     const ResourceLoadSummary& summary() const { return summary_; }
     int graphHandle(const std::string& logicalPath) const;
+    int graphFrame(std::string_view logicalPath, int frame) const;
+    int graphHandleById(std::string_view id) const;
+    int graphFrameById(std::string_view id, int frame) const;
+    int soundHandle(std::string_view logicalPath) const;
+    int soundHandleById(std::string_view id) const;
     std::string resolvePath(const std::string& logicalPath) const;
 
 private:

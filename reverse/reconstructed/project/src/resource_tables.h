@@ -52,6 +52,7 @@ struct TextResourceSpec {
 };
 
 std::span<const GraphResourceSpec> startupGraphResources();
+std::span<const GraphResourceSpec> frontendGraphResources();
 std::span<const GraphResourceSpec> expandedGraphResources();
 std::span<const SoundResourceSpec> soundResources();
 std::span<const TextResourceSpec> textResources();

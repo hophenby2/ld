@@ -1,5 +1,6 @@
 #pragma once
 
+#include "frontend_runtime.h"
 #include "resource_manager.h"
 #include "save_config.h"
 #include "stage_probe.h"
@@ -32,6 +33,7 @@ private:
     void shutdown();
     void loadFonts();
     int runSmokeTestLoop();
+    void drawLoadingFrame(int frame) const;
     void drawSmokeTestFrame();
     void drawResourceDiagnostics(int x, int y) const;
     void drawTextDiagnostics(int x, int y) const;
@@ -46,7 +48,8 @@ private:
     TextDatabase textDatabase_;
     StageProbe stageProbe_;
     StageRuntime stageRuntime_;
-    int diagnosticsPage_ = 1;
+    FrontendRuntime frontendRuntime_;
+    int diagnosticsPage_ = 0;
     bool dxInitialized_ = false;
     bool fontsLoaded_ = false;
 };

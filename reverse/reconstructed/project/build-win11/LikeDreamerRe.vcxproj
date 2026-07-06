@@ -377,6 +377,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\app.cpp" />
+    <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\frontend_runtime.cpp" />
     <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\main.cpp" />
     <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\path_utils.cpp" />
     <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\resource_manager.cpp" />

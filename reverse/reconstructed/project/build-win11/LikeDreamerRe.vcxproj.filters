@@ -4,6 +4,9 @@
     <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\app.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\frontend_runtime.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

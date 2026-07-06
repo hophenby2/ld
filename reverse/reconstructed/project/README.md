@@ -43,10 +43,11 @@ For DXA mode, run from a directory where `media.dxa` is visible using the same l
 
 - Steam is stubbed out.
 - `save\save.dat` and `save\config.dat` are byte-buffer stubs with sizes from the decompiled startup (`0x2730` and `0x1c`).
-- Startup only loads smoke-test graphics; `F6` loads the playable-stage graphics it needs on demand.
+- Startup now displays a reconstructed loading screen using `starting.png` / `NowLoading.png`, then enters an original-state-inspired frontend runtime.
+- The frontend runtime reconstructs a first-pass title menu (`state 0x02`), stage setup (`0x03`), stage select (`0x04`), alternate setup (`0x05`), options placeholder (`0x0a`), and handoff into the playable stage runtime (`0x14`).
 - Use `F1` for the title smoke screen, `F2` for resource diagnostics, `F3` for text CSV diagnostics, `F4` for save/config diagnostics, `F5` for stage reconstruction probes, `F6` for playable stage reconstruction slices, and `ESC` or close the window to exit.
 - The `F5` stage probe now includes a small curated set of projectile visual annotations from the boss/final helper review, joining spawn type, projectile ID/selector pair, Bullet.png frame interpretation, and confidence.
-- The `F6` playable stage uses arrow keys to move, `Shift` to focus/slow, `Z` to shoot, `R` to reset the runtime slice, and number keys `1`/`2` to switch between the Stage 01 and first-pass Stage 02 schedule slices.
+- The `F6` playable stage uses arrow keys to move, `Shift` to focus/slow, `Z` to shoot, `R` to reset the runtime slice, and number keys `1`/`2`/`4` to switch between the Stage 01, Stage 02, and first-pass Stage 04 schedule slices.
 
 ## Legal boundary
 
@@ -70,4 +71,4 @@ The expanded tables are hand-transcribed from `../data-structures/*.md` and the 
 
 `F6` enters the playable in-stage runtime. It uses hand-transcribed subsets from `../data-structures/stage-spawn-schedule.csv`, simplified common-family enemy behaviors from `../data-structures/stage-spawn-semantic-name-candidates.md`, and projectile constructor/spread conventions from `../data-structures/projectile-helper-notes.md` plus `../data-structures/bullet-frame-visual-map.md`.
 
-Controls: arrow keys move, `Shift` focuses/slows movement, `Z` shoots, `R` resets the active runtime slice, and `1`/`2` switches between the Stage 01 slice and a new sparse Stage 02 slice. These slices are reconstruction probes designed to make stage logic runnable and inspectable; they are not recovered original source and do not yet implement exact helper-by-helper gameplay.
+Controls: arrow keys move, `Shift` focuses/slows movement, `Z` shoots, `R` resets the active runtime slice, and `1`/`2`/`4` switches between the Stage 01 slice, Stage 02 slice, and a new sparse Stage 04 slice. These slices are reconstruction probes designed to make stage logic runnable and inspectable; they are not recovered original source and do not yet implement exact helper-by-helper gameplay.

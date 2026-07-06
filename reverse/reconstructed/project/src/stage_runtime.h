@@ -54,6 +54,7 @@ private:
         int hp = 8;
         int radius = 24;
         int visualFrame = 0;
+        int activationDelay = 20;
         bool active = true;
     };
 

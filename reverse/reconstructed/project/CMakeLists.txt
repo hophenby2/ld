@@ -46,6 +46,7 @@ endforeach()
 
 add_executable(LikeDreamerRe WIN32
     src/app.cpp
+    src/frontend_runtime.cpp
     src/main.cpp
     src/path_utils.cpp
     src/resource_manager.cpp
