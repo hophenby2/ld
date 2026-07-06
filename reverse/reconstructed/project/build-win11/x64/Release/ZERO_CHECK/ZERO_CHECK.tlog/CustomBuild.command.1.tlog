@@ -1,0 +1,10 @@
+^\\MAC\HOME\STEAMLIBRARY\STEAMAPPS\COMMON\LIKE DREAMER\REVERSE\RECONSTRUCTED\PROJECT\BUILD-WIN11\CMAKEFILES\811C209BD18FFC33BDE8D7C28FC53A4B\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-S//Mac/Home/SteamLibrary/steamapps/common/Like Dreamer/reverse/reconstructed/project" "-B//Mac/Home/SteamLibrary/steamapps/common/Like Dreamer/reverse/reconstructed/project/build-win11" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "//Mac/Home/SteamLibrary/steamapps/common/Like Dreamer/reverse/reconstructed/project/build-win11/LikeDreamerRe.sln"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\app.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\path_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\resource_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\resource_tables.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\save_config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\stage_probe.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\stage_runtime.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\steam_stub.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\text_database.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{99A3A24A-5E7D-310E-A939-BF54880D71B0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
