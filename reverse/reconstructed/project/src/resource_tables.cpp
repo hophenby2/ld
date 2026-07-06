@@ -34,7 +34,7 @@ constexpr std::array<GraphResourceSpec, 16> kFrontendGraphs{{
     {"GFX_system_WhiteBack_frontend", "media\\system\\WhiteBack.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Startup},
 }};
 
-constexpr std::array<GraphResourceSpec, 55> kExpandedGraphs{{
+constexpr std::array<GraphResourceSpec, 56> kExpandedGraphs{{
     {"GFX_system_BetaLogo", "media\\system\\BetaLogo.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
     {"GFX_system_DemoEnd", "media\\system\\DemoEnd.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
     {"GFX_system_TitleMenu", "media\\system\\TitleMenu.png", GraphLoadKind::Div, 9, 1, 9, 0x21c, 0x3c, ResourceSource::Primary},
@@ -49,6 +49,7 @@ constexpr std::array<GraphResourceSpec, 55> kExpandedGraphs{{
     {"GFX_system_Num_l", "media\\system\\Num_l.png", GraphLoadKind::Div, 0xe, 0xe, 1, 0x30, 0x48, ResourceSource::Primary},
     {"GFX_player_DataWindow", "media\\player\\DataWindow.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
     {"GFX_player_TimeWindow", "media\\player\\TimeWindow.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
+    {"GFX_player_DataWindow2", "media\\player\\DataWindow2.png", GraphLoadKind::Div, 10, 10, 1, 0x3c, 0x3c, ResourceSource::Primary},
     {"GFX_player_Player", "media\\player\\Player.png", GraphLoadKind::Div, 0x78, 0xf, 8, 0x50, 0x50, ResourceSource::Primary},
     {"GFX_player_Item", "media\\player\\Item.png", GraphLoadKind::Div, 0xf, 0xf, 1, 100, 100, ResourceSource::Primary},
     {"GFX_player_PlayerFrame", "media\\player\\PlayerFrame.png", GraphLoadKind::Div, 0x1e, 10, 3, 0x154, 0x2d0, ResourceSource::Primary},
