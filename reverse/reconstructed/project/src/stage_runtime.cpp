@@ -17,6 +17,17 @@ constexpr float kPlayLeft = 80.0f;
 constexpr float kPlayRight = 720.0f;
 constexpr float kPlayTop = 20.0f;
 constexpr float kPlayBottom = 700.0f;
+constexpr int kHudX = 1040;
+constexpr int kHudNumberRight = 1230;
+constexpr int kHudScoreY = 450;
+constexpr int kHudBaseValueY = 500;
+constexpr int kHudGaugeY = 530;
+constexpr int kHudTokenY = 580;
+constexpr int kHudStageY = 610;
+constexpr int kHudStockY = 650;
+constexpr int kHudPipStartX = 1037;
+constexpr int kHudPipStep = 27;
+constexpr int kHudMaxTokens = 9;
 
 // Hand-transcribed Stage 01 slice from stage-spawn-schedule.csv. Rows that used
 // DAT_140e9fd1c modulo expressions in the decompile are represented by stable
@@ -133,6 +144,63 @@ bool stageUsesMediumFrame(int spawnType) {
            spawnType == 0x38 || spawnType == 0x3d || spawnType == 0x3f;
 }
 
+bool isStage04FocusedType(int spawnType) {
+    return spawnType == 0x35 || spawnType == 0x36 || spawnType == 0x37 ||
+           spawnType == 0x38 || spawnType == 0x39 || spawnType == 0x3a ||
+           spawnType == 0x3d || spawnType == 0x3f;
+}
+
+int bulletFrameForVisualSelector(int visualSelector) {
+    switch (visualSelector) {
+    case 0x00: return 0;
+    case 0x01: return 1;
+    case 0x02: return 2;
+    case 0x03: return 3;
+    case 0x04: return 4;
+    case 0x05: return 5;
+    case 0x06: return 6;
+    case 0x07: return 7;
+    case 0x08: return 8;
+    case 0x09: return 9;
+    case 0x0a: return 20;
+    case 0x0b: return 21;
+    case 0x0c: return 22;
+    case 0x0d: return 23;
+    case 0x0e: return 24;
+    case 0x0f: return 25;
+    case 0x10: return 26;
+    case 0x11: return 4;
+    case 0x12: return 5;
+    case 0x13: return 5;
+    case 0x14: return 4;
+    default: return 0;
+    }
+}
+
+float normalizeAngle(float angle) {
+    while (angle > kPi) angle -= kTau;
+    while (angle < -kPi) angle += kTau;
+    return angle;
+}
+
+float approachAngle(float current, float target, float amount) {
+    return current + normalizeAngle(target - current) * amount;
+}
+
+float projectileScaleForVisualSelector(int visualSelector) {
+    switch (visualSelector) {
+    case 0x0a:
+    case 0x0b:
+    case 0x10:
+        return 0.82f;
+    case 0x02:
+    case 0x03:
+        return 0.86f;
+    default:
+        return 0.75f;
+    }
+}
+
 } // namespace
 
 const StageRuntime::StageSpawnEvent* StageRuntime::eventsForStage(int stage, std::size_t& count) {
@@ -155,6 +223,16 @@ bool StageRuntime::initialize(ResourceManager& resources, int stage) {
     bulletFrames_ = resources.loadDivGraph("media\\stage\\Bullet.png", 0x28, 10, 4, 0x3c, 0x3c);
     stageBack1Frames_ = resources.loadDivGraph("media\\stage\\StageBack1.png", 10, 10, 1, 0x2d0, 0xa00);
     stageBack2Frames_ = resources.loadDivGraph("media\\stage\\StageBack2.png", 10, 10, 1, 0x2d0, 0x2d0);
+
+    stageFrameFrames_ = resources.loadDivGraph("media\\system\\StageFrame.png", 2, 2, 1, 600, 720);
+    numSmallFrames_ = resources.loadDivGraph("media\\system\\Num_s.png", 0x0e, 0x0e, 1, 0x14, 0x1e);
+    numMediumFrames_ = resources.loadDivGraph("media\\system\\Num_m.png", 10, 10, 1, 0x20, 0x30);
+    numLargeFrames_ = resources.loadDivGraph("media\\system\\Num_l.png", 0x0e, 0x0e, 1, 0x30, 0x48);
+    dataWindowHandle_ = resources.loadGraph("media\\player\\DataWindow.png");
+    timeWindowHandle_ = resources.loadGraph("media\\player\\TimeWindow.png");
+    playerFrameFrames_ = resources.loadDivGraph("media\\player\\PlayerFrame.png", 0x1e, 10, 3, 0x154, 0x2d0);
+    stateFrames_ = resources.loadDivGraph("media\\player\\State.png", 0x20, 1, 0x20, 200, 0x28);
+    dreamGaugeFrames_ = resources.loadDivGraph("media\\player\\DreamGauge.png", 2, 2, 1, 0xa0, 0xa0);
 
     selectedStage_ = (stage == 2 || stage == 4) ? stage : 1;
     initialized_ = !playerFrames_.empty() && playerFrames_.front() != -1 &&
@@ -322,12 +400,14 @@ void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
         enemy.radius = 26;
         enemy.visualFrame = event.spawnType == 0x36 ? 36 : 40;
         enemy.speed = event.spawnType == 0x36 ? 3.2f : 1.7f;
+        enemy.activationDelay = event.spawnType == 0x37 ? 96 : 24;
         break;
     case 0x38:
         enemy.hp = 80;
         enemy.radius = 56;
         enemy.visualFrame = 120;
         enemy.vy = 0.2f;
+        enemy.activationDelay = 48;
         break;
     case 0x39:
     case 0x3a:
@@ -335,18 +415,21 @@ void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
         enemy.radius = 44;
         enemy.visualFrame = event.spawnType == 0x39 ? 124 : 128;
         enemy.speed = 1.1f;
+        enemy.activationDelay = 40;
         break;
     case 0x3d:
         enemy.hp = 64;
         enemy.radius = 48;
         enemy.visualFrame = 134;
         enemy.vy = 0.16f;
+        enemy.activationDelay = 36;
         break;
     case 0x3f:
         enemy.hp = 240;
         enemy.radius = 70;
         enemy.visualFrame = 138;
         enemy.vy = 0.1f;
+        enemy.activationDelay = 60;
         break;
     default:
         enemy.hp = 12;
@@ -397,106 +480,260 @@ void StageRuntime::updateEnemies() {
             continue;
         }
         const int activeAge = enemy.age - enemy.activationDelay;
-        if (enemy.spawnType == 0x35) {
-            const float desired = aimAtPlayer(enemy.x, enemy.y + 48.0f);
-            const float turn = activeAge < 100 ? 0.12f : 0.025f;
-            enemy.angle = enemy.angle * (1.0f - turn) + desired * turn;
-            enemy.vx = std::cos(enemy.angle) * enemy.speed;
-            enemy.vy = std::sin(enemy.angle) * enemy.speed;
-            if (activeAge > 100) {
-                enemy.speed = std::max(1.4f, enemy.speed - 0.035f);
-            }
+        if (isStage04FocusedType(enemy.spawnType)) {
+            updateStage04Enemy(enemy, activeAge);
         }
-        else if (enemy.spawnType == 0x36) {
-            const float desired = aimAtPlayer(enemy.x, enemy.y);
-            enemy.angle = enemy.angle * 0.92f + desired * 0.08f;
-            enemy.vx = std::cos(enemy.angle) * enemy.speed;
-            enemy.vy = std::sin(enemy.angle) * enemy.speed;
-        }
-        else if (enemy.spawnType == 0x37) {
-            const float wobble = std::sin((enemy.age + enemy.spawnType * 11) * 0.06f);
-            enemy.angle = enemy.angle * 0.97f + aimAtPlayer(enemy.x, enemy.y) * 0.03f;
-            enemy.vx = std::cos(enemy.angle) * enemy.speed + wobble * 0.9f;
-            enemy.vy = std::sin(enemy.angle) * enemy.speed;
-        }
-        else if (enemy.spawnType == 0x38 || enemy.spawnType == 0x3d || enemy.spawnType == 0x3f) {
-            enemy.vx = std::sin((enemy.age + enemy.spawnType * 17) * 0.02f) * (enemy.spawnType == 0x3f ? 1.4f : 0.9f);
-            if (enemy.spawnType == 0x3f && activeAge > 180) {
-                enemy.vy = std::sin(activeAge * 0.018f) * 0.45f;
-            }
-        }
-        else if (enemy.spawnType == 0x39 || enemy.spawnType == 0x3a) {
-            const float sign = enemy.spawnType == 0x39 ? 1.0f : -1.0f;
-            enemy.vx = sign * std::sin(activeAge * 0.025f) * 1.8f;
-            enemy.vy = 0.55f + std::cos(activeAge * 0.03f) * 0.45f;
-        }
-        else if ((enemy.spawnType == 0x0b || enemy.spawnType == 0x0c || enemy.spawnType == 0x0d ||
-             enemy.spawnType == 0x19 || enemy.spawnType == 0x1a || enemy.spawnType == 0x1d || enemy.spawnType == 0x1e) && enemy.age < 220) {
-            const float desired = aimAtPlayer(enemy.x, enemy.y);
-            enemy.angle = enemy.angle * 0.94f + desired * 0.06f;
-            enemy.vx = std::cos(enemy.angle) * enemy.speed;
-            enemy.vy = std::sin(enemy.angle) * enemy.speed;
-        }
-        else if (enemy.spawnType == 0x0e || enemy.spawnType == 0x0f || enemy.spawnType == 0x10 ||
-                 enemy.spawnType == 0x1b || enemy.spawnType == 0x1c || enemy.spawnType == 0x1f || enemy.spawnType == 0x20) {
-            enemy.vx = std::sin((enemy.age + enemy.spawnType * 17) * 0.025f) * 1.1f;
+        else {
+            updateGenericEnemy(enemy, activeAge);
         }
 
         enemy.x += enemy.vx;
         enemy.y += enemy.vy;
 
-        if (activeAge > 30 && activeAge % 70 == 0) {
-            const int selector = (enemy.spawnType >= 0x19 && enemy.spawnType <= 0x20) ? 1 : 0;
-            spawnProjectileNode(0, selector, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 3.0f, 6);
+        if (isStage04FocusedType(enemy.spawnType)) {
+            emitStage04Projectiles(enemy, activeAge);
         }
-        if (enemy.spawnType == 0x35 && activeAge > 40 && activeAge % 42 == 0) {
-            spawnProjectileSpread(6, 0, enemy.x, enemy.y + 48.0f, aimAtPlayer(enemy.x, enemy.y), 2.8f, 6, 3, kPi / 7.0f);
+        else {
+            emitGenericProjectiles(enemy, activeAge);
         }
-        if (enemy.spawnType == 0x36 && activeAge > 50 && activeAge % 72 == 0) {
-            spawnProjectileSpread(4, 0, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.9f, 6, 5, kPi / 5.0f);
+    }
+}
+
+void StageRuntime::updateStage04Enemy(StageEnemy& enemy, int activeAge) {
+    switch (enemy.spawnType) {
+    case 0x35: {
+        const float desired = aimAtPlayer(enemy.x, enemy.y + 48.0f);
+        enemy.angle = approachAngle(enemy.angle, desired, activeAge < 100 ? 0.12f : 0.025f);
+        enemy.vx = std::cos(enemy.angle) * enemy.speed;
+        enemy.vy = std::sin(enemy.angle) * enemy.speed;
+        if (activeAge > 100) {
+            enemy.speed = std::max(1.4f, enemy.speed - 0.035f);
         }
-        if (enemy.spawnType == 0x37 && activeAge > 70 && activeAge % 64 == 0) {
-            spawnProjectileNode(0, 0, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 3.2f, 5);
+        break;
+    }
+    case 0x36: {
+        const float exitAngle = kPi * 0.5f;
+        const float desired = activeAge < 200 ? aimAtPlayer(enemy.x, enemy.y) : exitAngle;
+        enemy.angle = approachAngle(enemy.angle, desired, activeAge < 200 ? 0.08f : 0.045f);
+        if (activeAge > 220) {
+            enemy.speed = std::max(1.4f, enemy.speed - 0.018f);
         }
-        if (enemy.spawnType == 0x38 && activeAge > 100 && activeAge % 96 == 0) {
-            spawnProjectileSpread(9, 2, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.3f, 8, 10, kTau);
+        enemy.vx = std::cos(enemy.angle) * enemy.speed;
+        enemy.vy = std::sin(enemy.angle) * enemy.speed;
+        break;
+    }
+    case 0x37: {
+        const float wobble = std::sin((enemy.age + enemy.spawnType * 11) * 0.06f);
+        enemy.angle = approachAngle(enemy.angle, aimAtPlayer(enemy.x, enemy.y), 0.03f);
+        const float speedPulse = 0.75f + std::sin(activeAge * 0.045f) * 0.35f;
+        enemy.vx = std::cos(enemy.angle) * enemy.speed * speedPulse + wobble * 0.9f;
+        enemy.vy = std::sin(enemy.angle) * enemy.speed * speedPulse;
+        break;
+    }
+    case 0x38:
+        enemy.angle = approachAngle(enemy.angle, aimAtPlayer(enemy.x, enemy.y), 0.018f);
+        enemy.vx = std::sin((activeAge + enemy.spawnType * 17) * 0.024f) * 1.05f;
+        enemy.vy = activeAge < 90 ? 0.18f : std::sin(activeAge * 0.018f) * 0.22f;
+        break;
+    case 0x39:
+    case 0x3a: {
+        const float sign = enemy.spawnType == 0x39 ? 1.0f : -1.0f;
+        enemy.angle = approachAngle(enemy.angle, aimAtPlayer(enemy.x, enemy.y), 0.035f);
+        enemy.vx = sign * std::sin(activeAge * 0.025f) * 1.8f;
+        enemy.vy = 0.55f + std::cos(activeAge * 0.03f) * 0.45f;
+        break;
+    }
+    case 0x3d:
+        enemy.angle = approachAngle(enemy.angle, aimAtPlayer(enemy.x, enemy.y), 0.02f);
+        enemy.vx = std::sin((activeAge + enemy.spawnType * 13) * 0.018f) * 0.75f;
+        enemy.vy = 0.10f + std::sin(activeAge * 0.015f) * 0.16f;
+        break;
+    case 0x3f:
+        enemy.angle = approachAngle(enemy.angle, aimAtPlayer(enemy.x, enemy.y), activeAge < 180 ? 0.018f : 0.01f);
+        if (activeAge < 180) {
+            enemy.vx = std::sin(activeAge * 0.026f) * 1.2f;
+            enemy.vy = 0.12f;
         }
-        if ((enemy.spawnType == 0x39 || enemy.spawnType == 0x3a) && activeAge > 80 && activeAge % 120 == 0) {
-            spawnProjectileSpread(3, 3, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.5f, 7, 7, kPi * 0.85f);
+        else if (activeAge < 900) {
+            enemy.vx = std::sin(activeAge * 0.018f) * 1.45f;
+            enemy.vy = std::sin(activeAge * 0.018f) * 0.45f;
         }
-        if (enemy.spawnType == 0x3d && activeAge > 70 && activeAge % 130 == 0) {
-            for (float offset : {-80.0f, 0.0f, 80.0f}) {
-                spawnProjectileSpread(5, 2, enemy.x + offset, enemy.y, aimAtPlayer(enemy.x + offset, enemy.y), 2.4f, 8, 5, kPi / 3.0f);
-            }
+        else {
+            enemy.vx = std::sin(activeAge * 0.012f) * 0.85f;
+            enemy.vy = 0.20f + std::sin(activeAge * 0.02f) * 0.28f;
         }
-        if (enemy.spawnType == 0x3f && activeAge > 90 && activeAge % 75 == 0) {
-            spawnProjectileSpread(7, 0, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.6f, 7, 14, kTau);
-            spawnProjectileSpread(2, 2, enemy.x, enemy.y + 32.0f, aimAtPlayer(enemy.x, enemy.y), 2.0f, 9, 8, kPi);
+        break;
+    default:
+        break;
+    }
+}
+
+void StageRuntime::emitStage04Projectiles(StageEnemy& enemy, int activeAge) {
+    // These patterns are playable approximations of the reviewed Stage04 helpers;
+    // true child entities (0x3b/0x3c/0x3e) and effect-node overlays are deferred.
+    if (enemy.spawnType == 0x35 && activeAge > 40 && activeAge % 42 == 0) {
+        spawnProjectileSpread(6, 0x06, enemy.x, enemy.y + 48.0f, aimAtPlayer(enemy.x, enemy.y), 2.8f, 6, 3, kPi / 7.0f);
+    }
+    if (enemy.spawnType == 0x36 && activeAge > 50 && activeAge % 72 == 0) {
+        spawnProjectileSpread(4, 0x00, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.9f, 6, 3, kPi / 5.0f);
+    }
+    if (enemy.spawnType == 0x37 && activeAge > 70 && activeAge % 64 == 0) {
+        spawnProjectileNode(0, 0x00, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 3.2f, 5);
+        if ((activeAge / 64) % 2 == 1) {
+            spawnProjectileNode(0, 0x01, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y) + 0.08f, 3.0f, 5);
         }
-        if ((enemy.spawnType == 0x0c || enemy.spawnType == 0x0d || enemy.spawnType == 0x19 || enemy.spawnType == 0x1a) &&
-            activeAge > 80 && activeAge % 120 == 0) {
-            const int count = (enemy.spawnType == 0x0c || enemy.spawnType == 0x19) ? 3 : 5;
-            spawnProjectileSpread(count, 0, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.6f, 6, count, kPi / 5.0f);
+    }
+    if (enemy.spawnType == 0x38 && activeAge > 100 && activeAge % 96 == 0) {
+        spawnProjectileSpread(9, 0x08, enemy.x, enemy.y, enemy.angle, 2.3f, 8, 10, kTau);
+    }
+    if (enemy.spawnType == 0x38 && activeAge > 140 && (activeAge + 48) % 144 == 0) {
+        spawnProjectileSpread(8, 0x09, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.1f, 8, 6, kPi * 0.85f);
+    }
+    if ((enemy.spawnType == 0x39 || enemy.spawnType == 0x3a) && activeAge > 80 && activeAge % 120 == 0) {
+        spawnProjectileSpread(3, 0x03, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.5f, 7, 7, kPi * 0.85f);
+    }
+    if ((enemy.spawnType == 0x39 || enemy.spawnType == 0x3a) && activeAge > 60 && activeAge % 90 == 0) {
+        const int selector = enemy.spawnType == 0x39 ? 0x08 : 0x09;
+        spawnProjectileSpread(8, selector, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.0f, 7, 3, kPi / 6.0f);
+    }
+    if (enemy.spawnType == 0x3d && activeAge > 70 && activeAge % 130 == 0) {
+        for (float offset : {-80.0f, 0.0f, 80.0f}) {
+            spawnProjectileSpread(5, 0x0b, enemy.x + offset, enemy.y, aimAtPlayer(enemy.x + offset, enemy.y), 2.4f, 8, 5, kPi / 3.0f);
         }
-        if ((enemy.spawnType == 0x0e || enemy.spawnType == 0x0f || enemy.spawnType == 0x10 ||
-             enemy.spawnType == 0x1b || enemy.spawnType == 0x1c || enemy.spawnType == 0x1f || enemy.spawnType == 0x20) &&
-            activeAge > 120 && activeAge % 180 == 0) {
-            const int selector = enemy.spawnType >= 0x19 ? 3 : 2;
-            spawnProjectileSpread(2, selector, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.2f, 8, 12, kTau);
-        }
+    }
+    if (enemy.spawnType == 0x3f && activeAge > 90 && activeAge % 75 == 0) {
+        spawnProjectileSpread(7, 0x07, enemy.x, enemy.y, enemy.angle, 2.6f, 7, 14, kTau);
+    }
+    if (enemy.spawnType == 0x3f && activeAge > 220 && activeAge % 100 == 0) {
+        spawnProjectileSpread(4, 0x04, enemy.x, enemy.y + 24.0f, aimAtPlayer(enemy.x, enemy.y), 2.7f, 7, 5, kPi / 2.8f);
+    }
+    if (enemy.spawnType == 0x3f && activeAge > 520 && activeAge % 150 == 0) {
+        spawnProjectileSpread(2, 0x02, enemy.x, enemy.y + 32.0f, aimAtPlayer(enemy.x, enemy.y), 2.0f, 9, 8, kPi);
+    }
+}
+
+void StageRuntime::updateGenericEnemy(StageEnemy& enemy, int activeAge) {
+    if ((enemy.spawnType == 0x0b || enemy.spawnType == 0x0c || enemy.spawnType == 0x0d ||
+         enemy.spawnType == 0x19 || enemy.spawnType == 0x1a || enemy.spawnType == 0x1d || enemy.spawnType == 0x1e) && enemy.age < 220) {
+        const float desired = aimAtPlayer(enemy.x, enemy.y);
+        enemy.angle = approachAngle(enemy.angle, desired, 0.06f);
+        enemy.vx = std::cos(enemy.angle) * enemy.speed;
+        enemy.vy = std::sin(enemy.angle) * enemy.speed;
+    }
+    else if (enemy.spawnType == 0x0e || enemy.spawnType == 0x0f || enemy.spawnType == 0x10 ||
+             enemy.spawnType == 0x1b || enemy.spawnType == 0x1c || enemy.spawnType == 0x1f || enemy.spawnType == 0x20) {
+        enemy.vx = std::sin((enemy.age + enemy.spawnType * 17) * 0.025f) * 1.1f;
+    }
+    else {
+        (void)activeAge;
+    }
+}
+
+void StageRuntime::emitGenericProjectiles(StageEnemy& enemy, int activeAge) {
+    if (activeAge > 30 && activeAge % 70 == 0) {
+        const int selector = (enemy.spawnType >= 0x19 && enemy.spawnType <= 0x20) ? 1 : 0;
+        spawnProjectileNode(0, selector, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 3.0f, 6);
+    }
+    if ((enemy.spawnType == 0x0c || enemy.spawnType == 0x0d || enemy.spawnType == 0x19 || enemy.spawnType == 0x1a) &&
+        activeAge > 80 && activeAge % 120 == 0) {
+        const int count = (enemy.spawnType == 0x0c || enemy.spawnType == 0x19) ? 3 : 5;
+        spawnProjectileSpread(count, 0, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.6f, 6, count, kPi / 5.0f);
+    }
+    if ((enemy.spawnType == 0x0e || enemy.spawnType == 0x0f || enemy.spawnType == 0x10 ||
+         enemy.spawnType == 0x1b || enemy.spawnType == 0x1c || enemy.spawnType == 0x1f || enemy.spawnType == 0x20) &&
+        activeAge > 120 && activeAge % 180 == 0) {
+        const int selector = enemy.spawnType >= 0x19 ? 3 : 2;
+        spawnProjectileSpread(2, selector, enemy.x, enemy.y, aimAtPlayer(enemy.x, enemy.y), 2.2f, 8, 12, kTau);
     }
 }
 
 void StageRuntime::updateProjectiles() {
     for (auto& projectile : enemyProjectiles_) {
         ++projectile.age;
-        if (projectile.projectileId == 9 || projectile.projectileId == 0x0b) {
-            if (projectile.age == 45) {
-                const float speed = std::sqrt(projectile.vx * projectile.vx + projectile.vy * projectile.vy);
-                const float angle = aimAtPlayer(projectile.x, projectile.y);
-                projectile.vx = std::cos(angle) * speed;
-                projectile.vy = std::sin(angle) * speed;
+        switch (projectile.projectileId) {
+        case 0x02:
+            if (projectile.age > 18) {
+                projectile.speed = std::min(projectile.baseSpeed * 1.35f, projectile.speed + 0.018f);
+                updateProjectileVelocity(projectile);
             }
+            break;
+        case 0x03:
+            if (projectile.age < 30) {
+                projectile.speed = std::max(0.25f, projectile.speed * 0.98f);
+            }
+            else {
+                projectile.speed = std::min(projectile.baseSpeed * 1.45f, projectile.speed + 0.035f);
+            }
+            updateProjectileVelocity(projectile);
+            break;
+        case 0x04:
+            if (projectile.age > 12) {
+                projectile.speed = std::min(projectile.baseSpeed * 1.35f, projectile.speed + 0.030f);
+                updateProjectileVelocity(projectile);
+            }
+            break;
+        case 0x05:
+            if (projectile.age < 60) {
+                projectile.speed = std::max(projectile.baseSpeed * 0.45f, projectile.speed * 0.985f);
+            }
+            else {
+                projectile.speed = std::min(projectile.baseSpeed * 1.25f, projectile.speed + 0.022f);
+            }
+            updateProjectileVelocity(projectile);
+            break;
+        case 0x06:
+            if (projectile.age < 30) {
+                projectile.speed = std::max(projectile.baseSpeed * 0.45f, projectile.speed - 0.045f);
+                updateProjectileVelocity(projectile);
+            }
+            break;
+        case 0x07:
+            if (projectile.age < 40) {
+                projectile.speed = std::max(projectile.baseSpeed * 0.35f, projectile.speed - 0.04f);
+            }
+            else if (projectile.age < 100) {
+                projectile.speed = std::min(projectile.baseSpeed * 1.3f, projectile.speed + 0.035f);
+            }
+            updateProjectileVelocity(projectile);
+            break;
+        case 0x08: {
+            bool reflected = false;
+            if ((projectile.x < kPlayLeft && projectile.vx < 0.0f) || (projectile.x > kPlayRight && projectile.vx > 0.0f)) {
+                projectile.vx = -projectile.vx;
+                reflected = true;
+            }
+            if ((projectile.y < kPlayTop && projectile.vy < 0.0f) || (projectile.y > kPlayBottom && projectile.vy > 0.0f)) {
+                projectile.vy = -projectile.vy;
+                reflected = true;
+            }
+            if (reflected) {
+                projectile.angle = std::atan2(projectile.vy, projectile.vx);
+                projectile.speed = std::sqrt(projectile.vx * projectile.vx + projectile.vy * projectile.vy);
+            }
+            break;
+        }
+        case 0x09:
+            if (projectile.age == 45) {
+                projectile.angle = aimAtPlayer(projectile.x, projectile.y);
+                projectile.speed = std::max(projectile.speed, projectile.baseSpeed * 0.8f);
+                updateProjectileVelocity(projectile);
+            }
+            break;
+        case 0x0b:
+            if (projectile.age == 50) {
+                projectile.angle = std::atan2(player_.y + 24.0f - projectile.y, player_.x - projectile.x);
+                projectile.speed = std::max(projectile.speed, projectile.baseSpeed * 0.85f);
+                updateProjectileVelocity(projectile);
+            }
+            break;
+        case 0x0c:
+        case 0x0e:
+            projectile.angle = approachAngle(projectile.angle, aimAtPlayer(projectile.x, projectile.y), projectile.projectileId == 0x0c ? 0.035f : 0.022f);
+            projectile.speed = std::min(projectile.baseSpeed * 1.35f, projectile.speed + 0.006f);
+            updateProjectileVelocity(projectile);
+            break;
+        default:
+            break;
         }
         projectile.x += projectile.vx;
         projectile.y += projectile.vy;
@@ -555,10 +792,17 @@ void StageRuntime::spawnProjectileNode(int projectileId, int visualSelector, flo
     projectile.visualSelector = visualSelector;
     projectile.x = x;
     projectile.y = y;
-    projectile.vx = std::cos(angle) * speed;
-    projectile.vy = std::sin(angle) * speed;
+    projectile.angle = angle;
+    projectile.speed = speed;
+    projectile.baseSpeed = speed;
     projectile.radius = radius;
+    updateProjectileVelocity(projectile);
     enemyProjectiles_.push_back(projectile);
+}
+
+void StageRuntime::updateProjectileVelocity(StageProjectile& projectile) {
+    projectile.vx = std::cos(projectile.angle) * projectile.speed;
+    projectile.vy = std::sin(projectile.angle) * projectile.speed;
 }
 
 void StageRuntime::spawnProjectileSpread(int projectileId, int visualSelector, float x, float y, float centerAngle, float speed, int radius, int count, float spreadRadians) {
@@ -591,7 +835,12 @@ void StageRuntime::drawBackground() const {
         DrawGraph(40, slowScroll - 720, stageBack1Frames_.front(), TRUE);
         DrawGraph(40, slowScroll, stageBack1Frames_.front(), TRUE);
     }
-    DrawBox(static_cast<int>(kPlayLeft), 0, static_cast<int>(kPlayRight), notes::kScreenHeight, GetColor(12, 12, 28), FALSE);
+    if (!stageFrameFrames_.empty() && stageFrameFrames_.front() != -1) {
+        DrawGraph(40, 0, stageFrameFrames_.front(), TRUE);
+    }
+    else {
+        DrawBox(static_cast<int>(kPlayLeft), 0, static_cast<int>(kPlayRight), notes::kScreenHeight, GetColor(12, 12, 28), FALSE);
+    }
 }
 
 void StageRuntime::drawPlayer() const {
@@ -610,7 +859,24 @@ void StageRuntime::drawEnemies() const {
         const int handle = index < 0 ? -1 : frames[static_cast<std::size_t>(index)];
         if (handle != -1) {
             const double scale = stageUsesMediumFrame(enemy.spawnType) ? 0.42 : 0.55;
+            if (enemy.spawnType == 0x35) {
+                SetDrawBlendMode(DX_BLENDMODE_ALPHA, 110);
+                DrawRotaGraphF(enemy.x, enemy.y, scale * 0.92, enemy.angle + kPi * 0.5f + kTau / 3.0f, handle, TRUE);
+                DrawRotaGraphF(enemy.x, enemy.y, scale * 0.92, enemy.angle + kPi * 0.5f - kTau / 3.0f, handle, TRUE);
+                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            }
             DrawRotaGraphF(enemy.x, enemy.y, scale, enemy.angle + kPi * 0.5f, handle, TRUE);
+            if (enemy.spawnType == 0x3d) {
+                for (float offset : {-80.0f, 0.0f, 80.0f}) {
+                    DrawCircle(static_cast<int>(enemy.x + offset), static_cast<int>(enemy.y), 8, GetColor(120, 190, 255), FALSE);
+                }
+            }
+            if (enemy.spawnType == 0x3f) {
+                SetDrawBlendMode(DX_BLENDMODE_ALPHA, 150);
+                DrawRotaGraphF(enemy.x - 48.0f, enemy.y + 18.0f, scale * 0.55, enemy.angle, handle, TRUE);
+                DrawRotaGraphF(enemy.x + 48.0f, enemy.y + 18.0f, scale * 0.55, enemy.angle, handle, TRUE);
+                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            }
         }
         else {
             DrawCircle(static_cast<int>(enemy.x), static_cast<int>(enemy.y), enemy.radius, GetColor(255, 96, 160), TRUE);
@@ -620,21 +886,12 @@ void StageRuntime::drawEnemies() const {
 
 void StageRuntime::drawProjectiles() const {
     for (const auto& projectile : enemyProjectiles_) {
-        int frameIndex = 0;
-        switch (projectile.visualSelector) {
-        case 0x01: frameIndex = 1; break;
-        case 0x02: frameIndex = 2; break;
-        case 0x03: frameIndex = 3; break;
-        case 0x04: frameIndex = 4; break;
-        case 0x07: frameIndex = 7; break;
-        case 0x0a: frameIndex = 20; break;
-        case 0x0f: frameIndex = 25; break;
-        default: frameIndex = 0; break;
-        }
+        const int frameIndex = bulletFrameForVisualSelector(projectile.visualSelector);
         const int handle = bulletFrames_.empty() || frameIndex >= static_cast<int>(bulletFrames_.size()) ? -1 : bulletFrames_[static_cast<std::size_t>(frameIndex)];
         const float angle = std::atan2(projectile.vy, projectile.vx) + kPi * 0.5f;
         if (handle != -1) {
-            DrawRotaGraphF(projectile.x, projectile.y, 0.75, angle, handle, TRUE);
+            // Selectors 0x11..0x14 also add overlays/effects in FUN_140070250; this runtime maps them to base bead frames until effect nodes are reconstructed.
+            DrawRotaGraphF(projectile.x, projectile.y, projectileScaleForVisualSelector(projectile.visualSelector), angle, handle, TRUE);
         }
         else {
             DrawCircle(static_cast<int>(projectile.x), static_cast<int>(projectile.y), projectile.radius, GetColor(255, 80, 180), TRUE);
@@ -650,14 +907,109 @@ void StageRuntime::drawPlayerShots() const {
 }
 
 void StageRuntime::drawOverlay() const {
-    DrawFormatString(24, 24, GetColor(255, 240, 128), "Playable reconstruction Stage %02d  frame=%d", selectedStage_, frame_);
-    DrawFormatString(24, 48, GetColor(255, 255, 255), "Arrows move  Shift focus  Z shot  R reset  1/2/4 stage slice  F1-F5 diagnostics  ESC exit");
-    DrawFormatString(24, 72, GetColor(210, 210, 210), "enemies=%d enemyBullets=%d shots=%d lives=%d",
-                     static_cast<int>(enemies_.size()), static_cast<int>(enemyProjectiles_.size()),
-                     static_cast<int>(playerShots_.size()), player_.lives);
-    DrawString(24, notes::kScreenHeight - 44,
-               "Evidence slice: selected stage schedule + common projectile/spread semantics; behavior is simplified pending helper-by-helper reconstruction.",
-               GetColor(210, 210, 210));
+    drawHudSidebar();
+    drawDebugOverlay();
+}
+
+void StageRuntime::drawHudSidebar() const {
+    // Layout placeholders: score/reward/gauge/token state is not fully reconstructed yet.
+    // Coordinates follow the original HUD draw candidate around FUN_1400c2860.
+    constexpr int runScore = 0;
+    constexpr int scoreItemBaseValue = 100;
+    constexpr int specialGauge = 0;
+    constexpr int specialGaugeMax = 50000;
+    constexpr int tokenStock = 2;
+
+    if (dataWindowHandle_ != -1) {
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 210);
+        DrawGraph(940, 340, dataWindowHandle_, TRUE);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    }
+    else {
+        DrawBox(960, 340, notes::kScreenWidth - 16, notes::kScreenHeight - 20, GetColor(18, 20, 36), TRUE);
+        DrawBox(960, 340, notes::kScreenWidth - 16, notes::kScreenHeight - 20, GetColor(70, 80, 120), FALSE);
+    }
+
+    DrawString(kHudX, kHudScoreY - 20, "SCORE", GetColor(180, 210, 255));
+    drawHudNumber(kHudNumberRight, kHudScoreY, runScore, numSmallFrames_, 20, 30, 0.9);
+
+    DrawString(kHudX, kHudBaseValueY - 18, "VALUE", GetColor(180, 210, 255));
+    drawHudNumber(kHudNumberRight, kHudBaseValueY, scoreItemBaseValue, numSmallFrames_, 20, 30, 0.85);
+
+    DrawString(kHudX, kHudGaugeY - 18, "DREAM", GetColor(180, 210, 255));
+    drawHudGauge(kHudX, kHudGaugeY, specialGauge, specialGaugeMax);
+
+    DrawString(kHudX, kHudTokenY - 18, "TOKEN", GetColor(180, 210, 255));
+    drawHudTokenPips(kHudPipStartX, kHudTokenY, tokenStock, kHudMaxTokens);
+
+    DrawString(kHudX, kHudStageY - 18, "STAGE", GetColor(180, 210, 255));
+    drawHudNumber(kHudNumberRight, kHudStageY, selectedStage_, numSmallFrames_, 20, 30, 0.85);
+
+    DrawString(kHudX, kHudStockY - 18, "STOCK", GetColor(180, 210, 255));
+    DrawString(kHudNumberRight - 48, kHudStockY, "x", GetColor(235, 235, 255));
+    drawHudNumber(kHudNumberRight, kHudStockY, std::max(0, player_.lives), numSmallFrames_, 20, 30, 0.85);
+}
+
+void StageRuntime::drawDebugOverlay() const {
+    DrawFormatString(24, notes::kScreenHeight - 28, GetColor(150, 160, 180),
+                     "reconstruction probe  stage=%02d frame=%d enemies=%d bullets=%d shots=%d lives=%d",
+                     selectedStage_, frame_, static_cast<int>(enemies_.size()),
+                     static_cast<int>(enemyProjectiles_.size()), static_cast<int>(playerShots_.size()), player_.lives);
+}
+
+void StageRuntime::drawHudNumber(int rightX, int y, int value, const std::vector<int>& digitFrames, int digitWidth, int digitHeight, double scale) const {
+    const int originalValue = std::max(0, value);
+    value = originalValue;
+    std::array<int, 12> digits{};
+    int count = 0;
+    do {
+        digits[static_cast<std::size_t>(count++)] = value % 10;
+        value /= 10;
+    } while (value > 0 && count < static_cast<int>(digits.size()));
+
+    if (digitFrames.empty() || digitFrames.front() == -1) {
+        DrawFormatString(rightX - count * digitWidth, y, GetColor(245, 245, 255), "%d", originalValue);
+        return;
+    }
+
+    const int step = static_cast<int>(static_cast<double>(digitWidth) * scale);
+    int x = rightX - step;
+    for (int i = 0; i < count; ++i) {
+        const int digit = digits[static_cast<std::size_t>(i)];
+        const int handle = digit < static_cast<int>(digitFrames.size()) ? digitFrames[static_cast<std::size_t>(digit)] : -1;
+        if (handle != -1) {
+            DrawRotaGraphF(static_cast<float>(x + step / 2), static_cast<float>(y + static_cast<int>(digitHeight * scale) / 2), scale, 0.0, handle, TRUE);
+        }
+        else {
+            DrawFormatString(x, y, GetColor(245, 245, 255), "%d", digit);
+        }
+        x -= step;
+    }
+}
+
+void StageRuntime::drawHudGauge(int x, int y, int value, int maxValue) const {
+    const int width = 160;
+    const int height = 12;
+    const float ratio = maxValue <= 0 ? 0.0f : clampFloat(static_cast<float>(value) / static_cast<float>(maxValue), 0.0f, 1.0f);
+    if (!dreamGaugeFrames_.empty() && dreamGaugeFrames_.front() != -1) {
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 95);
+        DrawRotaGraphF(static_cast<float>(x + 80), static_cast<float>(y + 8), 0.28, 0.0, dreamGaugeFrames_.front(), TRUE);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    }
+    DrawBox(x, y, x + width, y + height, GetColor(32, 36, 64), TRUE);
+    DrawBox(x, y, x + width, y + height, GetColor(96, 120, 180), FALSE);
+    DrawBox(x + 2, y + 2, x + 2 + static_cast<int>((width - 4) * ratio), y + height - 2, GetColor(100, 220, 255), TRUE);
+}
+
+void StageRuntime::drawHudTokenPips(int x, int y, int activeCount, int maxCount) const {
+    activeCount = std::max(0, std::min(activeCount, maxCount));
+    for (int i = 0; i < maxCount; ++i) {
+        const bool active = i < activeCount;
+        const int cx = x + i * kHudPipStep;
+        const int color = active ? GetColor(150, 235, 255) : GetColor(60, 68, 88);
+        DrawCircle(cx, y + 8, 7, color, TRUE);
+        DrawCircle(cx, y + 8, 7, GetColor(150, 170, 210), FALSE);
+    }
 }
 
 float StageRuntime::aimAtPlayer(float x, float y) const {

@@ -66,6 +66,9 @@ private:
         float y = 0.0f;
         float vx = 0.0f;
         float vy = 0.0f;
+        float angle = 0.0f;
+        float speed = 0.0f;
+        float baseSpeed = 0.0f;
         int radius = 5;
         bool active = true;
     };
@@ -83,7 +86,12 @@ private:
     void spawnEnemy(const StageSpawnEvent& event);
     void updatePlayer();
     void updateEnemies();
+    void updateStage04Enemy(StageEnemy& enemy, int activeAge);
+    void emitStage04Projectiles(StageEnemy& enemy, int activeAge);
+    void updateGenericEnemy(StageEnemy& enemy, int activeAge);
+    void emitGenericProjectiles(StageEnemy& enemy, int activeAge);
     void updateProjectiles();
+    static void updateProjectileVelocity(StageProjectile& projectile);
     void updatePlayerShots();
     void handleCollisions();
     void spawnProjectileNode(int projectileId, int visualSelector, float x, float y, float angle, float speed, int radius);
@@ -94,6 +102,11 @@ private:
     void drawProjectiles() const;
     void drawPlayerShots() const;
     void drawOverlay() const;
+    void drawHudSidebar() const;
+    void drawDebugOverlay() const;
+    void drawHudNumber(int rightX, int y, int value, const std::vector<int>& digitFrames, int digitWidth, int digitHeight, double scale = 1.0) const;
+    void drawHudGauge(int x, int y, int value, int maxValue) const;
+    void drawHudTokenPips(int x, int y, int activeCount, int maxCount) const;
 
     float aimAtPlayer(float x, float y) const;
     static float deterministicUnit(int frame, int salt);
@@ -109,6 +122,15 @@ private:
     std::vector<int> bulletFrames_;
     std::vector<int> stageBack1Frames_;
     std::vector<int> stageBack2Frames_;
+    std::vector<int> stageFrameFrames_;
+    std::vector<int> numSmallFrames_;
+    std::vector<int> numMediumFrames_;
+    std::vector<int> numLargeFrames_;
+    int dataWindowHandle_ = -1;
+    int timeWindowHandle_ = -1;
+    std::vector<int> playerFrameFrames_;
+    std::vector<int> stateFrames_;
+    std::vector<int> dreamGaugeFrames_;
     std::vector<StageEnemy> enemies_;
     std::vector<StageProjectile> enemyProjectiles_;
     std::vector<PlayerShot> playerShots_;
