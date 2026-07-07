@@ -17,6 +17,8 @@ public:
         int playerOption = 0;
         int subOption = 0;
         int loadoutId = 0;
+        int difficulty = 0;
+        int counterMode = 0;
         std::array<int, 4> optionSlots{{0, 0, 0, 0}};
     };
 

@@ -316,7 +316,8 @@ void StageRuntime::setConfig(const StageRuntimeConfig& config) {
     next.stage = normalized;
     const bool changed = selectedStage_ != normalized || config_.routeMode != next.routeMode ||
                          config_.playerOption != next.playerOption || config_.subOption != next.subOption ||
-                         config_.loadoutId != next.loadoutId || config_.optionSlots != next.optionSlots;
+                         config_.loadoutId != next.loadoutId || config_.difficulty != next.difficulty ||
+                         config_.counterMode != next.counterMode || config_.optionSlots != next.optionSlots;
     config_ = next;
     if (changed) {
         selectedStage_ = normalized;
@@ -649,8 +650,9 @@ void StageRuntime::updatePlayer() {
         dx *= 0.70710678f;
         dy *= 0.70710678f;
     }
-    player_.x = clampFloat(player_.x + dx * speed, kPlayLeft, kPlayRight);
-    player_.y = clampFloat(player_.y + dy * speed, kPlayTop, kPlayBottom);
+    constexpr float kPlayerClampInset = 4.0f;
+    player_.x = clampFloat(player_.x + dx * speed, kPlayLeft + kPlayerClampInset, kPlayRight - kPlayerClampInset);
+    player_.y = clampFloat(player_.y + dy * speed, kPlayTop + kPlayerClampInset, kPlayBottom - kPlayerClampInset);
 
     if (player_.invulnerableFrames > 0) {
         --player_.invulnerableFrames;
@@ -1619,8 +1621,8 @@ void StageRuntime::drawDebugOverlay() const {
                      static_cast<int>(enemyProjectiles_.size()), static_cast<int>(playerSideObjects_.size()),
                      static_cast<int>(playerShots_.size()), player_.lives);
     DrawFormatString(24, notes::kScreenHeight - 26, GetColor(150, 180, 210),
-                     "loadout route=%d playerOpt=%d sub=%d loadout=%d shotTimer=%d focus=%d slots=[%d %d %d %d]",
-                     config_.routeMode, config_.playerOption, config_.subOption, config_.loadoutId,
+                     "loadout route=%d playerOpt=%d sub=%d loadout=%d diff=%d counter=%d shotTimer=%d focus=%d slots=[%d %d %d %d]",
+                     config_.routeMode, config_.playerOption, config_.subOption, config_.loadoutId, config_.difficulty, config_.counterMode,
                      player_.shotTimer, player_.focused ? 1 : 0,
                      config_.optionSlots[0], config_.optionSlots[1], config_.optionSlots[2], config_.optionSlots[3]);
 }

@@ -194,6 +194,8 @@ int App::runSmokeTestLoop() {
                 config.playerOption = request.playerOption;
                 config.subOption = request.subOption;
                 config.loadoutId = request.loadoutId;
+                config.difficulty = request.difficulty;
+                config.counterMode = request.counterMode;
                 config.optionSlots = request.optionSlots;
                 if (!stageRuntime_.initialized()) {
                     stageRuntime_.initialize(*resources_, config);

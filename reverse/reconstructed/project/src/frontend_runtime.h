@@ -24,6 +24,8 @@ public:
         int playerOption = 0;
         int subOption = 0;
         int loadoutId = 0;
+        int difficulty = 0;
+        int counterMode = 0;
         std::array<int, 4> optionSlots{{0, 0, 0, 0}};
     };
 
@@ -107,6 +109,10 @@ private:
     int stageSubIndex_ = 0;
     int stageBranchToggle_ = 0;
     int stageOverlayState_ = 0;
+    int selectedDifficulty_ = 2;
+    int counterMode_ = 0;
+    std::array<int, 11> maxUnlockedDifficultyByStage_{{4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4}};
+    bool counterUnlocked_ = true;
     bool titleBgmStarted_ = false;
     GameplayRequest gameplayRequest_;
 

@@ -42,11 +42,12 @@ inline constexpr int kMenu2YOffset = 68;
 } // namespace title_layout
 
 namespace gameplay_layout {
-// Original player-side object bounds point to a 600x720 local gameplay area.
-// StageFrame.png is loaded as 2 frames of 600x720 and drawn at screen x=40.
+// Original screen layout reserves 340px side panels and places the 600x720
+// controllable area in the center: x=340..940. Player/enemy coordinates in this
+// reconstruction stay local 0..600/0..720 and are translated by kPlayScreenOrigin.
 inline constexpr RectI kPlayLocalRect{0, 0, 600, kScreenHeight};
-inline constexpr PointI kPlayScreenOrigin{40, 0};
-inline constexpr PointI kStageBackOrigin{40, 0};
+inline constexpr PointI kPlayScreenOrigin{340, 0};
+inline constexpr PointI kStageBackOrigin{280, 0};
 inline constexpr RectI kStageBackRect{kStageBackOrigin.x, kStageBackOrigin.y, 720, kScreenHeight};
 inline constexpr RectI kStageFrameRect{kPlayScreenOrigin.x, kPlayScreenOrigin.y, 600, kScreenHeight};
 inline constexpr PointI kPlayerStart{300, 620};
@@ -183,6 +184,26 @@ namespace stage_setup_provisional_layout {
 // decoded from .rdata; prompt text placement is scaffold UI, not original.
 inline constexpr PointI kPromptNote{648, 682};
 } // namespace stage_setup_provisional_layout
+
+
+namespace difficulty_overlay_evidence {
+// state_04 DAT_140e45274 phases: 0=stage, 1=difficulty/counter, 2=launch, -1=back.
+inline constexpr int kInputEnableFrame = 0x3b;
+inline constexpr int kDifficultyCount = 5;
+inline constexpr int kDefaultDifficulty = 2; // Expert
+inline constexpr PointI kBaseMapMenu2{590, 460};      // MapMenu2 frame 4, layer 0x50.
+inline constexpr PointI kDifficultyMapMenu2{640, 530}; // MapMenu2 frame 6+difficulty, layer 0x54.
+inline constexpr PointI kCounterMapMenu2{640, 580};    // MapMenu2 frame 5, layer 0x55.
+inline constexpr PointI kCounterArrow{730, 580};       // Effect_s frame 1, layer 0x52.
+inline constexpr PointI kDifficultyTips{790, 372};     // DifficultyTips frame difficulty; DAT_14053af60 unresolved.
+inline constexpr int kLayerSwitchCommitFrames = 10;
+inline constexpr int kLaunchCommitFrames = 100;
+inline constexpr int kMapMenu2BaseFrame = 4;
+inline constexpr int kMapMenu2CounterFrame = 5;
+inline constexpr int kMapMenu2DifficultyBaseFrame = 6;
+inline constexpr int kMapMenu2LockedFrame = 12;
+inline constexpr int kArrowEffectFrame = 1; // DAT_140e41934 = Effect_s frame 1.
+} // namespace difficulty_overlay_evidence
 
 namespace stage_select_provisional_layout {
 // Practical map-select anchors only. Exact original state_04 node coordinates
