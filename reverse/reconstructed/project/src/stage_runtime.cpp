@@ -1254,10 +1254,12 @@ void StageRuntime::handleCollisions() {
                 enemy.hp -= playerSideObjectDamage(object);
                 player_.specialGauge = std::min(50000, player_.specialGauge + 90);
                 player_.scoreItemBaseValue = std::min(999999, player_.scoreItemBaseValue + 1);
+                ++player_.graze;
                 if (enemy.hp <= 0) {
                     enemy.active = false;
                     player_.score += 1000 + enemy.spawnType * 10;
                     player_.tokenStock = std::min(notes::hud_layout::kMaxTokens, player_.tokenStock + 1);
+                    ++player_.keyStateCount;
                     player_.specialGauge = std::min(50000, player_.specialGauge + 1200);
                 }
                 break;
@@ -1279,10 +1281,12 @@ void StageRuntime::handleCollisions() {
                 enemy.hp -= 2;
                 player_.specialGauge = std::min(50000, player_.specialGauge + 180);
                 player_.scoreItemBaseValue = std::min(999999, player_.scoreItemBaseValue + 1);
+                ++player_.graze;
                 if (enemy.hp <= 0) {
                     enemy.active = false;
                     player_.score += 1000 + enemy.spawnType * 10;
                     player_.tokenStock = std::min(notes::hud_layout::kMaxTokens, player_.tokenStock + 1);
+                    ++player_.keyStateCount;
                     player_.specialGauge = std::min(50000, player_.specialGauge + 1200);
                 }
                 break;
@@ -1489,6 +1493,7 @@ void StageRuntime::drawOverlay() const {
 }
 
 void StageRuntime::drawHudSidebar() const {
+    drawLeftHudPanel();
     drawRightHudPanel();
     drawStateRows();
     drawNumberWithSeparators(notes::hud_layout::kNumberRightX, notes::hud_layout::kScoreY, player_.score, numSmallFrames_, 20, 30, 0.9);
@@ -1497,6 +1502,56 @@ void StageRuntime::drawHudSidebar() const {
     drawDataWindow2Tokens(notes::hud_layout::kPipStartX, notes::hud_layout::kTokenY, player_.tokenStock, notes::hud_layout::kMaxTokens);
     drawHudNumber(notes::hud_layout::kNumberRightX, notes::hud_layout::kStageY, selectedStage_, numSmallFrames_, 20, 30, 0.85);
     drawHudStatusIconGroup();
+}
+
+
+void StageRuntime::drawLeftHudPanel() const {
+    if (dataWindowHandle_ != -1) {
+        DrawGraph(notes::hud_layout::kLeftDataWindowRect.x, notes::hud_layout::kLeftDataWindowRect.y, dataWindowHandle_, TRUE);
+    }
+    else {
+        DrawBox(notes::hud_layout::kLeftDataWindowRect.x, notes::hud_layout::kLeftDataWindowRect.y,
+                notes::hud_layout::kLeftDataWindowRect.right(), notes::hud_layout::kLeftDataWindowRect.bottom(),
+                GetColor(18, 20, 36), TRUE);
+    }
+
+    if (!stateFrames_.empty() && stateFrames_.front() != -1) {
+        const auto drawState = [&](int frame, int x, int y, int alpha = 255) {
+            if (frame >= 0 && frame < static_cast<int>(stateFrames_.size()) && stateFrames_[static_cast<std::size_t>(frame)] != -1) {
+                SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+                DrawGraph(x, y, stateFrames_[static_cast<std::size_t>(frame)], TRUE);
+                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            }
+        };
+        drawState(0, notes::hud_layout::kLeftStageLabelX, notes::hud_layout::kLeftStageLabelY);
+        drawState(1, notes::hud_layout::kLeftFrameLabelX, notes::hud_layout::kLeftFrameLabelY);
+        drawState(3, notes::hud_layout::kLeftGrazeLabelX, notes::hud_layout::kLeftGrazeLabelY);
+        drawState(27, notes::hud_layout::kLeftKeyStateIconX - 80, notes::hud_layout::kLeftKeyStateIconY - 20, 220);
+    }
+
+    drawHudNumber(notes::hud_layout::kLeftStageLabelX + 190, notes::hud_layout::kLeftStageLabelY + 6,
+                  selectedStage_, numSmallFrames_, 20, 30, 0.72);
+    drawHudNumber(notes::hud_layout::kLeftFrameLabelX + 235, notes::hud_layout::kLeftFrameLabelY + 6,
+                  frame_, numSmallFrames_, 20, 30, 0.62);
+    drawNumberWithSeparators(notes::hud_layout::kLeftGrazeLabelX + 235, notes::hud_layout::kLeftGrazeLabelY + 6,
+                             player_.graze, numSmallFrames_, 20, 30, 0.62);
+    drawHudNumber(notes::hud_layout::kLeftKeyStateValueRightX, notes::hud_layout::kLeftKeyStateIconY + 8,
+                  player_.keyStateCount, numSmallFrames_, 20, 30, 0.72);
+
+    if (!playerFrames_.empty() && playerFrames_.front() != -1) {
+        const int base = std::min(config_.routeMode * 0x1e, static_cast<int>(playerFrames_.size()) - 1);
+        DrawRotaGraphF(static_cast<float>(notes::hud_layout::kLeftPlayerIconX),
+                       static_cast<float>(notes::hud_layout::kLeftPlayerIconY),
+                       0.62, 0.0, playerFrames_[static_cast<std::size_t>(base)], TRUE);
+    }
+    if (!dataWindow2Frames_.empty() && dataWindow2Frames_.front() != -1) {
+        for (int i = 0; i < std::min(player_.tokenStock, 5); ++i) {
+            const int frame = std::min(i, static_cast<int>(dataWindow2Frames_.size()) - 1);
+            DrawRotaGraphF(static_cast<float>(notes::hud_layout::kLeftDataWindow2X + i * 24),
+                           static_cast<float>(notes::hud_layout::kLeftDataWindow2Y),
+                           0.38, 0.0, dataWindow2Frames_[static_cast<std::size_t>(frame)], TRUE);
+        }
+    }
 }
 
 void StageRuntime::drawRightHudPanel() const {

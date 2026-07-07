@@ -55,6 +55,8 @@ private:
         int scoreItemBaseValue = 100;
         int specialGauge = 0;
         int tokenStock = 2;
+        int graze = 0;
+        int keyStateCount = 0;
         int invulnerableFrames = 0;
         int lives = 3;
         bool focused = false;
@@ -164,6 +166,7 @@ private:
     void drawPlayerShots() const;
     void drawOverlay() const;
     void drawHudSidebar() const;
+    void drawLeftHudPanel() const;
     void drawRightHudPanel() const;
     void drawStateRows() const;
     void drawDreamGauge(int x, int y, int value, int maxValue) const;

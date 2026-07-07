@@ -81,6 +81,23 @@ inline constexpr int kGaugeBarHeight = 12;
 inline constexpr int kDreamGaugePreviewCenterOffsetX = 80;
 inline constexpr int kDreamGaugePreviewCenterOffsetY = 8;
 inline constexpr double kDreamGaugePreviewScale = 0.28;
+
+// Left-side HUD from FUN_1400c4bb0. This panel is conditionally called from
+// FUN_1400c2860 and mirrors the right DataWindow-style HUD on x<340.
+inline constexpr RectI kLeftDataWindowRect{0, 330, 340, 380};
+inline constexpr int kLeftStageLabelX = 30;
+inline constexpr int kLeftStageLabelY = 365;
+inline constexpr int kLeftFrameLabelX = 30;
+inline constexpr int kLeftFrameLabelY = 405;
+inline constexpr int kLeftGrazeLabelX = 30;
+inline constexpr int kLeftGrazeLabelY = 455;
+inline constexpr int kLeftKeyStateIconX = 280;
+inline constexpr int kLeftKeyStateIconY = 535;
+inline constexpr int kLeftKeyStateValueRightX = 300;
+inline constexpr int kLeftPlayerIconX = 55;
+inline constexpr int kLeftPlayerIconY = 640;
+inline constexpr int kLeftDataWindow2X = 160;
+inline constexpr int kLeftDataWindow2Y = 647;
 } // namespace hud_layout
 
 namespace ui_resource_evidence {
