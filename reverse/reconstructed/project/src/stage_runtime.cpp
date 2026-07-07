@@ -1250,8 +1250,13 @@ void StageRuntime::handleCollisions() {
             if (distanceSquared(object.x, object.y, enemy.x, enemy.y) <= static_cast<float>(radius * radius)) {
                 object.active = false;
                 enemy.hp -= playerSideObjectDamage(object);
+                player_.specialGauge = std::min(50000, player_.specialGauge + 90);
+                player_.scoreItemBaseValue = std::min(999999, player_.scoreItemBaseValue + 1);
                 if (enemy.hp <= 0) {
                     enemy.active = false;
+                    player_.score += 1000 + enemy.spawnType * 10;
+                    player_.tokenStock = std::min(notes::hud_layout::kMaxTokens, player_.tokenStock + 1);
+                    player_.specialGauge = std::min(50000, player_.specialGauge + 1200);
                 }
                 break;
             }
@@ -1270,8 +1275,13 @@ void StageRuntime::handleCollisions() {
             if (distanceSquared(shot.x, shot.y, enemy.x, enemy.y) <= static_cast<float>(radius * radius)) {
                 shot.active = false;
                 enemy.hp -= 2;
+                player_.specialGauge = std::min(50000, player_.specialGauge + 180);
+                player_.scoreItemBaseValue = std::min(999999, player_.scoreItemBaseValue + 1);
                 if (enemy.hp <= 0) {
                     enemy.active = false;
+                    player_.score += 1000 + enemy.spawnType * 10;
+                    player_.tokenStock = std::min(notes::hud_layout::kMaxTokens, player_.tokenStock + 1);
+                    player_.specialGauge = std::min(50000, player_.specialGauge + 1200);
                 }
                 break;
             }
@@ -1371,7 +1381,8 @@ void StageRuntime::drawBackground() const {
         DrawGraph(notes::gameplay_layout::kStageBackOrigin.x, slowScroll, stageBack1Frames_.front(), TRUE);
     }
     if (!stageFrameFrames_.empty() && stageFrameFrames_.front() != -1) {
-        DrawGraph(notes::gameplay_layout::kStageFrameRect.x, notes::gameplay_layout::kStageFrameRect.y, stageFrameFrames_.front(), TRUE);
+        const int frameIndex = (config_.routeMode == 2 && stageFrameFrames_.size() > 1) ? 1 : 0;
+        DrawGraph(notes::gameplay_layout::kStageFrameRect.x, notes::gameplay_layout::kStageFrameRect.y, stageFrameFrames_[static_cast<std::size_t>(frameIndex)], TRUE);
     }
     else {
         DrawBox(notes::gameplay_layout::kStageFrameRect.x, notes::gameplay_layout::kStageFrameRect.y,
@@ -1471,68 +1482,96 @@ void StageRuntime::drawOverlay() const {
     drawHudSidebar();
     if (showLayoutGuides_) {
         drawLayoutGuides();
+        drawDebugOverlay();
     }
-    drawDebugOverlay();
 }
 
 void StageRuntime::drawHudSidebar() const {
-    // Operational scaffold only. Exact original HUD anchors/frame mapping still require
-    // FUN_1400c2860 xrefs for DataWindow/TimeWindow/DataWindow2/PlayerFrame/State.
-    constexpr int runScore = 0;
-    constexpr int scoreItemBaseValue = 100;
-    constexpr int specialGauge = 0;
-    constexpr int specialGaugeMax = 50000;
-    constexpr int tokenStock = 2;
+    drawRightHudPanel();
+    drawStateRows();
+    drawNumberWithSeparators(notes::hud_layout::kNumberRightX, notes::hud_layout::kScoreY, player_.score, numSmallFrames_, 20, 30, 0.9);
+    drawNumberWithSeparators(notes::hud_layout::kNumberRightX, notes::hud_layout::kBaseValueY, player_.scoreItemBaseValue, numSmallFrames_, 20, 30, 0.85);
+    drawDreamGauge(notes::hud_layout::kLabelX, notes::hud_layout::kDreamGaugeY, player_.specialGauge, 50000);
+    drawDataWindow2Tokens(notes::hud_layout::kPipStartX, notes::hud_layout::kTokenY, player_.tokenStock, notes::hud_layout::kMaxTokens);
+    drawHudNumber(notes::hud_layout::kNumberRightX, notes::hud_layout::kStageY, selectedStage_, numSmallFrames_, 20, 30, 0.85);
+    drawHudStatusIconGroup();
+}
 
+void StageRuntime::drawRightHudPanel() const {
+    if (!playerFrameFrames_.empty() && playerFrameFrames_.front() != -1) {
+        const int frameIndex = std::min(config_.routeMode * 10, static_cast<int>(playerFrameFrames_.size()) - 1);
+        DrawGraph(notes::hud_layout::kRightPanelRect.x, notes::hud_layout::kRightPanelRect.y, playerFrameFrames_[static_cast<std::size_t>(frameIndex)], TRUE);
+        return;
+    }
     if (timeWindowHandle_ != -1) {
         DrawGraph(notes::hud_layout::kTimeWindowRect.x, notes::hud_layout::kTimeWindowRect.y, timeWindowHandle_, TRUE);
     }
-    else {
-        DrawBox(notes::hud_layout::kTimeWindowRect.x, notes::hud_layout::kTimeWindowRect.y,
-                notes::hud_layout::kTimeWindowRect.right(), notes::hud_layout::kTimeWindowRect.bottom(),
-                GetColor(18, 20, 36), TRUE);
-        DrawBox(notes::hud_layout::kTimeWindowRect.x, notes::hud_layout::kTimeWindowRect.y,
-                notes::hud_layout::kTimeWindowRect.right(), notes::hud_layout::kTimeWindowRect.bottom(),
-                GetColor(70, 80, 120), FALSE);
-    }
-
     if (dataWindowHandle_ != -1) {
         DrawGraph(notes::hud_layout::kDataWindowRect.x, notes::hud_layout::kDataWindowRect.y, dataWindowHandle_, TRUE);
     }
-    else {
-        DrawBox(notes::hud_layout::kDataWindowRect.x, notes::hud_layout::kDataWindowRect.y,
-                notes::hud_layout::kDataWindowRect.right(), notes::hud_layout::kDataWindowRect.bottom(),
-                GetColor(18, 20, 36), TRUE);
-        DrawBox(notes::hud_layout::kDataWindowRect.x, notes::hud_layout::kDataWindowRect.y,
-                notes::hud_layout::kDataWindowRect.right(), notes::hud_layout::kDataWindowRect.bottom(),
-                GetColor(70, 80, 120), FALSE);
+}
+
+void StageRuntime::drawStateRows() const {
+    if (stateFrames_.empty() || stateFrames_.front() == -1) {
+        return;
     }
+    constexpr std::array<int, 6> frames{{0, 1, 2, 3, 4, 5}};
+    constexpr std::array<int, 6> ys{{notes::hud_layout::kScoreY - 32, notes::hud_layout::kBaseValueY - 32, notes::hud_layout::kGaugeY - 32,
+                                     notes::hud_layout::kTokenY - 32, notes::hud_layout::kStageY - 32, notes::hud_layout::kStockY - 32}};
+    for (std::size_t i = 0; i < frames.size(); ++i) {
+        const int frame = frames[i] < static_cast<int>(stateFrames_.size()) ? stateFrames_[static_cast<std::size_t>(frames[i])] : -1;
+        if (frame != -1) {
+            DrawGraph(notes::hud_layout::kLabelX, ys[i], frame, TRUE);
+        }
+    }
+}
 
-    DrawString(notes::hud_layout::kLabelX, notes::hud_layout::kScoreY - 20, "SCORE", GetColor(180, 210, 255));
-    drawHudNumber(notes::hud_layout::kNumberRightX, notes::hud_layout::kScoreY, runScore, numSmallFrames_, 20, 30, 0.9);
+void StageRuntime::drawDreamGauge(int x, int y, int value, int maxValue) const {
+    const float ratio = maxValue <= 0 ? 0.0f : clampFloat(static_cast<float>(value) / static_cast<float>(maxValue), 0.0f, 1.0f);
+    if (!dreamGaugeFrames_.empty() && dreamGaugeFrames_.front() != -1) {
+        DrawRotaGraphF(static_cast<float>(x + notes::hud_layout::kDreamGaugePreviewCenterOffsetX),
+                       static_cast<float>(y + notes::hud_layout::kDreamGaugePreviewCenterOffsetY),
+                       notes::hud_layout::kDreamGaugePreviewScale, 0.0, dreamGaugeFrames_.front(), TRUE);
+        if (dreamGaugeFrames_.size() > 1 && dreamGaugeFrames_[1] != -1) {
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, static_cast<int>(80 + ratio * 175));
+            DrawRotaGraphF(static_cast<float>(x + notes::hud_layout::kDreamGaugePreviewCenterOffsetX),
+                           static_cast<float>(y + notes::hud_layout::kDreamGaugePreviewCenterOffsetY),
+                           notes::hud_layout::kDreamGaugePreviewScale, 0.0, dreamGaugeFrames_[1], TRUE);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        }
+    }
+    const int width = notes::hud_layout::kGaugeBarWidth;
+    const int height = notes::hud_layout::kGaugeBarHeight;
+    DrawBox(x, y + 16, x + width, y + 16 + height, GetColor(32, 36, 64), TRUE);
+    DrawBox(x + 2, y + 18, x + 2 + static_cast<int>((width - 4) * ratio), y + 16 + height - 2, GetColor(100, 220, 255), TRUE);
+}
 
-    DrawString(notes::hud_layout::kLabelX, notes::hud_layout::kBaseValueY - 18, "VALUE", GetColor(180, 210, 255));
-    drawHudNumber(notes::hud_layout::kNumberRightX, notes::hud_layout::kBaseValueY, scoreItemBaseValue, numSmallFrames_, 20, 30, 0.85);
-
-    DrawString(notes::hud_layout::kLabelX, notes::hud_layout::kGaugeY - 18, "DREAM", GetColor(180, 210, 255));
-    drawHudGauge(notes::hud_layout::kLabelX, notes::hud_layout::kGaugeY, specialGauge, specialGaugeMax);
-
-    DrawString(notes::hud_layout::kLabelX, notes::hud_layout::kTokenY - 18, "TOKEN", GetColor(180, 210, 255));
-    drawHudTokenPips(notes::hud_layout::kPipStartX, notes::hud_layout::kTokenY, tokenStock, notes::hud_layout::kMaxTokens);
-
-    DrawString(notes::hud_layout::kLabelX, notes::hud_layout::kStageY - 18, "STAGE", GetColor(180, 210, 255));
-    drawHudNumber(notes::hud_layout::kNumberRightX, notes::hud_layout::kStageY, selectedStage_, numSmallFrames_, 20, 30, 0.85);
-
-    DrawString(notes::hud_layout::kLabelX, notes::hud_layout::kStockY - 18, "STOCK", GetColor(180, 210, 255));
-    DrawString(notes::hud_layout::kNumberRightX - 48, notes::hud_layout::kStockY, "x", GetColor(235, 235, 255));
-    drawHudNumber(notes::hud_layout::kNumberRightX, notes::hud_layout::kStockY, std::max(0, player_.lives), numSmallFrames_, 20, 30, 0.85);
-    if (!dataWindow2Frames_.empty() && dataWindow2Frames_.front() != -1) {
-        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 125);
-        DrawRotaGraphF(static_cast<float>(notes::hud_layout::kLabelX + 18), static_cast<float>(notes::hud_layout::kStockY + 52),
-                       0.75, 0.0, dataWindow2Frames_.front(), TRUE);
+void StageRuntime::drawDataWindow2Tokens(int x, int y, int activeCount, int maxCount) const {
+    activeCount = std::max(0, std::min(activeCount, maxCount));
+    for (int i = 0; i < maxCount; ++i) {
+        const bool active = i < activeCount;
+        const int handle = dataWindow2Frames_.empty() ? -1 : dataWindow2Frames_[static_cast<std::size_t>(std::min(i, static_cast<int>(dataWindow2Frames_.size()) - 1))];
+        if (handle == -1) {
+            continue;
+        }
+        const int cx = x + i * notes::hud_layout::kPipStep;
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, active ? 255 : 90);
+        DrawRotaGraphF(static_cast<float>(cx), static_cast<float>(y), 0.42, 0.0, handle, TRUE);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-        DrawString(notes::hud_layout::kLabelX + 54, notes::hud_layout::kStockY + 36,
-                   "DataWindow2 preview only; original HUD position unresolved", GetColor(185, 195, 215));
+    }
+}
+
+void StageRuntime::drawHudStatusIconGroup() const {
+    if (dataWindow2Frames_.empty() || dataWindow2Frames_.front() == -1) {
+        drawHudNumber(notes::hud_layout::kNumberRightX, notes::hud_layout::kStockY, std::max(0, player_.lives), numSmallFrames_, 20, 30, 0.85);
+        return;
+    }
+    const std::array<int, 3> xs{{notes::hud_layout::kStockIcon0X, notes::hud_layout::kStockIcon1X, notes::hud_layout::kStockIcon2X}};
+    for (std::size_t i = 0; i < xs.size(); ++i) {
+        const int handle = dataWindow2Frames_[static_cast<std::size_t>(std::min(6 + static_cast<int>(i), static_cast<int>(dataWindow2Frames_.size()) - 1))];
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, static_cast<int>(i) < player_.lives ? 255 : 90);
+        DrawRotaGraphF(static_cast<float>(xs[i]), static_cast<float>(notes::hud_layout::kStockY), 0.48, 0.0, handle, TRUE);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     }
 }
 
@@ -1568,12 +1607,12 @@ void StageRuntime::drawLayoutGuides() const {
                      "F7 layout guides  player local=(%.1f, %.1f) screen=(%.1f, %.1f)",
                      player_.x, player_.y, screenX(player_.x), screenY(player_.y));
     DrawString(56, 42, "blue=StageBack  green=StageFrame  yellow=600x720 playfield  red/pink=HUD windows", GetColor(210, 220, 240));
-    DrawString(56, 64, "HUD anchors are scaffold/evidence-limited; exact DataWindow/TimeWindow/DataWindow2/PlayerFrame/State positions need FUN_1400c2860 xrefs.", GetColor(255, 220, 170));
+    DrawString(56, 64, "HUD panel anchors follow FUN_1400c2860; State/DataWindow2 frame meanings remain provisional.", GetColor(255, 220, 170));
 }
 
 void StageRuntime::drawDebugOverlay() const {
     DrawFormatString(24, notes::kScreenHeight - 70, GetColor(170, 170, 190),
-                     "HUD scaffold/evidence-limited; F7 guide names unresolved HUD xrefs.");
+                     "F7 guide: HUD anchors from FUN_1400c2860; frame meanings provisional.");
     DrawFormatString(24, notes::kScreenHeight - 48, GetColor(150, 160, 180),
                      "reconstruction probe  stage=%02d frame=%d enemies=%d bullets=%d side=%d shots=%d lives=%d",
                      selectedStage_, frame_, static_cast<int>(enemies_.size()),
@@ -1587,6 +1626,10 @@ void StageRuntime::drawDebugOverlay() const {
 }
 
 void StageRuntime::drawHudNumber(int rightX, int y, int value, const std::vector<int>& digitFrames, int digitWidth, int digitHeight, double scale) const {
+    drawNumberWithSeparators(rightX, y, value, digitFrames, digitWidth, digitHeight, scale);
+}
+
+void StageRuntime::drawNumberWithSeparators(int rightX, int y, int value, const std::vector<int>& digitFrames, int digitWidth, int digitHeight, double scale) const {
     const int originalValue = std::max(0, value);
     value = originalValue;
     std::array<int, 12> digits{};
@@ -1613,35 +1656,16 @@ void StageRuntime::drawHudNumber(int rightX, int y, int value, const std::vector
             DrawFormatString(x, y, GetColor(245, 245, 255), "%d", digit);
         }
         x -= step;
+        if ((i + 1) % 3 == 0 && i + 1 < count) {
+            const int commaFrame = digitFrames.size() > 10 ? digitFrames[10] : -1;
+            if (commaFrame != -1) {
+                DrawRotaGraphF(static_cast<float>(x + step / 2), static_cast<float>(y + static_cast<int>(digitHeight * scale) / 2), scale, 0.0, commaFrame, TRUE);
+            }
+            x -= step / 2;
+        }
     }
 }
 
-void StageRuntime::drawHudGauge(int x, int y, int value, int maxValue) const {
-    const int width = notes::hud_layout::kGaugeBarWidth;
-    const int height = notes::hud_layout::kGaugeBarHeight;
-    const float ratio = maxValue <= 0 ? 0.0f : clampFloat(static_cast<float>(value) / static_cast<float>(maxValue), 0.0f, 1.0f);
-    if (!dreamGaugeFrames_.empty() && dreamGaugeFrames_.front() != -1) {
-        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 95);
-        DrawRotaGraphF(static_cast<float>(x + notes::hud_layout::kDreamGaugePreviewCenterOffsetX),
-                       static_cast<float>(y + notes::hud_layout::kDreamGaugePreviewCenterOffsetY),
-                       notes::hud_layout::kDreamGaugePreviewScale, 0.0, dreamGaugeFrames_.front(), TRUE);
-        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-    }
-    DrawBox(x, y, x + width, y + height, GetColor(32, 36, 64), TRUE);
-    DrawBox(x, y, x + width, y + height, GetColor(96, 120, 180), FALSE);
-    DrawBox(x + 2, y + 2, x + 2 + static_cast<int>((width - 4) * ratio), y + height - 2, GetColor(100, 220, 255), TRUE);
-}
-
-void StageRuntime::drawHudTokenPips(int x, int y, int activeCount, int maxCount) const {
-    activeCount = std::max(0, std::min(activeCount, maxCount));
-    for (int i = 0; i < maxCount; ++i) {
-        const bool active = i < activeCount;
-        const int cx = x + i * notes::hud_layout::kPipStep;
-        const int color = active ? GetColor(150, 235, 255) : GetColor(60, 68, 88);
-        DrawCircle(cx, y + 8, 7, color, TRUE);
-        DrawCircle(cx, y + 8, 7, GetColor(150, 170, 210), FALSE);
-    }
-}
 
 void StageRuntime::updateLayoutGuideToggle() {
     const bool down = CheckHitKey(KEY_INPUT_F7) != 0;

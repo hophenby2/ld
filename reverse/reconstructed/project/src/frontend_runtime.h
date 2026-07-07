@@ -44,10 +44,25 @@ private:
         bool right = false;
         bool confirm = false;
         bool cancel = false;
+        bool upRepeat = false;
+        bool downRepeat = false;
+        bool leftRepeat = false;
+        bool rightRepeat = false;
+        bool leftRepeatFast = false;
+        bool rightRepeatFast = false;
+    };
+
+    struct TransitionSpec {
+        int commitFrames = 0x3c;
+        int wipeDelay = 0x14;
     };
 
     InputSnapshot readInput();
-    bool keyPressed(int key, bool& previous) const;
+    static void updateHeldCounter(bool down, int& heldFrames);
+    static bool repeatSlow(int heldFrames);
+    static bool repeatFast(int heldFrames);
+    static bool pressed(int heldFrames);
+    TransitionSpec currentTransitionSpec() const;
     void setState(MainState state, int cursor = 0);
 
     void updateTitleMenu(ResourceManager& resources, const InputSnapshot& input);
@@ -84,20 +99,23 @@ private:
     int playerOption_ = 0;
     int subOption_ = 0;
     int loadoutId_ = 0;
+    int setupToggle_ = 0;
     std::array<int, 4> optionSlots_{{0, 0, 0, 0}};
     int selectedStage_ = 1;
     int stageSetupRow_ = 0;
+    int stageRouteIndex_ = 0;
+    int stageSubIndex_ = 0;
+    int stageBranchToggle_ = 0;
+    int stageOverlayState_ = 0;
     bool titleBgmStarted_ = false;
     GameplayRequest gameplayRequest_;
 
-    bool prevUp_ = false;
-    bool prevDown_ = false;
-    bool prevLeft_ = false;
-    bool prevRight_ = false;
-    bool prevConfirmA_ = false;
-    bool prevConfirmB_ = false;
-    bool prevCancelA_ = false;
-    bool prevCancelB_ = false;
+    int upHeldFrames_ = 0;
+    int downHeldFrames_ = 0;
+    int leftHeldFrames_ = 0;
+    int rightHeldFrames_ = 0;
+    int confirmHeldFrames_ = 0;
+    int cancelHeldFrames_ = 0;
 };
 
 } // namespace reconstructed

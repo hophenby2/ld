@@ -49,7 +49,10 @@ private:
         float y = 620.0f;
         int shotTimer = 0;
         int shotVariant = 0;
+        int score = 0;
+        int scoreItemBaseValue = 100;
         int specialGauge = 0;
+        int tokenStock = 2;
         int invulnerableFrames = 0;
         int lives = 3;
         bool focused = false;
@@ -159,11 +162,15 @@ private:
     void drawPlayerShots() const;
     void drawOverlay() const;
     void drawHudSidebar() const;
+    void drawRightHudPanel() const;
+    void drawStateRows() const;
+    void drawDreamGauge(int x, int y, int value, int maxValue) const;
+    void drawDataWindow2Tokens(int x, int y, int activeCount, int maxCount) const;
+    void drawHudStatusIconGroup() const;
     void drawLayoutGuides() const;
     void drawDebugOverlay() const;
     void drawHudNumber(int rightX, int y, int value, const std::vector<int>& digitFrames, int digitWidth, int digitHeight, double scale = 1.0) const;
-    void drawHudGauge(int x, int y, int value, int maxValue) const;
-    void drawHudTokenPips(int x, int y, int activeCount, int maxCount) const;
+    void drawNumberWithSeparators(int rightX, int y, int value, const std::vector<int>& digitFrames, int digitWidth, int digitHeight, double scale = 1.0) const;
 
     void updateLayoutGuideToggle();
     float aimAtPlayer(float x, float y) const;

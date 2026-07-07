@@ -53,22 +53,27 @@ inline constexpr PointI kPlayerStart{300, 620};
 } // namespace gameplay_layout
 
 namespace hud_layout {
-// Scaffold anchors only. Exact original HUD coordinates still require deeper
-// FUN_1400c2860 xrefs for DataWindow/TimeWindow/DataWindow2/PlayerFrame/State.
+// Right-side anchors transcribed from FUN_1400c2860. Frame/label semantics are
+// still provisional, but the panel bounds and row coordinates are original-style.
+inline constexpr RectI kRightPanelRect{940, 0, 340, 720};
 inline constexpr RectI kTimeWindowRect{940, 0, 340, 340};
 inline constexpr RectI kDataWindowRect{940, 340, 340, 380};
 
 inline constexpr int kLabelX = 1040;
-inline constexpr int kNumberRightX = 1230; // Scaffold anchor; refine once numeric draw helper is recovered.
-inline constexpr int kScoreY = 450;
-inline constexpr int kBaseValueY = 500;
-inline constexpr int kGaugeY = 530;
+inline constexpr int kNumberRightX = 1230;
+inline constexpr int kScoreY = 410;
+inline constexpr int kBaseValueY = 450;
+inline constexpr int kGaugeY = 500;
+inline constexpr int kDreamGaugeY = 530;
 inline constexpr int kTokenY = 580;
 inline constexpr int kStageY = 610;
 inline constexpr int kStockY = 650;
 inline constexpr int kPipStartX = 1037;
 inline constexpr int kPipStep = 27;
 inline constexpr int kMaxTokens = 9;
+inline constexpr int kStockIcon0X = 1100;
+inline constexpr int kStockIcon1X = 1135;
+inline constexpr int kStockIcon2X = 1170;
 
 inline constexpr int kGaugeBarWidth = 160;
 inline constexpr int kGaugeBarHeight = 12;
@@ -192,9 +197,10 @@ inline constexpr PointI kProvisionalNote{720, 642};
 } // namespace stage_select_provisional_layout
 
 namespace hud_evidence {
-// Confirmed resource identities; exact HUD coordinates/frame mapping need further
-// FUN_1400c2860 xrefs before they can replace scaffold anchors.
-inline constexpr bool kHudCoordinatesResolved = false;
+// Resource identities and core right-panel anchors are confirmed from FUN_1400c2860;
+// individual State/DataWindow2 frame meanings still need targeted xref validation.
+inline constexpr bool kHudPanelAnchorsResolved = true;
+inline constexpr bool kHudFrameMeaningsResolved = false;
 } // namespace hud_evidence
 
 // Primary evidence files:

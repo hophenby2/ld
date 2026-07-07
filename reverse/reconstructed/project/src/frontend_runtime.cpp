@@ -11,18 +11,12 @@
 namespace reconstructed {
 namespace {
 
-constexpr int kTransitionFrames = 60;
 constexpr int kTitleMenuCount = 9;
 constexpr int kStageSetupRows = 7;
 constexpr int kAlternateRows = 10;
 constexpr int kOptionsRows = 9;
 constexpr std::array<int, 3> kSelectableStages{{1, 2, 4}};
 constexpr float kPi = 3.14159265358979323846f;
-
-struct StageSetupApproxRow {
-    const char* label = nullptr;
-    int value = 0;
-};
 
 struct StageSelectApproxNode {
     int stage = 1;
@@ -42,31 +36,34 @@ int selectableStageIndex(int stage) {
     return it == kSelectableStages.end() ? 0 : static_cast<int>(it - kSelectableStages.begin());
 }
 
-int approxEquipMenuFrameForRow(int row, int routeMode, int playerOption, int subOption, int loadoutId, int selectedStage) {
-    // Provisional mapping: original state_03 indexes DAT_140e46a40 from route,
-    // option-slot, and cursor globals. Keep this replaceable until DAT_14053 and
-    // frame semantics are decoded.
-    const int stageIndex = selectableStageIndex(selectedStage);
+int equipMenuFrameForSetupRow(int row, int routeMode, const std::array<int, 4>& optionSlots, int setupToggle) {
+    // State 0x03 indexes DAT_140e46a40 from route and four setup globals.
+    // The status frame and toggle/start rows are evidence-backed; option-slot
+    // rows remain isolated here until DAT_14053 table semantics are fully decoded.
     switch (row) {
     case 0: return wrapIndex(routeMode, notes::ui_resource_evidence::kEquipMenuFrames);
-    case 1: return wrapIndex(6 + routeMode * 2 + playerOption, notes::ui_resource_evidence::kEquipMenuFrames);
-    case 2: return wrapIndex(12 + routeMode * 2 + subOption, notes::ui_resource_evidence::kEquipMenuFrames);
-    case 3: return wrapIndex(18 + loadoutId, notes::ui_resource_evidence::kEquipMenuFrames);
-    case 4: return wrapIndex(23 + stageIndex, notes::ui_resource_evidence::kEquipMenuFrames);
-    case 5: return wrapIndex(27 + routeMode, notes::ui_resource_evidence::kEquipMenuFrames);
-    default: return 0;
+    case 1: return wrapIndex(4 + routeMode * 4 + optionSlots[0], notes::ui_resource_evidence::kEquipMenuFrames);
+    case 2: return wrapIndex(8 + routeMode * 4 + optionSlots[1], notes::ui_resource_evidence::kEquipMenuFrames);
+    case 3: return wrapIndex(0x12 + optionSlots[2], notes::ui_resource_evidence::kEquipMenuFrames);
+    case 4: return wrapIndex(0x14 + optionSlots[3], notes::ui_resource_evidence::kEquipMenuFrames);
+    case 5: return setupToggle == 0 ? 0x17 : 0x1d;
+    default: return 0x16;
     }
 }
 
-int approxStatusEquipMenuFrame(int routeMode) {
+int statusEquipMenuFrameForRoute(int routeMode) {
     // state_03 uses DAT_140e445c0 + 0x18 for the right/status EquipMenu handle.
     return wrapIndex(0x18 + routeMode, notes::ui_resource_evidence::kEquipMenuFrames);
 }
 
-int approxStandFrame(int routeMode, int playerOption, int subOption, int loadoutId) {
+int standFrameForSetup(int routeMode, const std::array<int, 4>& optionSlots) {
     // Provisional visual selection. Evidence confirms Stand.png and y positions,
     // but local_1ec/frame table semantics still require DAT_14053 decoding.
-    return wrapIndex(routeMode * 10 + playerOption * 4 + subOption * 2 + loadoutId, notes::ui_resource_evidence::kStandFrames);
+    return wrapIndex(routeMode * 10 + optionSlots[0] * 4 + optionSlots[1] * 2 + optionSlots[2], notes::ui_resource_evidence::kStandFrames);
+}
+
+int textIconFrameForSetup(int row, int routeMode) {
+    return wrapIndex(routeMode * 4 + row, notes::ui_resource_evidence::kTextIconFrames);
 }
 
 int approxStageFrame2ForStage(int stage) {
@@ -109,13 +106,6 @@ void drawNumSmall(const ResourceManager& resources, int x, int y, int value, dou
     drawFrameScaledAlpha(resources, "GFX_system_Num_s", ones, static_cast<float>(x + (value >= 10 ? 18 : 0)), static_cast<float>(y), scale, 255);
 }
 
-const char* stageSetupRowLabel(int index) {
-    constexpr std::array<const char*, kStageSetupRows> labels{{
-        "Route", "Player", "Sub", "Loadout", "Stage", "Slots", "Start",
-    }};
-    return index >= 0 && index < static_cast<int>(labels.size()) ? labels[static_cast<std::size_t>(index)] : "?";
-}
-
 const char* titleRowLabel(int index) {
     constexpr std::array<const char*, kTitleMenuCount> labels{{
         "Start route 0", "Start route 1", "Start route 2", "Replay", "Extra branch",
@@ -147,8 +137,17 @@ void FrontendRuntime::initialize(ResourceManager& resources) {
     transitionDirection_ = 0;
     selectionDirtyTimer_ = 0;
     routeMode_ = 0;
+    playerOption_ = 0;
+    subOption_ = 0;
+    loadoutId_ = 0;
+    setupToggle_ = 0;
+    optionSlots_ = {{0, 0, 0, 0}};
     selectedStage_ = 1;
     stageSetupRow_ = 0;
+    stageRouteIndex_ = 0;
+    stageSubIndex_ = 0;
+    stageBranchToggle_ = 0;
+    stageOverlayState_ = 0;
     gameplayRequest_ = {};
     ensureTitleBgm(resources);
 }
@@ -193,29 +192,60 @@ FrontendRuntime::GameplayRequest FrontendRuntime::consumeGameplayRequest() {
 }
 
 FrontendRuntime::InputSnapshot FrontendRuntime::readInput() {
+    updateHeldCounter(CheckHitKey(KEY_INPUT_UP) != 0, upHeldFrames_);
+    updateHeldCounter(CheckHitKey(KEY_INPUT_DOWN) != 0, downHeldFrames_);
+    updateHeldCounter(CheckHitKey(KEY_INPUT_LEFT) != 0, leftHeldFrames_);
+    updateHeldCounter(CheckHitKey(KEY_INPUT_RIGHT) != 0, rightHeldFrames_);
+    updateHeldCounter(CheckHitKey(KEY_INPUT_Z) != 0 || CheckHitKey(KEY_INPUT_RETURN) != 0, confirmHeldFrames_);
+    updateHeldCounter(CheckHitKey(KEY_INPUT_X) != 0 || CheckHitKey(KEY_INPUT_BACK) != 0, cancelHeldFrames_);
+
     InputSnapshot input;
-    input.up = keyPressed(KEY_INPUT_UP, prevUp_);
-    input.down = keyPressed(KEY_INPUT_DOWN, prevDown_);
-    input.left = keyPressed(KEY_INPUT_LEFT, prevLeft_);
-    input.right = keyPressed(KEY_INPUT_RIGHT, prevRight_);
-    const bool confirmA = keyPressed(KEY_INPUT_Z, prevConfirmA_);
-    const bool confirmB = keyPressed(KEY_INPUT_RETURN, prevConfirmB_);
-    input.confirm = confirmA || confirmB;
-    const bool cancelA = keyPressed(KEY_INPUT_X, prevCancelA_);
-    const bool cancelB = keyPressed(KEY_INPUT_BACK, prevCancelB_);
-    input.cancel = cancelA || cancelB;
+    input.up = pressed(upHeldFrames_);
+    input.down = pressed(downHeldFrames_);
+    input.left = pressed(leftHeldFrames_);
+    input.right = pressed(rightHeldFrames_);
+    input.confirm = pressed(confirmHeldFrames_);
+    input.cancel = pressed(cancelHeldFrames_);
+    input.upRepeat = repeatSlow(upHeldFrames_);
+    input.downRepeat = repeatSlow(downHeldFrames_);
+    input.leftRepeat = repeatSlow(leftHeldFrames_);
+    input.rightRepeat = repeatSlow(rightHeldFrames_);
+    input.leftRepeatFast = repeatFast(leftHeldFrames_);
+    input.rightRepeatFast = repeatFast(rightHeldFrames_);
     return input;
 }
 
-void FrontendRuntime::refreshOptionSlots() {
-    optionSlots_ = {{routeMode_, playerOption_, subOption_, loadoutId_}};
+void FrontendRuntime::updateHeldCounter(bool down, int& heldFrames) {
+    heldFrames = down ? heldFrames + 1 : 0;
 }
 
-bool FrontendRuntime::keyPressed(int key, bool& previous) const {
-    const bool down = CheckHitKey(key) != 0;
-    const bool pressed = down && !previous;
-    previous = down;
-    return pressed;
+bool FrontendRuntime::repeatSlow(int heldFrames) {
+    return heldFrames == 1 || (heldFrames > 0x13 && (heldFrames - 0x14) % 8 == 0);
+}
+
+bool FrontendRuntime::repeatFast(int heldFrames) {
+    return heldFrames == 1 || (heldFrames > 0x13 && (heldFrames - 0x14) % 3 == 0);
+}
+
+bool FrontendRuntime::pressed(int heldFrames) {
+    return heldFrames == 1;
+}
+
+FrontendRuntime::TransitionSpec FrontendRuntime::currentTransitionSpec() const {
+    if (state_ == MainState::StageSetup && transitionDirection_ > 0) {
+        return {0x50, 0x14};
+    }
+    if (state_ == MainState::StageSetup && transitionDirection_ < 0) {
+        return {0x32, 0x14};
+    }
+    if (pendingState_ == MainState::Gameplay) {
+        return {0x50, 0x14};
+    }
+    return {0x3c, 0x14};
+}
+
+void FrontendRuntime::refreshOptionSlots() {
+    optionSlots_ = {{playerOption_, subOption_, loadoutId_, setupToggle_}};
 }
 
 void FrontendRuntime::setState(MainState state, int cursor) {
@@ -230,10 +260,10 @@ void FrontendRuntime::setState(MainState state, int cursor) {
 
 void FrontendRuntime::updateTitleMenu(ResourceManager& resources, const InputSnapshot& input) {
     ensureTitleBgm(resources);
-    if (input.up) {
+    if (input.upRepeat) {
         moveCursor(resources, -1, kTitleMenuCount);
     }
-    if (input.down) {
+    if (input.downRepeat) {
         moveCursor(resources, 1, kTitleMenuCount);
     }
     if (input.cancel) {
@@ -265,41 +295,33 @@ void FrontendRuntime::updateTitleMenu(ResourceManager& resources, const InputSna
 }
 
 void FrontendRuntime::updateStageSetup(ResourceManager& resources, const InputSnapshot& input) {
-    if (input.up) {
+    if (input.upRepeat) {
         moveCursor(resources, -1, kStageSetupRows);
         stageSetupRow_ = cursor_;
     }
-    if (input.down) {
+    if (input.downRepeat) {
         moveCursor(resources, 1, kStageSetupRows);
         stageSetupRow_ = cursor_;
     }
-    if (input.left || input.right) {
-        const int delta = input.right ? 1 : -1;
+    if (input.leftRepeatFast || input.rightRepeatFast) {
+        const int delta = input.rightRepeatFast ? 1 : -1;
         if (cursor_ == 0) {
-            routeMode_ = (routeMode_ + (input.right ? 1 : 2)) % 3;
+            routeMode_ = (routeMode_ + delta + 3) % 3;
             refreshOptionSlots();
             playSound(resources, "SE_se_Switch");
         }
-        else if (cursor_ == 1) {
-            playerOption_ = playerOption_ == 0 ? 1 : 0;
-            refreshOptionSlots();
+        else if (cursor_ >= 1 && cursor_ <= 4) {
+            int& slot = optionSlots_[static_cast<std::size_t>(cursor_ - 1)];
+            const int slotMax = routeMode_ == 2 ? 3 : 1;
+            slot = (slot + delta + slotMax + 1) % (slotMax + 1);
+            playerOption_ = optionSlots_[0];
+            subOption_ = optionSlots_[1];
+            loadoutId_ = optionSlots_[2];
             playSound(resources, "SE_se_Switch");
         }
-        else if (cursor_ == 2) {
-            subOption_ = subOption_ == 0 ? 1 : 0;
+        else if (cursor_ == 5) {
+            setupToggle_ = setupToggle_ == 0 ? 1 : 0;
             refreshOptionSlots();
-            playSound(resources, "SE_se_Switch");
-        }
-        else if (cursor_ == 3) {
-            loadoutId_ = (loadoutId_ + delta + 7) % 7;
-            refreshOptionSlots();
-            playSound(resources, "SE_se_Switch");
-        }
-        else if (cursor_ == 4) {
-            auto it = std::find(kSelectableStages.begin(), kSelectableStages.end(), selectedStage_);
-            int index = it == kSelectableStages.end() ? 0 : static_cast<int>(it - kSelectableStages.begin());
-            index = (index + (input.right ? 1 : static_cast<int>(kSelectableStages.size()) - 1)) % static_cast<int>(kSelectableStages.size());
-            selectedStage_ = kSelectableStages[static_cast<std::size_t>(index)];
             playSound(resources, "SE_se_Switch");
         }
     }
@@ -324,6 +346,7 @@ void FrontendRuntime::updateStageSetup(ResourceManager& resources, const InputSn
         }
         else {
             refreshOptionSlots();
+            selectedStage_ = kSelectableStages[static_cast<std::size_t>(std::min(routeMode_, static_cast<int>(kSelectableStages.size()) - 1))];
             playSound(resources, "SE_se_Enter");
             beginConfirmTransition(routeMode_ == 2 ? MainState::AlternateSetup : MainState::StageSelect);
         }
@@ -331,10 +354,10 @@ void FrontendRuntime::updateStageSetup(ResourceManager& resources, const InputSn
 }
 
 void FrontendRuntime::updateStageSelect(ResourceManager& resources, const InputSnapshot& input) {
-    if (input.left || input.right) {
+    if (input.leftRepeat || input.rightRepeat) {
         auto it = std::find(kSelectableStages.begin(), kSelectableStages.end(), selectedStage_);
         int index = it == kSelectableStages.end() ? 0 : static_cast<int>(it - kSelectableStages.begin());
-        index = (index + (input.right ? 1 : static_cast<int>(kSelectableStages.size()) - 1)) % static_cast<int>(kSelectableStages.size());
+        index = (index + (input.rightRepeat ? 1 : static_cast<int>(kSelectableStages.size()) - 1)) % static_cast<int>(kSelectableStages.size());
         selectedStage_ = kSelectableStages[static_cast<std::size_t>(index)];
         selectionDirtyTimer_ = 10;
         playSound(resources, "SE_se_Select");
@@ -384,15 +407,16 @@ void FrontendRuntime::updateOptions(ResourceManager& resources, const InputSnaps
 }
 
 void FrontendRuntime::updateTransition(ResourceManager&) {
+    const auto spec = currentTransitionSpec();
     transitionTimer_ += transitionDirection_;
-    if (transitionDirection_ > 0 && transitionTimer_ >= kTransitionFrames) {
+    if (transitionDirection_ > 0 && transitionTimer_ >= spec.commitFrames) {
         const auto target = pendingState_;
         setState(target, 0);
         if (target == MainState::Gameplay) {
             gameplayRequest_ = {true, selectedStage_, routeMode_, playerOption_, subOption_, loadoutId_, optionSlots_};
         }
     }
-    else if (transitionDirection_ < 0 && transitionTimer_ <= -kTransitionFrames) {
+    else if (transitionDirection_ < 0 && transitionTimer_ <= -spec.commitFrames) {
         setState(pendingState_, 0);
     }
 }
@@ -437,7 +461,7 @@ void FrontendRuntime::drawTitleMenu(const ResourceManager& resources) const {
             DrawGraph(x, y, handle, TRUE);
         }
         else {
-            DrawFormatString(x, y + 18, GetColor(255, 255, 255), "%s", titleRowLabel(index));
+            DrawBox(x, y, x + notes::title_layout::kMenuFrameWidth, y + notes::title_layout::kMenuFrameHeight, GetColor(255, 255, 255), FALSE);
         }
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
@@ -466,7 +490,7 @@ void FrontendRuntime::drawStageSetup(const ResourceManager& resources) const {
         DrawGraph(notes::stage_setup_evidence::kMenuTitleOrigin.x, notes::stage_setup_evidence::kMenuTitleOrigin.y, menuTitle, TRUE);
     }
 
-    const int standFrame = approxStandFrame(routeMode_, playerOption_, subOption_, loadoutId_);
+    const int standFrame = standFrameForSetup(routeMode_, optionSlots_);
     drawFrameScaledAlpha(resources, "GFX_system_Stand", standFrame,
                          static_cast<float>(notes::stage_setup_evidence::kStandBaseX + notes::stage_setup_evidence::kStandShadowOffsetX),
                          static_cast<float>(notes::stage_setup_evidence::kStandShadowY),
@@ -476,14 +500,11 @@ void FrontendRuntime::drawStageSetup(const ResourceManager& resources) const {
                          static_cast<float>(notes::stage_setup_evidence::kStandY),
                          1.0, 255);
 
-    drawFrameScaledAlpha(resources, "GFX_system_EquipMenu", approxStatusEquipMenuFrame(routeMode_),
+    drawFrameScaledAlpha(resources, "GFX_system_EquipMenu", statusEquipMenuFrameForRoute(routeMode_),
                          static_cast<float>(notes::stage_setup_evidence::kStatusEquipMenuX),
                          static_cast<float>(notes::stage_setup_evidence::kStatusEquipMenuY),
                          1.0, 230);
 
-    constexpr std::array<StageSetupApproxRow, kStageSetupRows> rows{{
-        {"Route", 0}, {"Player", 0}, {"Sub", 0}, {"Loadout", 0}, {"Stage", 0}, {"Slots", 0}, {"Start", 0},
-    }};
     constexpr std::array<notes::PointI, 6> rowOrigins{{
         notes::stage_setup_evidence::kEquipMenuRow0,
         notes::stage_setup_evidence::kEquipMenuRow1,
@@ -497,20 +518,17 @@ void FrontendRuntime::drawStageSetup(const ResourceManager& resources) const {
         const int y = rowOrigins[static_cast<std::size_t>(i)].y;
         const bool selected = i == cursor_;
         const int alpha = selected ? 255 : (i < cursor_ ? 180 : 128);
-        const int frame = approxEquipMenuFrameForRow(i, routeMode_, playerOption_, subOption_, loadoutId_, selectedStage_);
+        const int frame = equipMenuFrameForSetupRow(i, routeMode_, optionSlots_, setupToggle_);
         drawFrameScaledAlpha(resources, "GFX_system_EquipMenu", frame, static_cast<float>(x), static_cast<float>(y), 1.0, alpha);
         if (selected) {
             const int halfW = notes::ui_resource_evidence::kEquipMenuFrameWidth / 2;
             const int halfH = notes::ui_resource_evidence::kEquipMenuFrameHeight / 2;
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 110);
             DrawBox(x - halfW - 7, y - halfH - 7, x + halfW + 7, y + halfH + 7, GetColor(255, 232, 96), FALSE);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         }
-        DrawFormatString(x - 132, y - 104, selected ? GetColor(255, 245, 160) : GetColor(220, 226, 238), "%s", rows[static_cast<std::size_t>(i)].label);
     }
 
-    DrawFormatString(106, 570, GetColor(240, 242, 255), "route=%d  player=%d  sub=%d  loadout=%d  stage=%02d",
-                     routeMode_, playerOption_, subOption_, loadoutId_, selectedStage_);
-    DrawFormatString(106, 594, GetColor(190, 205, 230), "slots=[%d %d %d %d]  Z/Enter advances  X/Back returns",
-                     optionSlots_[0], optionSlots_[1], optionSlots_[2], optionSlots_[3]);
 
     const int textBox = resources.graphFrameById("GFX_system_TextBox", 0);
     if (textBox != -1) {
@@ -522,12 +540,9 @@ void FrontendRuntime::drawStageSetup(const ResourceManager& resources) const {
                 notes::stage_setup_evidence::kTextBoxOrigin.y + notes::ui_resource_evidence::kTextBoxFrameHeight,
                 GetColor(24, 28, 48), TRUE);
     }
-    drawFrameScaledAlpha(resources, "GFX_system_TextIcon", wrapIndex(routeMode_ * 4 + cursor_, notes::ui_resource_evidence::kTextIconFrames),
+    drawFrameScaledAlpha(resources, "GFX_system_TextIcon", textIconFrameForSetup(cursor_, routeMode_),
                          static_cast<float>(notes::stage_setup_evidence::kTextIconOrigin.x + 40),
                          static_cast<float>(notes::stage_setup_evidence::kTextIconOrigin.y + 40), 1.0, 255);
-    DrawFormatString(notes::stage_setup_provisional_layout::kPromptNote.x, notes::stage_setup_provisional_layout::kPromptNote.y,
-                     GetColor(235, 235, 245), "%s: arrows adjust, confirm selects. Provisional frame/coords pending DAT_14053 decode.",
-                     stageSetupRowLabel(cursor_));
 }
 
 void FrontendRuntime::drawStageSelect(const ResourceManager& resources) const {
@@ -593,14 +608,9 @@ void FrontendRuntime::drawStageSelect(const ResourceManager& resources) const {
     drawFrameAlpha(resources, "GFX_system_MapMenu2", approxMapMenu2FrameForStage(selectedStage_, routeMode_),
                    notes::stage_select_provisional_layout::kMapMenu2Origin.x,
                    notes::stage_select_provisional_layout::kMapMenu2Origin.y, 235);
-    DrawFormatString(720, 466, GetColor(255, 255, 255), "SELECT STAGE");
     drawNumSmall(resources, 908, 474, selectedStage_, 1.0);
-    DrawString(720, 594, "Left/Right: stage 01 / 02 / 04   Z/Enter: start   X/Back: loadout", GetColor(220, 225, 240));
-    DrawString(notes::stage_select_provisional_layout::kProvisionalNote.x,
-               notes::stage_select_provisional_layout::kProvisionalNote.y,
-               "Provisional map nodes/frame mapping; exact layout awaits DAT_14053 local_218 decode.", GetColor(190, 200, 220));
 
-    drawFrameScaledAlpha(resources, "GFX_system_Stand", approxStandFrame(routeMode_, playerOption_, subOption_, loadoutId_),
+    drawFrameScaledAlpha(resources, "GFX_system_Stand", standFrameForSetup(routeMode_, optionSlots_),
                          static_cast<float>(notes::stage_select_provisional_layout::kStandCenter.x),
                          static_cast<float>(notes::stage_select_provisional_layout::kStandCenter.y),
                          notes::stage_select_provisional_layout::kStandScale, 210);
@@ -651,12 +661,14 @@ void FrontendRuntime::drawTransitionOverlay(const ResourceManager&) const {
     // and commits at 0x3c. Use the same timing window here; the exact tile-grid
     // helper is still represented by a fade approximation until FUN_1400d3fd0 is
     // fully transcribed.
+    const auto spec = currentTransitionSpec();
     const int raw = std::abs(transitionTimer_);
-    const int delayed = std::max(0, raw - 0x14);
+    const int delayed = std::max(0, raw - spec.wipeDelay);
     if (delayed == 0) {
         return;
     }
-    const int alpha = std::min(220, delayed * 220 / (kTransitionFrames - 0x14));
+    const int denom = std::max(1, spec.commitFrames - spec.wipeDelay);
+    const int alpha = std::min(220, delayed * 220 / denom);
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
     DrawBox(0, 0, notes::kScreenWidth, notes::kScreenHeight, GetColor(255, 255, 255), TRUE);
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
