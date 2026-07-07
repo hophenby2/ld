@@ -289,6 +289,7 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
     numLargeFrames_ = resources.loadDivGraph("media\\system\\Num_l.png", 0x0e, 0x0e, 1, 0x30, 0x48);
     dataWindowHandle_ = resources.loadGraph("media\\player\\DataWindow.png");
     timeWindowHandle_ = resources.loadGraph("media\\player\\TimeWindow.png");
+    dataWindow2Frames_ = resources.loadDivGraph("media\\player\\DataWindow2.png", 10, 10, 1, 60, 60);
     playerFrameFrames_ = resources.loadDivGraph("media\\player\\PlayerFrame.png", 0x1e, 10, 3, 0x154, 0x2d0);
     stateFrames_ = resources.loadDivGraph("media\\player\\State.png", 0x20, 1, 0x20, 200, 0x28);
     dreamGaugeFrames_ = resources.loadDivGraph("media\\player\\DreamGauge.png", 2, 2, 1, 0xa0, 0xa0);
@@ -1475,8 +1476,8 @@ void StageRuntime::drawOverlay() const {
 }
 
 void StageRuntime::drawHudSidebar() const {
-    // Layout placeholders: score/reward/gauge/token state is not fully reconstructed yet.
-    // Coordinates follow the original HUD draw candidate around FUN_1400c2860.
+    // Operational scaffold only. Exact original HUD anchors/frame mapping still require
+    // FUN_1400c2860 xrefs for DataWindow/TimeWindow/DataWindow2/PlayerFrame/State.
     constexpr int runScore = 0;
     constexpr int scoreItemBaseValue = 100;
     constexpr int specialGauge = 0;
@@ -1525,6 +1526,14 @@ void StageRuntime::drawHudSidebar() const {
     DrawString(notes::hud_layout::kLabelX, notes::hud_layout::kStockY - 18, "STOCK", GetColor(180, 210, 255));
     DrawString(notes::hud_layout::kNumberRightX - 48, notes::hud_layout::kStockY, "x", GetColor(235, 235, 255));
     drawHudNumber(notes::hud_layout::kNumberRightX, notes::hud_layout::kStockY, std::max(0, player_.lives), numSmallFrames_, 20, 30, 0.85);
+    if (!dataWindow2Frames_.empty() && dataWindow2Frames_.front() != -1) {
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 125);
+        DrawRotaGraphF(static_cast<float>(notes::hud_layout::kLabelX + 18), static_cast<float>(notes::hud_layout::kStockY + 52),
+                       0.75, 0.0, dataWindow2Frames_.front(), TRUE);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        DrawString(notes::hud_layout::kLabelX + 54, notes::hud_layout::kStockY + 36,
+                   "DataWindow2 preview only; original HUD position unresolved", GetColor(185, 195, 215));
+    }
 }
 
 void StageRuntime::drawLayoutGuides() const {
@@ -1559,9 +1568,12 @@ void StageRuntime::drawLayoutGuides() const {
                      "F7 layout guides  player local=(%.1f, %.1f) screen=(%.1f, %.1f)",
                      player_.x, player_.y, screenX(player_.x), screenY(player_.y));
     DrawString(56, 42, "blue=StageBack  green=StageFrame  yellow=600x720 playfield  red/pink=HUD windows", GetColor(210, 220, 240));
+    DrawString(56, 64, "HUD anchors are scaffold/evidence-limited; exact DataWindow/TimeWindow/DataWindow2/PlayerFrame/State positions need FUN_1400c2860 xrefs.", GetColor(255, 220, 170));
 }
 
 void StageRuntime::drawDebugOverlay() const {
+    DrawFormatString(24, notes::kScreenHeight - 70, GetColor(170, 170, 190),
+                     "HUD scaffold/evidence-limited; F7 guide names unresolved HUD xrefs.");
     DrawFormatString(24, notes::kScreenHeight - 48, GetColor(150, 160, 180),
                      "reconstruction probe  stage=%02d frame=%d enemies=%d bullets=%d side=%d shots=%d lives=%d",
                      selectedStage_, frame_, static_cast<int>(enemies_.size()),

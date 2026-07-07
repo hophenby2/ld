@@ -19,6 +19,103 @@ constexpr int kOptionsRows = 9;
 constexpr std::array<int, 3> kSelectableStages{{1, 2, 4}};
 constexpr float kPi = 3.14159265358979323846f;
 
+struct StageSetupApproxRow {
+    const char* label = nullptr;
+    int value = 0;
+};
+
+struct StageSelectApproxNode {
+    int stage = 1;
+    notes::PointI center{};
+};
+
+int wrapIndex(int value, int count) {
+    if (count <= 0) {
+        return 0;
+    }
+    value %= count;
+    return value < 0 ? value + count : value;
+}
+
+int selectableStageIndex(int stage) {
+    auto it = std::find(kSelectableStages.begin(), kSelectableStages.end(), stage);
+    return it == kSelectableStages.end() ? 0 : static_cast<int>(it - kSelectableStages.begin());
+}
+
+int approxEquipMenuFrameForRow(int row, int routeMode, int playerOption, int subOption, int loadoutId, int selectedStage) {
+    // Provisional mapping: original state_03 indexes DAT_140e46a40 from route,
+    // option-slot, and cursor globals. Keep this replaceable until DAT_14053 and
+    // frame semantics are decoded.
+    const int stageIndex = selectableStageIndex(selectedStage);
+    switch (row) {
+    case 0: return wrapIndex(routeMode, notes::ui_resource_evidence::kEquipMenuFrames);
+    case 1: return wrapIndex(6 + routeMode * 2 + playerOption, notes::ui_resource_evidence::kEquipMenuFrames);
+    case 2: return wrapIndex(12 + routeMode * 2 + subOption, notes::ui_resource_evidence::kEquipMenuFrames);
+    case 3: return wrapIndex(18 + loadoutId, notes::ui_resource_evidence::kEquipMenuFrames);
+    case 4: return wrapIndex(23 + stageIndex, notes::ui_resource_evidence::kEquipMenuFrames);
+    case 5: return wrapIndex(27 + routeMode, notes::ui_resource_evidence::kEquipMenuFrames);
+    default: return 0;
+    }
+}
+
+int approxStatusEquipMenuFrame(int routeMode) {
+    // state_03 uses DAT_140e445c0 + 0x18 for the right/status EquipMenu handle.
+    return wrapIndex(0x18 + routeMode, notes::ui_resource_evidence::kEquipMenuFrames);
+}
+
+int approxStandFrame(int routeMode, int playerOption, int subOption, int loadoutId) {
+    // Provisional visual selection. Evidence confirms Stand.png and y positions,
+    // but local_1ec/frame table semantics still require DAT_14053 decoding.
+    return wrapIndex(routeMode * 10 + playerOption * 4 + subOption * 2 + loadoutId, notes::ui_resource_evidence::kStandFrames);
+}
+
+int approxStageFrame2ForStage(int stage) {
+    return wrapIndex(stage - 1, notes::ui_resource_evidence::kStageFrame2Frames);
+}
+
+int approxMapMenuFrameForStage(int stage) {
+    return wrapIndex(stage - 1, notes::ui_resource_evidence::kMapMenuFrames);
+}
+
+int approxMapMenu2FrameForStage(int stage, int routeMode) {
+    return wrapIndex((stage - 1) + routeMode * 3, notes::ui_resource_evidence::kMapMenu2Frames);
+}
+
+void drawFrameAlpha(const ResourceManager& resources, const char* id, int frame, int x, int y, int alpha) {
+    const int handle = resources.graphFrameById(id, frame);
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+    if (handle != -1) {
+        DrawGraph(x, y, handle, TRUE);
+    }
+    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+}
+
+void drawFrameScaledAlpha(const ResourceManager& resources, const char* id, int frame, float cx, float cy, double scale, int alpha) {
+    const int handle = resources.graphFrameById(id, frame);
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+    if (handle != -1) {
+        DrawRotaGraphF(cx, cy, scale, 0.0, handle, TRUE);
+    }
+    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+}
+
+void drawNumSmall(const ResourceManager& resources, int x, int y, int value, double scale = 1.0) {
+    value = std::max(0, value);
+    const int tens = value / 10;
+    const int ones = value % 10;
+    if (value >= 10) {
+        drawFrameScaledAlpha(resources, "GFX_system_Num_s", tens, static_cast<float>(x), static_cast<float>(y), scale, 255);
+    }
+    drawFrameScaledAlpha(resources, "GFX_system_Num_s", ones, static_cast<float>(x + (value >= 10 ? 18 : 0)), static_cast<float>(y), scale, 255);
+}
+
+const char* stageSetupRowLabel(int index) {
+    constexpr std::array<const char*, kStageSetupRows> labels{{
+        "Route", "Player", "Sub", "Loadout", "Stage", "Slots", "Start",
+    }};
+    return index >= 0 && index < static_cast<int>(labels.size()) ? labels[static_cast<std::size_t>(index)] : "?";
+}
+
 const char* titleRowLabel(int index) {
     constexpr std::array<const char*, kTitleMenuCount> labels{{
         "Start route 0", "Start route 1", "Start route 2", "Replay", "Extra branch",
@@ -356,26 +453,81 @@ void FrontendRuntime::drawTitleMenu(const ResourceManager& resources) const {
 }
 
 void FrontendRuntime::drawStageSetup(const ResourceManager& resources) const {
-    drawTitleMenu(resources);
-    SetDrawBlendMode(DX_BLENDMODE_ALPHA, 192);
-    DrawBox(120, 128, 1160, 620, GetColor(0, 0, 0), TRUE);
-    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-    DrawString(148, 150, "Stage setup/loadout candidate (state 0x03)", GetColor(255, 240, 128));
-    constexpr std::array<const char*, kStageSetupRows> rows{{
-        "Route / player group", "Player option/type", "Suboption", "Loadout / shot id", "Stage", "Option slots preview", "Start",
-    }};
-    for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
-        const int color = i == cursor_ ? GetColor(255, 240, 128) : GetColor(230, 230, 230);
-        DrawFormatString(180, 205 + i * 44, color, "%s%s", i == cursor_ ? "> " : "  ", rows[static_cast<std::size_t>(i)]);
+    const int titleBack = resources.graphHandleById("GFX_system_TitleBack");
+    if (titleBack != -1) {
+        DrawGraph(notes::stage_setup_evidence::kTitleBackOrigin.x, notes::stage_setup_evidence::kTitleBackOrigin.y, titleBack, TRUE);
     }
-    DrawFormatString(560, 205, GetColor(210, 210, 210), "%d", routeMode_);
-    DrawFormatString(560, 205 + 44, GetColor(210, 210, 210), "%d", playerOption_);
-    DrawFormatString(560, 205 + 2 * 44, GetColor(210, 210, 210), "%d", subOption_);
-    DrawFormatString(560, 205 + 3 * 44, GetColor(210, 210, 210), "%d", loadoutId_);
-    DrawFormatString(560, 205 + 4 * 44, GetColor(210, 210, 210), "%02d", selectedStage_);
-    DrawFormatString(560, 205 + 5 * 44, GetColor(210, 210, 210), "[%d %d %d %d]",
+    else {
+        DrawBox(0, 0, notes::kScreenWidth, notes::kScreenHeight, GetColor(18, 22, 42), TRUE);
+    }
+
+    const int menuTitle = resources.graphFrameById("GFX_system_MenuTitle", routeMode_);
+    if (menuTitle != -1) {
+        DrawGraph(notes::stage_setup_evidence::kMenuTitleOrigin.x, notes::stage_setup_evidence::kMenuTitleOrigin.y, menuTitle, TRUE);
+    }
+
+    const int standFrame = approxStandFrame(routeMode_, playerOption_, subOption_, loadoutId_);
+    drawFrameScaledAlpha(resources, "GFX_system_Stand", standFrame,
+                         static_cast<float>(notes::stage_setup_evidence::kStandBaseX + notes::stage_setup_evidence::kStandShadowOffsetX),
+                         static_cast<float>(notes::stage_setup_evidence::kStandShadowY),
+                         1.0, 48);
+    drawFrameScaledAlpha(resources, "GFX_system_Stand", standFrame,
+                         static_cast<float>(notes::stage_setup_evidence::kStandBaseX),
+                         static_cast<float>(notes::stage_setup_evidence::kStandY),
+                         1.0, 255);
+
+    drawFrameScaledAlpha(resources, "GFX_system_EquipMenu", approxStatusEquipMenuFrame(routeMode_),
+                         static_cast<float>(notes::stage_setup_evidence::kStatusEquipMenuX),
+                         static_cast<float>(notes::stage_setup_evidence::kStatusEquipMenuY),
+                         1.0, 230);
+
+    constexpr std::array<StageSetupApproxRow, kStageSetupRows> rows{{
+        {"Route", 0}, {"Player", 0}, {"Sub", 0}, {"Loadout", 0}, {"Stage", 0}, {"Slots", 0}, {"Start", 0},
+    }};
+    constexpr std::array<notes::PointI, 6> rowOrigins{{
+        notes::stage_setup_evidence::kEquipMenuRow0,
+        notes::stage_setup_evidence::kEquipMenuRow1,
+        notes::stage_setup_evidence::kEquipMenuRow2,
+        notes::stage_setup_evidence::kEquipMenuRow3,
+        notes::stage_setup_evidence::kEquipMenuRow4,
+        notes::stage_setup_evidence::kEquipMenuRow5,
+    }};
+    for (int i = 0; i < static_cast<int>(rowOrigins.size()); ++i) {
+        const int x = rowOrigins[static_cast<std::size_t>(i)].x;
+        const int y = rowOrigins[static_cast<std::size_t>(i)].y;
+        const bool selected = i == cursor_;
+        const int alpha = selected ? 255 : (i < cursor_ ? 180 : 128);
+        const int frame = approxEquipMenuFrameForRow(i, routeMode_, playerOption_, subOption_, loadoutId_, selectedStage_);
+        drawFrameScaledAlpha(resources, "GFX_system_EquipMenu", frame, static_cast<float>(x), static_cast<float>(y), 1.0, alpha);
+        if (selected) {
+            const int halfW = notes::ui_resource_evidence::kEquipMenuFrameWidth / 2;
+            const int halfH = notes::ui_resource_evidence::kEquipMenuFrameHeight / 2;
+            DrawBox(x - halfW - 7, y - halfH - 7, x + halfW + 7, y + halfH + 7, GetColor(255, 232, 96), FALSE);
+        }
+        DrawFormatString(x - 132, y - 104, selected ? GetColor(255, 245, 160) : GetColor(220, 226, 238), "%s", rows[static_cast<std::size_t>(i)].label);
+    }
+
+    DrawFormatString(106, 570, GetColor(240, 242, 255), "route=%d  player=%d  sub=%d  loadout=%d  stage=%02d",
+                     routeMode_, playerOption_, subOption_, loadoutId_, selectedStage_);
+    DrawFormatString(106, 594, GetColor(190, 205, 230), "slots=[%d %d %d %d]  Z/Enter advances  X/Back returns",
                      optionSlots_[0], optionSlots_[1], optionSlots_[2], optionSlots_[3]);
-    DrawString(148, 560, "Evidence: route/player/sub/loadout fields mirror DAT_140e445c0, DAT_140e44194, DAT_140e41b70, DAT_140e44198.", GetColor(180, 180, 180));
+
+    const int textBox = resources.graphFrameById("GFX_system_TextBox", 0);
+    if (textBox != -1) {
+        DrawGraph(notes::stage_setup_evidence::kTextBoxOrigin.x, notes::stage_setup_evidence::kTextBoxOrigin.y, textBox, TRUE);
+    }
+    else {
+        DrawBox(notes::stage_setup_evidence::kTextBoxOrigin.x, notes::stage_setup_evidence::kTextBoxOrigin.y,
+                notes::stage_setup_evidence::kTextBoxOrigin.x + notes::ui_resource_evidence::kTextBoxFrameWidth,
+                notes::stage_setup_evidence::kTextBoxOrigin.y + notes::ui_resource_evidence::kTextBoxFrameHeight,
+                GetColor(24, 28, 48), TRUE);
+    }
+    drawFrameScaledAlpha(resources, "GFX_system_TextIcon", wrapIndex(routeMode_ * 4 + cursor_, notes::ui_resource_evidence::kTextIconFrames),
+                         static_cast<float>(notes::stage_setup_evidence::kTextIconOrigin.x + 40),
+                         static_cast<float>(notes::stage_setup_evidence::kTextIconOrigin.y + 40), 1.0, 255);
+    DrawFormatString(notes::stage_setup_provisional_layout::kPromptNote.x, notes::stage_setup_provisional_layout::kPromptNote.y,
+                     GetColor(235, 235, 245), "%s: arrows adjust, confirm selects. Provisional frame/coords pending DAT_14053 decode.",
+                     stageSetupRowLabel(cursor_));
 }
 
 void FrontendRuntime::drawStageSelect(const ResourceManager& resources) const {
@@ -386,14 +538,72 @@ void FrontendRuntime::drawStageSelect(const ResourceManager& resources) const {
     else {
         DrawBox(0, 0, notes::kScreenWidth, notes::kScreenHeight, GetColor(12, 16, 34), TRUE);
     }
-    SetDrawBlendMode(DX_BLENDMODE_ALPHA, 192);
-    DrawBox(160, 130, 1120, 590, GetColor(0, 0, 0), TRUE);
-    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-    DrawString(190, 160, "Stage select candidate (state 0x04)", GetColor(255, 240, 128));
-    DrawFormatString(220, 250, GetColor(255, 255, 255), "Selected Stage: %02d", selectedStage_);
-    DrawString(220, 300, "Left/Right changes currently reconstructed slices: 01 / 02 / 04", GetColor(210, 210, 210));
-    DrawString(220, 340, "Z/Enter starts StageRuntime, X/Back returns to setup.", GetColor(210, 210, 210));
-    DrawString(190, 535, "Evidence: state 0x04 is normal pre-gameplay/stage selection before 0x14/0x15 gameplay.", GetColor(180, 180, 180));
+
+    const int stageFrame = resources.graphFrameById("GFX_system_StageFrame", routeMode_ == 2 ? 1 : 0);
+    if (stageFrame != -1) {
+        DrawGraph(notes::gameplay_layout::kStageFrameRect.x, notes::gameplay_layout::kStageFrameRect.y, stageFrame, TRUE);
+    }
+    else {
+        DrawBox(notes::gameplay_layout::kStageFrameRect.x, notes::gameplay_layout::kStageFrameRect.y,
+                notes::gameplay_layout::kStageFrameRect.right(), notes::gameplay_layout::kStageFrameRect.bottom(),
+                GetColor(16, 18, 34), TRUE);
+    }
+
+    constexpr std::array<StageSelectApproxNode, 3> nodes{{
+        {1, {notes::gameplay_layout::kStageFrameRect.x + notes::stage_select_evidence::kMapFocusOffset.x + notes::stage_select_evidence::kStageNode1.x,
+             notes::gameplay_layout::kStageFrameRect.y + notes::stage_select_evidence::kMapFocusOffset.y + notes::stage_select_evidence::kStageNode1.y}},
+        {2, {notes::gameplay_layout::kStageFrameRect.x + notes::stage_select_evidence::kMapFocusOffset.x + notes::stage_select_evidence::kStageNode2.x,
+             notes::gameplay_layout::kStageFrameRect.y + notes::stage_select_evidence::kMapFocusOffset.y + notes::stage_select_evidence::kStageNode2.y}},
+        {4, {notes::gameplay_layout::kStageFrameRect.x + notes::stage_select_evidence::kMapFocusOffset.x + notes::stage_select_evidence::kStageNode4.x,
+             notes::gameplay_layout::kStageFrameRect.y + notes::stage_select_evidence::kMapFocusOffset.y + notes::stage_select_evidence::kStageNode4.y}},
+    }};
+    const int pathColor = GetColor(120, 170, 230);
+    for (std::size_t i = 1; i < nodes.size(); ++i) {
+        DrawLine(nodes[i - 1].center.x, nodes[i - 1].center.y, nodes[i].center.x, nodes[i].center.y, pathColor, 3);
+    }
+    for (const auto& node : nodes) {
+        const bool selected = node.stage == selectedStage_;
+        const int pulse = selected ? selectionDirtyTimer_ * 4 : 0;
+        const int radius = selected ? 26 + pulse / 3 : 18;
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, selected ? 230 : 130);
+        DrawCircle(node.center.x, node.center.y, radius, selected ? GetColor(255, 220, 90) : GetColor(80, 140, 220), TRUE);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        DrawCircle(node.center.x, node.center.y, radius, GetColor(255, 255, 255), FALSE);
+        drawNumSmall(resources, node.center.x - 8, node.center.y - 4, node.stage, selected ? 0.75 : 0.58);
+    }
+
+    const int selectedPreview = resources.graphFrameById("GFX_system_StageFrame2", approxStageFrame2ForStage(selectedStage_));
+    if (selectedPreview != -1) {
+        DrawRotaGraphF(static_cast<float>(notes::stage_select_provisional_layout::kSelectedPreviewCenter.x),
+                       static_cast<float>(notes::stage_select_provisional_layout::kSelectedPreviewCenter.y),
+                       notes::stage_select_provisional_layout::kSelectedPreviewScale, 0.0, selectedPreview, TRUE);
+    }
+    for (const int stage : kSelectableStages) {
+        if (stage == selectedStage_) {
+            continue;
+        }
+        const int index = selectableStageIndex(stage);
+        drawFrameScaledAlpha(resources, "GFX_system_StageFrame2", approxStageFrame2ForStage(stage),
+                             735.0f + static_cast<float>(index) * 132.0f, 520.0f, 0.32, 120);
+    }
+
+    drawFrameAlpha(resources, "GFX_system_MapMenu", approxMapMenuFrameForStage(selectedStage_),
+                   notes::stage_select_provisional_layout::kMapMenuOrigin.x,
+                   notes::stage_select_provisional_layout::kMapMenuOrigin.y, 255);
+    drawFrameAlpha(resources, "GFX_system_MapMenu2", approxMapMenu2FrameForStage(selectedStage_, routeMode_),
+                   notes::stage_select_provisional_layout::kMapMenu2Origin.x,
+                   notes::stage_select_provisional_layout::kMapMenu2Origin.y, 235);
+    DrawFormatString(720, 466, GetColor(255, 255, 255), "SELECT STAGE");
+    drawNumSmall(resources, 908, 474, selectedStage_, 1.0);
+    DrawString(720, 594, "Left/Right: stage 01 / 02 / 04   Z/Enter: start   X/Back: loadout", GetColor(220, 225, 240));
+    DrawString(notes::stage_select_provisional_layout::kProvisionalNote.x,
+               notes::stage_select_provisional_layout::kProvisionalNote.y,
+               "Provisional map nodes/frame mapping; exact layout awaits DAT_14053 local_218 decode.", GetColor(190, 200, 220));
+
+    drawFrameScaledAlpha(resources, "GFX_system_Stand", approxStandFrame(routeMode_, playerOption_, subOption_, loadoutId_),
+                         static_cast<float>(notes::stage_select_provisional_layout::kStandCenter.x),
+                         static_cast<float>(notes::stage_select_provisional_layout::kStandCenter.y),
+                         notes::stage_select_provisional_layout::kStandScale, 210);
 }
 
 void FrontendRuntime::drawAlternateSetup(const ResourceManager& resources) const {

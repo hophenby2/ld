@@ -99,9 +99,15 @@ inline constexpr int kMapMenuFrameHeight = 60;
 inline constexpr int kMapMenu2Frames = 20;
 inline constexpr int kMapMenu2FrameWidth = 240;
 inline constexpr int kMapMenu2FrameHeight = 80;
+inline constexpr int kStageFrameFrames = 2;
+inline constexpr int kStageFrameFrameWidth = 600;
+inline constexpr int kStageFrameFrameHeight = 720;
 inline constexpr int kStageFrame2Frames = 15;
 inline constexpr int kStageFrame2FrameWidth = 390;
 inline constexpr int kStageFrame2FrameHeight = 300;
+inline constexpr int kNumSmallFrames = 14;
+inline constexpr int kNumSmallFrameWidth = 20;
+inline constexpr int kNumSmallFrameHeight = 30;
 inline constexpr int kDataWindow2Frames = 10;
 inline constexpr int kDataWindow2FrameWidth = 60;
 inline constexpr int kDataWindow2FrameHeight = 60;
@@ -125,12 +131,23 @@ inline constexpr int kStandShadowY = 320;
 inline constexpr int kStatusEquipMenuY = 160;
 inline constexpr PointI kTextBoxOrigin{640, 650};
 inline constexpr PointI kTextIconOrigin{390, 650};
+inline constexpr PointI kEquipMenuRow0{660, 170};
+inline constexpr PointI kEquipMenuRow1{1000, 170};
+inline constexpr PointI kEquipMenuRow2{740, 410};
+inline constexpr PointI kEquipMenuRow3{1080, 410};
+inline constexpr PointI kEquipMenuRow4{910, 560};
+inline constexpr PointI kEquipMenuRow5{1100, 650};
+inline constexpr int kStandBaseX = 480;
+inline constexpr int kStandShadowOffsetX = 15;
+inline constexpr int kStatusEquipMenuX = 600;
 inline constexpr int kPromptMode = 1;
 inline constexpr int kPromptLayer = 0x70;
 inline constexpr int kPromptAlpha = 0xff;
-// Unresolved: six EquipMenu row coordinates, Stand x/local_1ec,
-// status EquipMenu x/local_1f0, Stand shadow x offset DAT_14053ac44,
-// and MenuTitle/TextIcon exact frame semantics require DAT_14053 data decoding.
+// Resolved from LikeDreamer.exe .rdata constants: _DAT_14053bcd0,
+// _DAT_14053bd90, _DAT_14053be70, DAT_14053ae7c,
+// DAT_14053ac44, and DAT_14053aec0. Remaining frame semantics still need
+// handler-level validation.
+// Unresolved: transition/easing offsets and MenuTitle/TextIcon exact frame semantics.
 } // namespace stage_setup_evidence
 
 namespace prompt_helper_evidence {
@@ -150,7 +167,29 @@ namespace stage_select_evidence {
 // and local_218 DAT_14053-derived arrays are decoded.
 inline constexpr int kStageFrameLayer = 0x4b;
 inline constexpr int kMapMenuLayer = 0x50;
+inline constexpr PointI kMapFocusOffset{635, 320};
+inline constexpr PointI kStageNode1{0, 0};
+inline constexpr PointI kStageNode2{750, -320};
+inline constexpr PointI kStageNode4{95, -345};
 } // namespace stage_select_evidence
+
+namespace stage_setup_provisional_layout {
+// Remaining practical anchors only. The major state_03 positions above are now
+// decoded from .rdata; prompt text placement is scaffold UI, not original.
+inline constexpr PointI kPromptNote{648, 682};
+} // namespace stage_setup_provisional_layout
+
+namespace stage_select_provisional_layout {
+// Practical map-select anchors only. Exact original state_04 node coordinates
+// require decoding local_218/fVar38/fVar44/local_290 and DAT_14053 data blocks.
+inline constexpr PointI kSelectedPreviewCenter{900, 180};
+inline constexpr double kSelectedPreviewScale = 0.72;
+inline constexpr PointI kMapMenuOrigin{730, 330};
+inline constexpr PointI kMapMenu2Origin{810, 410};
+inline constexpr PointI kStandCenter{1085, 438};
+inline constexpr double kStandScale = 0.36;
+inline constexpr PointI kProvisionalNote{720, 642};
+} // namespace stage_select_provisional_layout
 
 namespace hud_evidence {
 // Confirmed resource identities; exact HUD coordinates/frame mapping need further

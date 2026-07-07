@@ -187,6 +187,7 @@ private:
     std::vector<int> numLargeFrames_;
     int dataWindowHandle_ = -1;
     int timeWindowHandle_ = -1;
+    std::vector<int> dataWindow2Frames_;
     std::vector<int> playerFrameFrames_;
     std::vector<int> stateFrames_;
     std::vector<int> dreamGaugeFrames_;

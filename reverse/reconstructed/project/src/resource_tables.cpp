@@ -15,7 +15,7 @@ constexpr std::array<GraphResourceSpec, 5> kStartupGraphs{{
     {"GFX_system_TitleLogo", "media\\system\\TitleLogo.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
 }};
 
-constexpr std::array<GraphResourceSpec, 16> kFrontendGraphs{{
+constexpr std::array<GraphResourceSpec, 21> kFrontendGraphs{{
     {"GFX_system_TitleMenu", "media\\system\\TitleMenu.png", GraphLoadKind::Div, 9, 1, 9, 0x21c, 0x3c, ResourceSource::Primary},
     {"GFX_system_TitleMenu2", "media\\system\\TitleMenu2.png", GraphLoadKind::Div, 9, 1, 9, 300, 30, ResourceSource::Secondary},
     {"GFX_system_TitleMenu2_ch1", "media\\system\\TitleMenu2_ch1.png", GraphLoadKind::Div, 9, 1, 9, 300, 30, ResourceSource::Secondary},
@@ -26,11 +26,16 @@ constexpr std::array<GraphResourceSpec, 16> kFrontendGraphs{{
     {"GFX_system_ConfigMenu", "media\\system\\ConfigMenu.png", GraphLoadKind::Div, 20, 1, 20, 240, 40, ResourceSource::Primary},
     {"GFX_system_ConfigMenu2", "media\\system\\ConfigMenu2.png", GraphLoadKind::Div, 15, 1, 15, 240, 40, ResourceSource::Primary},
     {"GFX_system_KeyConfigMenu", "media\\system\\KeyConfigMenu.png", GraphLoadKind::Div, 21, 1, 21, 240, 40, ResourceSource::Primary},
+    {"GFX_system_Stand", "media\\system\\Stand.png", GraphLoadKind::Div, 50, 10, 5, 800, 1000, ResourceSource::Primary},
+    {"GFX_system_TextBox", "media\\system\\TextBox.png", GraphLoadKind::Div, 2, 1, 2, 600, 100, ResourceSource::Primary},
+    {"GFX_system_TextIcon", "media\\system\\TextIcon.png", GraphLoadKind::Div, 20, 10, 2, 80, 80, ResourceSource::Primary},
     {"GFX_system_EquipMenu", "media\\system\\EquipMenu.png", GraphLoadKind::Div, 30, 6, 5, 300, 240, ResourceSource::Secondary},
     {"GFX_system_MapMenu", "media\\system\\MapMenu.png", GraphLoadKind::Div, 14, 1, 14, 400, 60, ResourceSource::Secondary},
     {"GFX_system_MapMenu2", "media\\system\\MapMenu2.png", GraphLoadKind::Div, 20, 1, 20, 240, 80, ResourceSource::Secondary},
     {"GFX_system_StageFrame", "media\\system\\StageFrame.png", GraphLoadKind::Div, 2, 2, 1, 600, 720, ResourceSource::Primary},
     {"GFX_system_StageFrame2", "media\\system\\StageFrame2.png", GraphLoadKind::Div, 15, 5, 3, 390, 300, ResourceSource::Primary},
+    {"GFX_system_Num_s", "media\\system\\Num_s.png", GraphLoadKind::Div, 14, 14, 1, 20, 30, ResourceSource::Primary},
+    {"GFX_player_DataWindow2", "media\\player\\DataWindow2.png", GraphLoadKind::Div, 10, 10, 1, 60, 60, ResourceSource::Primary},
     {"GFX_system_WhiteBack_frontend", "media\\system\\WhiteBack.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Startup},
 }};
 
