@@ -57,6 +57,7 @@ private:
         int tokenStock = 2;
         int graze = 0;
         int keyStateCount = 0;
+        int stockProgress = 0;
         int invulnerableFrames = 0;
         int lives = 3;
         bool focused = false;
@@ -82,6 +83,10 @@ private:
         int updateCase = -1;
         int sourceDispatchKind = -1;
         int sourceDispatchField = 0;
+        int entityId = 0;
+        int parentEntityId = 0;
+        int parentSpawnType = 0;
+        int childIndex = 0;
         const char* sourceNote = nullptr;
         float originX = 0.0f;
         float originY = 0.0f;
@@ -139,18 +144,37 @@ private:
         bool active = true;
     };
 
+    struct RewardItem {
+        bool active = true;
+        int age = 0;
+        int itemType = 0;
+        float x = 0.0f;
+        float y = 0.0f;
+        std::uint16_t angle16 = 0;
+        float speed = 0.0f;
+        int radiusOrScale = 12;
+        bool homing = false;
+    };
+
     static const StageSpawnEvent* eventsForStage(int stage, std::size_t& count);
     void spawnDueEvents();
     void spawnStage01OriginalSchedule();
     void spawnStage04OriginalSchedule();
     void spawnEnemy(const StageSpawnEvent& event);
+    void spawnStage01Child(StageEnemy& parent, int childIndex, float offsetX, float offsetY, int lifetime, const char* note);
+    void spawnStage01MarkerSatellite(StageEnemy& parent, int childIndex, float offsetX, float offsetY, int lifetime, const char* note);
     void updatePlayer();
     void updateEnemies();
     void updateStage01Enemy(StageEnemy& enemy, int activeAge);
     void updateStage01Type0A(StageEnemy& enemy, int activeAge);
-    void updateStage01SmallChaser(StageEnemy& enemy, int activeAge, int enterFrames, int trackFrames, int turnStep, int exitTurnStep, double initialSpeed);
+    void updateStage01Type0B(StageEnemy& enemy, int activeAge);
+    void updateStage01Type0C(StageEnemy& enemy, int activeAge);
+    void updateStage01Type0D(StageEnemy& enemy, int activeAge);
+    void updateStage01SmallChaser(StageEnemy& enemy, int activeAge, int enterFrames, int trackFrames, int turnStep, int exitTurnStep, double initialSpeed, double floorSpeed = 1.0);
     void updateStage01Setpiece(StageEnemy& enemy, int activeAge);
     void updateStage01Marker(StageEnemy& enemy, int activeAge);
+    void updateStage01MarkerSatellite(StageEnemy& enemy, int activeAge);
+    void updateStage01Child(StageEnemy& enemy, int activeAge);
     void emitStage01Projectiles(StageEnemy& enemy, int activeAge);
     void updateStage04Enemy(StageEnemy& enemy, int activeAge);
     void emitStage04Projectiles(StageEnemy& enemy, int activeAge);
@@ -164,6 +188,7 @@ private:
     void updateProjectileOrbitArcPair(StageProjectile& projectile);
     void updateProjectileExpandingSpiralPair(StageProjectile& projectile);
     static void updateProjectileVelocity(StageProjectile& projectile);
+    void updateRewardItems();
     void updatePlayerSideObjects();
     void updatePlayerShots();
     void handleCollisions();
@@ -171,6 +196,8 @@ private:
     void spawnPlayerSideObject(int type, float x, float y, float speedOrScale, std::uint16_t angle16, int radiusOrLifetime, int auxRadiusOrScale);
     int baseOptionShotTypeForConfig() const;
     int optionShotTypeForSlot(int slot) const;
+    int enemyVisualFrameForSpawnType(const StageEnemy& enemy) const;
+    bool enemyUsesMediumFrame(const StageEnemy& enemy) const;
     int playerSideObjectVisualFrame(const PlayerSideObject& object) const;
     bool playerSideObjectCanHitEnemy(const PlayerSideObject& object) const;
     int playerSideObjectDamage(const PlayerSideObject& object) const;
@@ -178,11 +205,13 @@ private:
     void spawnProjectileNode(int projectileId, int visualSelector, float x, float y, std::uint16_t angle16, float speedOrAccelHint, float speed, int radius, int arg8OrAux);
     void spawnProjectileSpread(int projectileId, int visualSelector, float x, float y, float centerAngle, float speed, int radius, int count, float spreadRadians);
     void spawnProjectileSpread(int projectileId, int visualSelector, float x, float y, std::uint16_t centerAngle16, float speedOrAccelHint, float speed, int radius, int count, int spreadAngle16, int arg8OrAux);
+    void spawnRewardItem(int itemType, float x, float y, std::uint16_t angle16, float speed, int radiusOrScale);
     void drawBackground() const;
     void drawPlayerSideObjects() const;
     void drawPlayer() const;
     void drawEnemies() const;
     void drawProjectiles() const;
+    void drawRewardItems() const;
     void drawPlayerShots() const;
     void drawOverlay() const;
     void drawHudSidebar() const;
@@ -210,6 +239,7 @@ private:
     std::vector<int> playerFrames_;
     std::vector<int> enemySmallFrames_;
     std::vector<int> enemyMediumFrames_;
+    std::vector<int> bossFrames_;
     std::vector<int> bulletFrames_;
     std::vector<int> stageBack1Frames_;
     std::vector<int> stageBack2Frames_;
@@ -224,15 +254,19 @@ private:
     std::vector<int> stateFrames_;
     std::vector<int> dreamGaugeFrames_;
     std::vector<StageEnemy> enemies_;
+    std::vector<StageEnemy> pendingEnemies_;
     std::vector<StageProjectile> enemyProjectiles_;
     std::vector<PlayerSideObject> playerSideObjects_;
     std::vector<PlayerShot> playerShots_;
+    std::vector<RewardItem> rewardItems_;
     bool showLayoutGuides_ = false;
     bool prevLayoutGuideToggle_ = false;
     bool stage01GateFlag_ = false;
     bool stage01EndVisualQueued_ = false;
     bool stage01EndFlushed_ = false;
     bool stage01BossSpawned_ = false;
+    int stage01EndFrame_ = 5700;
+    int nextEntityId_ = 1;
 };
 
 } // namespace reconstructed

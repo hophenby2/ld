@@ -71,6 +71,7 @@ Evidence:
 - Types `0..5` use `DAT_140e45d38 + index` graphics and draw frame group `0x41`: same file `:383` through `:400`.
 - Types `6..8` use a separate movement/collision path and draw from `DAT_140e45d64`, `DAT_140e45d68`, or `DAT_140e4468c` with frame group `0x4c`: same file `:411` through `:620`.
 - Type `6` collection increments a gauge/counter-like global `DAT_140e45d88` and spawns effect type `0x16`: same file `:551` through `:591`.
+  - Reconstruction status: `reverse/reconstructed/project/src/stage_runtime.cpp` now has a compact `RewardItem` vector and models Stage 1 type `0x10` reward type `6` drops/collection against `PlayerState::stockProgress`/lives. The original list allocator, draw resources, sound, and effect-node `0x16` chain are still deferred rather than faked.
 - Type `7` collection increments `DAT_140e445f8` up to `9`, spawns effect type `0x17`, and plays `DAT_140e47228`: same file `:500` through `:549`.
 - Type `8` collection grants a large bonus (`DAT_140e45d88 += 99999`) and sets `DAT_140e445f8 = 9`: same file `:593` through `:596`.
 - Bounds cleanup for both groups sets `active = 0`: same file `:402` through `:409` and `:621` through `:628`.

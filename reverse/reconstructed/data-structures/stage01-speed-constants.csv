@@ -1,0 +1,17 @@
+global,value,notes
+DAT_14053a018,3.0,decoded .rdata scalar used in Stage 1 projectile tables; `FUN_14007ea30` normal Stage<=3 difficulty 0 projectile speed; also `0x0d` movement speed before later-stage branch
+DAT_14053a040,3.5,decoded .rdata scalar used in Stage 1 projectile tables
+DAT_14053a070,4.0,decoded .rdata scalar used in Stage 1 projectile tables; `FUN_14007ea30` normal difficulty 1 and later-stage difficulty 0 projectile speed; also `0x0d` movement speed for later-stage branch
+DAT_14053a088,4.5,decoded .rdata scalar used in Stage 1 projectile tables; `FUN_14007d4e0` normal/later difficulty 0 projectile speed; `FUN_14007ea30` normal difficulty 2 and later difficulty 1 projectile speed
+DAT_14053a0a0,4.8,decoded .rdata scalar used in Stage 1 projectile tables; `FUN_14007dfb0` normal difficulty 0 projectile speed
+DAT_14053a0b0,5.0,decoded .rdata scalar used in Stage 1 projectile tables; `FUN_14007dfb0` initial speed range lower bound; `FUN_14007ea30` later-stage difficulty 2 projectile speed
+DAT_14053a0d0,5.5,decoded .rdata scalar used in Stage 1 projectile tables; `FUN_14007d4e0` normal/later difficulty 1 projectile speed; `FUN_14007ea30` normal difficulty 3 projectile speed
+DAT_14053a0f8,6.0,decoded .rdata scalar used in Stage 1 projectile tables; `FUN_14007ea30` later-stage difficulty 3 projectile speed
+DAT_14053a118,6.5,decoded .rdata scalar used in Stage 1 projectile tables; `FUN_14007d4e0` normal/later difficulty 2-3 projectile speed; `FUN_14007dfb0` normal difficulty 1 projectile speed
+DAT_14053a138,7.0,decoded .rdata scalar used in Stage 1 projectile tables; `FUN_14007dfb0` initial speed range upper bound and later-stage difficulty 1 projectile speed
+DAT_14053a158,7.5,decoded .rdata scalar used in Stage 1 projectile tables; `FUN_14007ea30` normal/later difficulty 4 projectile speed
+DAT_14053a178,8.0,decoded .rdata scalar used in Stage 1 projectile tables; `FUN_14007dfb0` normal/later difficulty 2-3 projectile speed
+DAT_14053a190,8.5,decoded .rdata scalar used in Stage 1 projectile tables; `FUN_14007d4e0` normal/later difficulty 4 projectile speed
+DAT_14053a1b8,9.0,decoded .rdata scalar used in Stage 1 projectile tables; `FUN_14007d4e0` initial speed range upper bound
+DAT_14053a1c8,9.5,decoded .rdata scalar used in Stage 1 projectile tables; `FUN_14007dfb0` normal/later difficulty 4 projectile speed
+DAT_14053a208,11.0,decoded .rdata scalar used in Stage 1 projectile tables

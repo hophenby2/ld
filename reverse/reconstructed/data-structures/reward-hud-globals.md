@@ -71,6 +71,7 @@ Evidence for `DAT_140e45d88`:
 - Initialized from a difficulty/route threshold table `DAT_140538bd8` times `DAT_140e474ec`: `reverse/ghidra-or-ida/exports/gameplay-helpers-renamed/neighborhood-decompiled/1400f6c40_FUN_1400f6c40.c:16`.
 - Stage 00 clamps it to `30000` in an early-stage condition: `reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/14012eba0_FUN_14012eba0.c:870` through `:871`.
 - Reward item type `6` increments it by one difficulty threshold chunk if `DAT_140e45d34 < 3`: `reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/1400ca7b0_FUN_1400ca7b0.c:551` through `:558`.
+  - Reconstruction status: Stage 1 runtime now maps this through `PlayerState::stockProgress` for the new minimal `RewardItem` type `6` path. This is a gameplay probe mapping, not a final rename of the original HUD variable.
 - Reward item type `8` grants a large `+99999`: same file `:593` through `:595`.
 - `FUN_14010e250` clamps it to `3 * threshold`, computes progress within the current stock band, and increments `DAT_140e45d34` when a threshold is crossed: `reverse/ghidra-or-ida/exports/gameplay-helpers-renamed/neighborhood-decompiled/14010e250_FUN_14010e250.c:21` through `:38` and `:86` through `:88`.
 - Player hit/route logic subtracts one threshold chunk from it and decrements `DAT_140e45d34`: `reverse/ghidra-or-ida/exports/gameplay-helpers-renamed/neighborhood-decompiled/140106be0_player_update_input_movement_candidate.c:880` through `:897`.

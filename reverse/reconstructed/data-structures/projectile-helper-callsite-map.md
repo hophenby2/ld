@@ -27,6 +27,9 @@ Counts include duplicate export sets; use as a coverage estimate rather than a u
 | Final type `0x100` | `1400b1db0_FUN_1400b1db0.c` | `FUN_14006c2f0(7, 0, paired_offset_x, paired_offset_y, angle, speed, ..., 1, 0)` | Dual child / paired aimed emitter. |
 | Final type `0x102` | `1400b2760_FUN_1400b2760.c` | `FUN_14006c2f0(0xd, 0, offset_x, offset_y, angle, 0, speed, flags, 0)` and later id `0` bursts | Large multi-part carrier/emitter; repeated final-stage id `0xd` shots. |
 | Final types `0x103/0x104` | `1400b3540_FUN_1400b3540.c` | `FUN_14006c2f0(4, 0x34, x, y, orbit_angle + base_angle, 0, speed, flags, 0)` | Four-offset rotating/orbit burst pair. |
+| Stage01 type `0x0b` | `14007d4e0_FUN_14007d4e0.c` | `FUN_14006c2f0(0, phase_mod, x, y+offset, aimed_quantized_angle, 0, difficulty_speed, flags, 0)` | State-1 aimed id `0` microburst while helper age `< 200`; start frame and interval are difficulty-scaled, with a three-interval burst inside a five-interval cycle. |
+| Stage01 type `0x0c` | `14007dfb0_FUN_14007dfb0.c` | `FUN_14006c2f0(7, 0, x±DAT_14053ac60, y, side_aim_angle, DAT_14053ac2c, speed + phase_delta, flags, 0)` | Paired left/right id `7` shots during state age `< 200`; high difficulty adds angled variants from both sides. |
+| Stage01 type `0x0d` | `14007ea30_FUN_14007ea30.c` | `FUN_14006c2f0(0, global_frame_mod, side_offset_x, side_offset_y, aimed_quantized_angle, 0/DAT_14053ac2c, difficulty_speed, flags, 0)` | Side-entry source emits id `0` on global-frame modulo intervals; original also emits a paired accelerated shot. |
 
 ## `FUN_1400709b0` representative spread/ring call sites
 

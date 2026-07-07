@@ -7,6 +7,7 @@ Status: derived from `stage_entity_update_dispatch_candidate @ 0x140078b70` and 
 | `0x0, 0x1` | `0x0` | `FUN_1401327d0` |
 | `0x2, 0x3, 0x4, 0x5` | `0x1` | `FUN_1401331c0` |
 | `0x6, 0x7, 0x8` | `0x2` | `FUN_140082d90` |
+| `0x9` | `0x3` | `FUN_140083db0` |
 | `0xa` | `0x4` | `FUN_14007c9c0` |
 | `0xb` | `0x5` | `FUN_14007d4e0` |
 | `0xc` | `0x6` | `FUN_14007dfb0` |
@@ -14,6 +15,7 @@ Status: derived from `stage_entity_update_dispatch_candidate @ 0x140078b70` and 
 | `0xe` | `0x8` | `FUN_14007f2c0` |
 | `0xf` | `0x9` | `FUN_140080170` |
 | `0x10` | `0xa` | `FUN_140080fb0` |
+| `0x11` | `0xb` | `FUN_140082090` |
 | `0x19` | `0xe` | `FUN_1400841d0` |
 | `0x1a` | `0xf` | `FUN_140084be0` |
 | `0x1b` | `0x10` | `FUN_1400853f0` |
@@ -72,3 +74,9 @@ Status: derived from `stage_entity_update_dispatch_candidate @ 0x140078b70` and 
 | `0x100` | `0x87` | `FUN_1400b1db0` |
 | `0x102` | `0x88` | `FUN_1400b2760` |
 | `0x103, 0x104` | `0x89` | `FUN_1400b3540` |
+
+## Stage 1 restoration notes
+
+- `0x0b` / `FUN_14007d4e0`: movement state machine, body frame `DAT_140e44670`, overlay frame `DAT_140e44674`, and id `0` projectile cadence are ported into `StageRuntime` from `stage01-helper-decompiled/14007d4e0_FUN_14007d4e0.c:39-75,87-146,219-245,244-367`; original effect/list overlay allocation remains approximated by direct drawing.
+- `0x0c` / `FUN_14007dfb0`: movement state machine, frames `DAT_140e44678/7c/80`, and id `7` paired-source cadence are ported from `stage01-helper-decompiled/14007dfb0_FUN_14007dfb0.c:52-89,95-166,168-305,309-322`; original multipart draw nodes remain approximated by direct drawing.
+- `0x0d` / `FUN_14007ea30`: side-entry speed/angle setup, frames `DAT_140e44684/88`, and id `0` global-frame modulo cadence are ported from `stage01-helper-decompiled/14007ea30_FUN_14007ea30.c:48-80,82-127,128-228,230-258`; helper sinusoidal offsets and offscreen expiry are represented in runtime, but exact effect/list allocation remains deferred.
