@@ -13,6 +13,8 @@ Status: first semantic pass over the gameplay reward and HUD globals touched by 
 | `DAT_140e45d88` | `extend_or_life_stock_progress_candidate` | Medium | Progress toward increasing `DAT_140e45d34`; clamped against difficulty/stage thresholds and incremented by special reward items. |
 | `DAT_140e45d34` | `stock_level_or_life_count_candidate` | Medium | Small capped value `0..3` initialized from route/setup, incremented when `DAT_140e45d88` reaches thresholds, decremented/spent on hit/route events. |
 | `DAT_140e445f8` | `special_token_stock_candidate` | Medium | Small stock/token count, capped at `9`, drawn as HUD pips and consumed by a special clear/action path. |
+| `DAT_140e46b24` | `key_state_count_candidate` | Medium | Left HUD key-state/count value; drawn by `FUN_1400c4bb0` and incremented in the state14 gameplay loop. |
+| `DAT_140e441b8` | `left_key_state_hud_enabled_candidate` | Medium | Gate that allows `FUN_1400c2860` to call the left HUD/key-state helper `FUN_1400c4bb0` when the current route/mode is valid. |
 
 ## `DAT_140e44590` — run score candidate
 
@@ -93,7 +95,27 @@ Evidence:
 
 Interpretation: a small token/stock count represented by HUD pips and consumed by a projectile clear/special action. It may be a bomb/guard/token stock, but the exact label is not confirmed.
 
-## Rename candidates
+## `DAT_140e46b24` and `DAT_140e441b8` — left key-state HUD candidates
+
+Candidate names:
+
+- `DAT_140e46b24` → `key_state_count_candidate`.
+- `DAT_140e441b8` → `left_key_state_hud_enabled_candidate`.
+
+Evidence for `DAT_140e46b24`:
+
+- `FUN_1400c4bb0` draws it through the HUD number helper on layer `0x73`: `reverse/ghidra-or-ida/exports/stage-entity-list-refs/global-key-ref-decompiled/1400c4bb0_FUN_1400c4bb0.c:227` through `:272`.
+- The same draw block uses left-HUD coordinates and resources, including a status/icon area around `(280,535)` and number drawing via `FUN_1400c95e0`.
+- The state14 gameplay loop increments it in a gameplay event path: `reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/1400bca30_state_14_replay_demo_gameplay_update_candidate.c:1007`.
+
+Evidence for `DAT_140e441b8`:
+
+- `FUN_1400c2860` conditionally calls the left HUD helper when `DAT_140e441b8 == 1` and `DAT_140e41928 != -1`: `reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/1400c2860_FUN_1400c2860.c:1064` through `:1066`.
+- The callee `FUN_1400c4bb0` is the left-side DataWindow/key-state HUD helper; it draws `DataWindow.png` at `(0,330)` and several x<340 HUD rows/icons.
+
+Interpretation:
+
+`DAT_140e46b24` is a count/value displayed in the left key-state HUD, and `DAT_140e441b8` gates whether that left HUD is shown. Avoid mapping this to any temporary reconstruction counters until the exact gameplay event semantics of the increment path are named.
 
 | Address/global | Candidate | Confidence |
 |---|---|---|
@@ -104,6 +126,8 @@ Interpretation: a small token/stock count represented by HUD pips and consumed b
 | `DAT_140e45d88` | `g_stock_progress_candidate` | Medium |
 | `DAT_140e45d34` | `g_stock_level_candidate` | Medium |
 | `DAT_140e445f8` | `g_special_token_stock_candidate` | Medium |
+| `DAT_140e46b24` | `g_key_state_count_candidate` | Medium |
+| `DAT_140e441b8` | `g_left_key_state_hud_enabled_candidate` | Medium |
 
 ## Next targets
 

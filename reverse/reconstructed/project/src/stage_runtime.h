@@ -76,6 +76,19 @@ private:
         int radius = 24;
         int visualFrame = 0;
         int activationDelay = 20;
+        int sourceLifetime = 0;
+        int sourceX = 0;
+        int sourceY = 0;
+        int updateCase = -1;
+        int sourceDispatchKind = -1;
+        int sourceDispatchField = 0;
+        const char* sourceNote = nullptr;
+        float originX = 0.0f;
+        float originY = 0.0f;
+        std::uint16_t sourceAngle16 = 0;
+        std::uint16_t secondaryAngle16 = 0;
+        double sourceSpeed = 0.0;
+        int helperState = 0;
         bool active = true;
     };
 
@@ -128,10 +141,17 @@ private:
 
     static const StageSpawnEvent* eventsForStage(int stage, std::size_t& count);
     void spawnDueEvents();
+    void spawnStage01OriginalSchedule();
     void spawnStage04OriginalSchedule();
     void spawnEnemy(const StageSpawnEvent& event);
     void updatePlayer();
     void updateEnemies();
+    void updateStage01Enemy(StageEnemy& enemy, int activeAge);
+    void updateStage01Type0A(StageEnemy& enemy, int activeAge);
+    void updateStage01SmallChaser(StageEnemy& enemy, int activeAge, int enterFrames, int trackFrames, int turnStep, int exitTurnStep, double initialSpeed);
+    void updateStage01Setpiece(StageEnemy& enemy, int activeAge);
+    void updateStage01Marker(StageEnemy& enemy, int activeAge);
+    void emitStage01Projectiles(StageEnemy& enemy, int activeAge);
     void updateStage04Enemy(StageEnemy& enemy, int activeAge);
     void emitStage04Projectiles(StageEnemy& enemy, int activeAge);
     void updateGenericEnemy(StageEnemy& enemy, int activeAge);
@@ -209,6 +229,10 @@ private:
     std::vector<PlayerShot> playerShots_;
     bool showLayoutGuides_ = false;
     bool prevLayoutGuideToggle_ = false;
+    bool stage01GateFlag_ = false;
+    bool stage01EndVisualQueued_ = false;
+    bool stage01EndFlushed_ = false;
+    bool stage01BossSpawned_ = false;
 };
 
 } // namespace reconstructed

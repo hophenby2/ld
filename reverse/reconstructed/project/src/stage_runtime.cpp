@@ -150,6 +150,99 @@ bool isStage04FocusedType(int spawnType) {
            spawnType == 0x3d || spawnType == 0x3f;
 }
 
+bool isStage01ObservedType(int spawnType) {
+    return spawnType == 0x06 || spawnType == 0x08 || spawnType == 0x0a ||
+           spawnType == 0x0b || spawnType == 0x0c || spawnType == 0x0d ||
+           spawnType == 0x0e || spawnType == 0x0f || spawnType == 0x10;
+}
+
+int stage01UpdateCaseForSpawnType(int spawnType) {
+    switch (spawnType) {
+    case 0x06:
+    case 0x07:
+    case 0x08:
+        return 0x2;
+    case 0x0a:
+        return 0x4;
+    case 0x0b:
+        return 0x5;
+    case 0x0c:
+        return 0x6;
+    case 0x0d:
+        return 0x7;
+    case 0x0e:
+        return 0x8;
+    case 0x0f:
+        return 0x9;
+    case 0x10:
+        return 0x0a;
+    default:
+        return -1;
+    }
+}
+
+int stage01DispatchKindForSpawnType(int spawnType) {
+    switch (spawnType) {
+    case 0x06:
+    case 0x07:
+    case 0x08:
+    case 0x0f:
+        return 30;
+    case 0x0a:
+        return 10;
+    case 0x0b:
+    case 0x0d:
+        return 5;
+    case 0x0c:
+        return 7;
+    case 0x0e:
+        return 24;
+    case 0x10:
+        return 120;
+    default:
+        return -1;
+    }
+}
+
+int stage01DispatchFieldForSpawnType(int spawnType) {
+    switch (spawnType) {
+    case 0x06:
+    case 0x07:
+    case 0x08:
+        return 90;
+    case 0x0a:
+        return 50;
+    case 0x0b:
+    case 0x0c:
+    case 0x0d:
+        return 30;
+    case 0x0e:
+        return 80;
+    case 0x10:
+        return 150;
+    default:
+        return 0;
+    }
+}
+
+std::uint32_t stageScriptRandFromFrame(int frame) {
+    // Matches the repeated DAT_140e9fd1c computation in
+    // stage_01_gameplay_update_candidate @ 0x140118420. This is not the
+    // generic runtime RNG; it is the frame-seeded expression embedded in the
+    // stage schedule blocks.
+    const auto seed = static_cast<std::uint32_t>(frame);
+    const std::uint32_t u = ((seed >> 30) ^ seed) * 0x6c078965u + 1u;
+    const std::uint32_t a = ((u >> 30) ^ u) * 0x6c078965u + 2u;
+    const std::uint32_t b = ((a >> 30) ^ a) * 0x6c078965u + 3u;
+    const std::uint32_t c = ((b >> 30) ^ b) * 0x6c078965u + 4u;
+    const std::uint32_t mixed = u * 0x800u ^ u;
+    return ((c >> 11) ^ mixed) >> 8 ^ c ^ mixed;
+}
+
+int stageRandCoord(int frame, int modulus, int base) {
+    return static_cast<int>(stageScriptRandFromFrame(frame) % static_cast<std::uint32_t>(modulus)) + base;
+}
+
 int bulletFrameForVisualSelector(int visualSelector) {
     switch (visualSelector) {
     case 0x00: return 0;
@@ -254,6 +347,162 @@ std::uint16_t approachAngle16(std::uint16_t current, std::uint16_t target, int m
     return normalizeAngle16(static_cast<int>(current) + delta);
 }
 
+int stage01Type0AShotStartFrame(int difficulty) {
+    switch (difficulty) {
+    case 0: return 0x14;
+    case 1: return 10;
+    default: return 0;
+    }
+}
+
+int stage01Type0AShotInterval(int difficulty, int stage) {
+    if (stage > 7) {
+        switch (difficulty) {
+        case 0: return 0x78;
+        case 1: return 0x5a;
+        case 2: return 0x32;
+        case 3: return 0x28;
+        case 4: return 0x20;
+        default: return 1;
+        }
+    }
+    switch (difficulty) {
+    case 0: return 0x96;
+    case 1: return 0x78;
+    case 2: return 0x3c;
+    case 3: return 0x28;
+    case 4: return 0x20;
+    default: return 1;
+    }
+}
+
+float stage01Type0AProjectileSpeed(int difficulty, int stage) {
+    // FUN_14007c9c0 selects DAT_14053a070/a0b0/a118/a138/a178 by
+    // difficulty, with a slightly faster table for stages above 7. The exact
+    // global values are not named yet; these retain the observed monotonic
+    // difficulty intent as a gameplay fallback until constants are decoded.
+    if (stage > 7) {
+        switch (difficulty) {
+        case 0: return 2.2f;
+        case 1: return 2.6f;
+        case 2: return 3.0f;
+        case 3: return 3.3f;
+        case 4: return 3.7f;
+        default: return 2.4f;
+        }
+    }
+    switch (difficulty) {
+    case 0: return 1.8f;
+    case 1: return 2.2f;
+    case 2: return 2.8f;
+    case 3: return 3.3f;
+    case 4: return 3.7f;
+    default: return 2.4f;
+    }
+}
+
+int stage01Type0BShotStartFrame(int difficulty) {
+    switch (difficulty) {
+    case 0: return 0x1e;
+    case 1: return 0x10;
+    case 2: return 0x0c;
+    case 3: return 8;
+    case 4: return 6;
+    default: return 1;
+    }
+}
+
+int stage01Type0BShotInterval(int difficulty, int stage) {
+    if (stage > 3) {
+        switch (difficulty) {
+        case 0: return 0x18;
+        case 1: return 0x14;
+        case 2: return 0x10;
+        case 3: return 0x0c;
+        case 4: return 6;
+        default: return 1;
+        }
+    }
+    switch (difficulty) {
+    case 0: return 0x20;
+    case 1: return 0x1b;
+    case 2: return 0x14;
+    case 3: return 0x0f;
+    case 4: return 6;
+    default: return 1;
+    }
+}
+
+int stage01Type0CShotStartFrame(int difficulty, int stage) {
+    if (stage > 3) {
+        switch (difficulty) {
+        case 0: return 0x14;
+        case 1: return 0x0c;
+        default: return 10;
+        }
+    }
+    switch (difficulty) {
+    case 0: return 0x1e;
+    case 1: return 0x14;
+    case 2: return 0x0c;
+    default: return 10;
+    }
+}
+
+int stage01Type0CShotInterval(int difficulty, int stage) {
+    if (stage > 3) {
+        switch (difficulty) {
+        case 0: return 0x78;
+        case 1: return 0x50;
+        case 2:
+        case 3: return 0x3c;
+        case 4: return 0x32;
+        default: return 1;
+        }
+    }
+    switch (difficulty) {
+    case 0: return 0x8c;
+    case 1: return 100;
+    case 2:
+    case 3: return 0x50;
+    case 4: return 0x3c;
+    default: return 1;
+    }
+}
+
+int stage01Type0DShotInterval(int difficulty, int stage) {
+    if (stage > 3) {
+        switch (difficulty) {
+        case 0: return 0x2c;
+        case 1: return 0x1f;
+        case 2: return 0x11;
+        case 3: return 0x0c;
+        case 4: return 7;
+        default: return 1;
+        }
+    }
+    switch (difficulty) {
+    case 0: return 0x3c;
+    case 1: return 0x2c;
+    case 2: return 0x18;
+    case 3: return 0x0f;
+    case 4: return 7;
+    default: return 1;
+    }
+}
+
+float stage01SmallProjectileSpeed(int difficulty, int stage, float base = 2.0f) {
+    const float stageBoost = stage > 3 ? 0.35f : 0.0f;
+    switch (difficulty) {
+    case 0: return base + stageBoost;
+    case 1: return base + 0.35f + stageBoost;
+    case 2: return base + 0.75f + stageBoost;
+    case 3: return base + 1.05f + stageBoost;
+    case 4: return base + 1.45f + stageBoost;
+    default: return base + stageBoost;
+    }
+}
+
 } // namespace
 
 const StageRuntime::StageSpawnEvent* StageRuntime::eventsForStage(int stage, std::size_t& count) {
@@ -328,6 +577,10 @@ void StageRuntime::setConfig(const StageRuntimeConfig& config) {
 void StageRuntime::reset() {
     frame_ = 0;
     player_ = {};
+    stage01GateFlag_ = false;
+    stage01EndVisualQueued_ = false;
+    stage01EndFlushed_ = false;
+    stage01BossSpawned_ = false;
     enemies_.clear();
     enemyProjectiles_.clear();
     playerSideObjects_.clear();
@@ -389,6 +642,10 @@ int StageRuntime::enemyProjectilesAlive() const {
 }
 
 void StageRuntime::spawnDueEvents() {
+    if (selectedStage_ == 1) {
+        spawnStage01OriginalSchedule();
+        return;
+    }
     if (selectedStage_ == 4) {
         spawnStage04OriginalSchedule();
         return;
@@ -402,6 +659,109 @@ void StageRuntime::spawnDueEvents() {
             spawnEnemy(event);
         }
     }
+}
+
+void StageRuntime::spawnStage01OriginalSchedule() {
+    const int f = frame_;
+    auto spawn = [this](int type, int lifetime, int x, int y, const char* note) {
+        spawnEnemy({frame_, type, lifetime, x, y, note});
+    };
+    auto spawn0bTop = [&](int lifetime, int modulus, int base, const char* note) {
+        spawn(0x0b, lifetime, stageRandCoord(f, modulus, base), -20, note); // original y literal: 0xffffffec
+    };
+    auto spawn0bLeft = [&](int lifetime, int modulus, int base, const char* note) {
+        spawn(0x0b, lifetime, -20, stageRandCoord(f, modulus, base), note); // original x literal: 0xffffffec
+    };
+    auto spawn0bRight = [&](int lifetime, int modulus, int base, const char* note) {
+        spawn(0x0b, lifetime, 0x2e4, stageRandCoord(f, modulus, base), note);
+    };
+    auto spawn0cTop = [&](const char* note) {
+        spawn(0x0c, 400, stageRandCoord(f, 0x191, 0xa0), -20, note); // original y literal: 0xffffffec
+    };
+    auto spawn0dLeft = [&](int lifetime, int modulus, int base, const char* note) {
+        spawn(0x0d, lifetime, -20, stageRandCoord(f, modulus, base), note); // original x literal: 0xffffffec
+    };
+    auto spawn0dRight = [&](int lifetime, int modulus, int base, const char* note) {
+        spawn(0x0d, lifetime, 0x2e4, stageRandCoord(f, modulus, base), note);
+    };
+
+    // Direct transcription of stage_01_gameplay_update_candidate @ 0x140118420.
+    // This replaces the older 25-row approximation for Stage 1; enemy behavior
+    // still falls back to the current generic/update-helper paths until the
+    // individual original helpers are ported.
+    if (f == 200) spawn(0x0a, 0x960, 0x1e0, 0x96, "S01 original line 27: 0x0a fixed early entry");
+    if (f == 0x104) spawn(0x0a, 0x960, 0x0f0, 200, "S01 original line 30: 0x0a fixed follow-up");
+    if (f == 0x15e) spawn(0x0a, 2000, 0x208, 100, "S01 original line 33: 0x0a fixed lane");
+    if (f == 0x16d) spawn(0x0a, 2000, 0x168, 100, "S01 original line 36: 0x0a fixed lane");
+    if (f == 0x17c) spawn(0x0a, 2000, 200, 100, "S01 original line 39: 0x0a fixed lane");
+
+    if (f >= 600 && f < 600 + 0x50 && (f - 600) % 0x14 == 0) {
+        spawn0bTop(400, 0x12d, 0x3c, "S01 original line 50: 0x0b top random entry");
+    }
+    if (f == 700) spawn(0x06, 5000, 0x1cc, 0, "S01 original line 54: common marker/emitter");
+    if (f == 900) spawn(0x0e, 10000, 0x118, 0, "S01 original line 58: 0x0e long setpiece");
+    if (f == 0x44c) spawn(0x0e, 10000, 0x1cc, 0, "S01 original line 62: 0x0e long setpiece");
+
+    if (f >= 0x514 && f < 0x514 + 0x96 && (f - 0x514) % 0x14 == 0) {
+        spawn0cTop("S01 original line 73: 0x0c top random entry");
+    }
+    if (f >= 0x60e && f < 0x60e + 300 && (f - 0x60e) % 0x1e == 0) {
+        spawn0dRight(700, 0x65, 0xfa, "S01 original line 84: 0x0d right random entry");
+    }
+    if (f >= 0x78a && f < 0x78a + 0x78 && (f - 0x78a) % 0x14 == 0) {
+        spawn0bLeft(500, 0xc9, 100, "S01 original line 95: 0x0b left random entry");
+    }
+    if (f >= 0x834 && f < 0x834 + 0x50 && (f - 0x834) % 0x14 == 0) {
+        spawn0bRight(500, 0xc9, 100, "S01 original line 106: 0x0b right random entry");
+    }
+    if (f == 0x898) spawn(0x0f, 8000, 0x348, 0x96, "S01 original line 110: 0x0f side setpiece");
+    if (f >= 0x8ca && f < 0x8ca + 200 && (f - 0x8ca) % 0x1e == 0) {
+        spawn0dLeft(700, 0x65, 0xfa, "S01 original line 121: 0x0d left random entry");
+    }
+    if (f >= 0x9f6 && f < 0x9f6 + 100 && (f - 0x9f6) % 10 == 0) {
+        spawn0bTop(400, 0x191, 0xa0, "S01 original line 132: 0x0b top burst");
+    }
+    if (f == 0xabe) {
+        spawn(0x10, 40000, 0x168, 0x50, "S01 original line 137: 0x10 long setpiece; sets DAT_140e418cc");
+        stage01GateFlag_ = true;
+    }
+
+    if (!stage01GateFlag_ && f >= 0xaf0 && f < 0xdde) {
+        const int local = (f - 0xaf0) % 0x96;
+        if (local < 100 && local % 0x0c == 0) {
+            spawn0cTop("S01 original line 155: gated 0x0c top burst");
+        }
+    }
+    if (f == 0xe10) spawn(0x0e, 7000, 0x168, 0, "S01 original line 159: later 0x0e setpiece");
+    if (f >= 0xed8 && f < 0xf78 && (f - 0xed8) % 0x14 == 0) {
+        spawn0bRight(500, 0xc9, 100, "S01 original line 173: later 0x0b right random entry");
+    }
+    if (f >= 0xf3c && f < 0xf3c + 200 && (f - 0xf3c) % 0x1e == 0) {
+        spawn0dLeft(500, 0x65, 300, "S01 original line 185: later 0x0d left low entry");
+    }
+    if (f == 0x1068) spawn(0x0e, 7000, 0x1cc, 0, "S01 original line 189: later 0x0e setpiece");
+    if (f == 0x1108) spawn(0x0f, 8000, -120, 100, "S01 original line 193: later 0x0f side setpiece; original x 0xffffff88");
+    if (f >= 0x1194 && f < 0x1194 + 200) {
+        const int local = (f - 0x1194) % 0x96;
+        if (local < 100 && local % 0x10 == 0) {
+            spawn0cTop("S01 original line 209: later gated 0x0c top burst");
+        }
+    }
+    if (f >= 0x122a && f < 0x122a + 200 && (f - 0x122a) % 0x1e == 0) {
+        spawn0dLeft(500, 0x65, 0xfa, "S01 original line 221: later 0x0d left random entry");
+    }
+    if (f >= 0x1324 && f < 0x1324 + 0x96 && (f - 0x1324) % 0x14 == 0) {
+        spawn0bTop(400, 0xc9, 0x168, "S01 original line 233: final 0x0b top random entry");
+    }
+    if (f == 0x13ec) spawn(0x08, 5000, 0x104, 0, "S01 original line 237: ending marker/emitter");
+
+    // End-of-stage and boss handoff evidence exists after line 240 of the
+    // decompile. The exact stage length table (UNK_140538ad8) is not yet
+    // normalized into this runtime, so keep explicit state flags for the next
+    // pass rather than inventing an end frame here.
+    (void)stage01EndVisualQueued_;
+    (void)stage01EndFlushed_;
+    (void)stage01BossSpawned_;
 }
 
 void StageRuntime::spawnStage04OriginalSchedule() {
@@ -515,8 +875,20 @@ void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
     StageEnemy enemy;
     enemy.spawnType = event.spawnType;
     enemy.lifetime = event.lifetime;
+    enemy.sourceLifetime = event.lifetime;
+    enemy.sourceX = event.x;
+    enemy.sourceY = event.y;
+    enemy.sourceNote = event.sourceNote;
+    if (selectedStage_ == 1 && isStage01ObservedType(event.spawnType)) {
+        enemy.updateCase = stage01UpdateCaseForSpawnType(event.spawnType);
+        enemy.sourceDispatchKind = stage01DispatchKindForSpawnType(event.spawnType);
+        enemy.sourceDispatchField = stage01DispatchFieldForSpawnType(event.spawnType);
+        enemy.activationDelay = 0;
+    }
     enemy.x = static_cast<float>(event.x);
     enemy.y = static_cast<float>(event.y);
+    enemy.originX = enemy.x;
+    enemy.originY = enemy.y;
     enemy.angle = aimAtPlayer(enemy.x, enemy.y);
 
     switch (event.spawnType) {
@@ -677,7 +1049,10 @@ void StageRuntime::updateEnemies() {
             continue;
         }
         const int activeAge = enemy.age - enemy.activationDelay;
-        if (isStage04FocusedType(enemy.spawnType)) {
+        if (selectedStage_ == 1 && isStage01ObservedType(enemy.spawnType)) {
+            updateStage01Enemy(enemy, activeAge);
+        }
+        else if (isStage04FocusedType(enemy.spawnType)) {
             updateStage04Enemy(enemy, activeAge);
         }
         else {
@@ -687,13 +1062,414 @@ void StageRuntime::updateEnemies() {
         enemy.x += enemy.vx;
         enemy.y += enemy.vy;
 
-        if (isStage04FocusedType(enemy.spawnType)) {
+        if (selectedStage_ == 1 && isStage01ObservedType(enemy.spawnType)) {
+            emitStage01Projectiles(enemy, activeAge);
+        }
+        else if (isStage04FocusedType(enemy.spawnType)) {
             emitStage04Projectiles(enemy, activeAge);
         }
         else {
             emitGenericProjectiles(enemy, activeAge);
         }
     }
+}
+
+void StageRuntime::updateStage01Enemy(StageEnemy& enemy, int activeAge) {
+    // Stage 01 type routing is evidence-backed by stage-spawn-used-update-map.md:
+    // 0x0a->FUN_14007c9c0, 0x0b->FUN_14007d4e0, 0x0c->FUN_14007dfb0,
+    // 0x0d->FUN_14007ea30, 0x0e->FUN_14007f2c0, 0x0f->FUN_140080170,
+    // 0x10->FUN_140080fb0, 0x06/0x08->FUN_140082d90.
+    switch (enemy.spawnType) {
+    case 0x0a:
+        updateStage01Type0A(enemy, activeAge);
+        break;
+    case 0x0b:
+        updateStage01SmallChaser(enemy, activeAge, 0x14, 200, 0x80, 0x200, 1.0);
+        break;
+    case 0x0c:
+        updateStage01SmallChaser(enemy, activeAge, 0x14, 200, 0x80, 0x100, 1.15);
+        break;
+    case 0x0d:
+        updateStage01SmallChaser(enemy, activeAge, 0x14, 99999, 0x80, 0x100, selectedStage_ > 3 ? 4.0 : 3.0);
+        break;
+    case 0x0e:
+    case 0x0f:
+    case 0x10:
+        updateStage01Setpiece(enemy, activeAge);
+        break;
+    case 0x06:
+    case 0x08:
+        updateStage01Marker(enemy, activeAge);
+        break;
+    default:
+        // Other Stage 1 helper bodies are not fully ported yet, so retain the
+        // previous playable movement as an explicit fallback behind the Stage
+        // 1-specific dispatch point.
+        updateGenericEnemy(enemy, activeAge);
+        break;
+    }
+}
+
+void StageRuntime::updateStage01Type0A(StageEnemy& enemy, int activeAge) {
+    // FUN_14007c9c0: two-state early Stage 1 enemy. State 0 lasts 0x78
+    // frames, then state 1 tracks the player for 300 frames before turning
+    // toward fixed angle 0xc000 and accelerating away. The exact random entry
+    // jitter and draw overlays are still deferred; movement/shot timing below
+    // follows the confirmed state/cadence structure.
+    if (enemy.helperState == 0) {
+        const float t = clampFloat(static_cast<float>(activeAge) / 120.0f, 0.0f, 1.0f);
+        const float wobble = std::sin((enemy.age + enemy.sourceX * 3) * 0.08f) * (1.0f - t) * 12.0f;
+        enemy.x = enemy.originX + wobble;
+        enemy.y = enemy.originY + std::sin((enemy.age + enemy.sourceY * 5) * 0.07f) * (1.0f - t) * 8.0f;
+        enemy.vx = 0.0f;
+        enemy.vy = 0.0f;
+        if (activeAge >= 0x78) {
+            enemy.helperState = 1;
+            enemy.age = 0;
+            enemy.sourceSpeed = 0.8;
+            enemy.sourceAngle16 = radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y));
+            enemy.secondaryAngle16 = enemy.sourceAngle16;
+        }
+        return;
+    }
+
+    const int stateAge = enemy.age;
+    if (enemy.sourceSpeed <= 0.0) {
+        enemy.sourceSpeed = 0.8;
+    }
+    if (stateAge < 300) {
+        enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y)), 0x100);
+    }
+    else {
+        enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, 0xc000, 0x100);
+        enemy.sourceSpeed += 1.0 / 60.0;
+    }
+    enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
+    enemy.speed = static_cast<float>(enemy.sourceSpeed);
+    enemy.vx = std::cos(enemy.angle) * enemy.speed;
+    enemy.vy = std::sin(enemy.angle) * enemy.speed;
+}
+
+void StageRuntime::updateStage01SmallChaser(StageEnemy& enemy, int activeAge, int enterFrames, int trackFrames, int turnStep, int exitTurnStep, double initialSpeed) {
+    // Shared structure for FUN_14007d4e0 (0x0b), FUN_14007dfb0 (0x0c), and
+    // FUN_14007ea30 (0x0d): a short state-0 entry display, then state-1 motion
+    // that turns toward the player for a fixed window and then exits toward
+    // 0xc000 while accelerating. Exact overlay/effect nodes remain deferred.
+    if (enemy.helperState == 0) {
+        const float t = clampFloat(static_cast<float>(activeAge) / static_cast<float>(std::max(1, enterFrames)), 0.0f, 1.0f);
+        enemy.x = enemy.originX;
+        enemy.y = enemy.originY - (1.0f - t) * 20.0f;
+        enemy.vx = 0.0f;
+        enemy.vy = 0.0f;
+        if (activeAge >= enterFrames) {
+            enemy.helperState = 1;
+            enemy.age = 0;
+            enemy.sourceSpeed = initialSpeed;
+            if (enemy.sourceX <= 0) {
+                enemy.sourceAngle16 = 0x0000;
+            }
+            else if (enemy.sourceX >= 0x2e4) {
+                enemy.sourceAngle16 = 0x8000;
+            }
+            else {
+                enemy.sourceAngle16 = radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y));
+            }
+            enemy.secondaryAngle16 = enemy.sourceAngle16;
+        }
+        return;
+    }
+
+    const int stateAge = enemy.age;
+    if (enemy.sourceSpeed <= 0.0) {
+        enemy.sourceSpeed = initialSpeed;
+    }
+    const std::uint16_t target = stateAge < trackFrames ? radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y)) : 0xc000;
+    enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, target, stateAge < trackFrames ? turnStep : exitTurnStep);
+    if (stateAge >= trackFrames) {
+        enemy.sourceSpeed += 1.0 / 60.0;
+    }
+    enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
+    enemy.speed = static_cast<float>(enemy.sourceSpeed);
+    enemy.vx = std::cos(enemy.angle) * enemy.speed;
+    enemy.vy = std::sin(enemy.angle) * enemy.speed;
+}
+
+void StageRuntime::updateStage01Setpiece(StageEnemy& enemy, int activeAge) {
+    // FUN_14007f2c0/140080170/140080fb0 are long-lived Stage 1 sources. They
+    // enter after 0x14 frames and then run mostly as scripted pattern anchors.
+    // This preserves their state timing and broad motion role; exact child
+    // entity spawns/effect overlays remain deferred.
+    if (enemy.helperState == 0) {
+        const float t = clampFloat(static_cast<float>(activeAge) / 20.0f, 0.0f, 1.0f);
+        enemy.y = enemy.originY - (1.0f - t) * 50.0f;
+        enemy.vx = 0.0f;
+        enemy.vy = 0.0f;
+        if (activeAge >= 0x14) {
+            enemy.helperState = 1;
+            enemy.age = 0;
+            enemy.sourceAngle16 = radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y));
+            if (enemy.spawnType == 0x0e) enemy.sourceSpeed = 7.0;
+            else if (enemy.spawnType == 0x0f) enemy.sourceSpeed = 9.0;
+            else enemy.sourceSpeed = 0.7;
+        }
+        return;
+    }
+
+    const int stateAge = enemy.age;
+    if (enemy.spawnType == 0x10) {
+        if (enemy.helperState == 1 && stateAge < 900) {
+            if (stateAge % 0x14 == 0) {
+                enemy.originX = static_cast<float>(stageRandCoord(frame_, 0x141, 200));
+                enemy.originY = static_cast<float>(stageRandCoord(frame_ + 0x457, 0x29, 0xb4));
+            }
+            enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, radiansToFixedAngle(std::atan2(enemy.originY - enemy.y, enemy.originX - enemy.x)), 0x200);
+        }
+        else {
+            enemy.sourceAngle16 = 0xc000;
+            enemy.sourceSpeed = std::max(enemy.sourceSpeed, (stateAge - 900) / 60.0);
+        }
+        enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
+        enemy.vx = std::cos(enemy.angle) * static_cast<float>(enemy.sourceSpeed);
+        enemy.vy = std::sin(enemy.angle) * static_cast<float>(enemy.sourceSpeed);
+        return;
+    }
+
+    const int trackFrames = enemy.spawnType == 0x0e ? 300 : 300;
+    enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y)), 0x80);
+    if (stateAge > trackFrames) {
+        enemy.sourceSpeed = std::max(1.2, enemy.sourceSpeed - 1.0 / 60.0);
+    }
+    enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
+    const float wobble = std::sin((stateAge + enemy.spawnType * 23) * 0.025f) * (enemy.spawnType == 0x0e ? 0.6f : 0.9f);
+    enemy.vx = std::cos(enemy.angle) * static_cast<float>(enemy.sourceSpeed) * 0.15f + wobble;
+    enemy.vy = std::sin(enemy.angle) * static_cast<float>(enemy.sourceSpeed) * 0.12f;
+}
+
+void StageRuntime::updateStage01Marker(StageEnemy& enemy, int activeAge) {
+    // FUN_140082d90 is used by common marker/emitter types 0x06/0x08. It
+    // spawns additional child entities based on route/difficulty and then
+    // behaves as a low-motion pattern anchor. Child type spawning is not yet
+    // represented in this runtime, so keep it as an anchor that fades through
+    // its lifetime and emits via emitStage01Projectiles().
+    if (enemy.helperState == 0) {
+        if (activeAge >= 0x14) {
+            enemy.helperState = 1;
+            enemy.age = 0;
+            enemy.sourceSpeed = 1.0;
+            enemy.sourceAngle16 = radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y));
+        }
+        enemy.vx = 0.0f;
+        enemy.vy = 0.0f;
+        return;
+    }
+    enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y)), 0x14);
+    enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
+    enemy.vx = std::sin(enemy.age * 0.018f) * 0.35f;
+    enemy.vy = 0.05f;
+}
+
+void StageRuntime::emitStage01Projectiles(StageEnemy& enemy, int activeAge) {
+    if (enemy.spawnType == 0x0a) {
+        // FUN_14007c9c0 fires projectile id 4 during state 1, while state age
+        // is below 300. Difficulty controls the first volley frame and repeat
+        // interval; each volley has a short 20-frame window and fires every 3
+        // frames. Original emits left/right/center offsets, plus extra center
+        // speed/angle variants on higher difficulties.
+        if (enemy.helperState != 1 || enemy.age >= 300) {
+            return;
+        }
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        const int start = stage01Type0AShotStartFrame(difficulty);
+        const int interval = stage01Type0AShotInterval(difficulty, selectedStage_);
+        if (enemy.age < start || interval <= 0) {
+            return;
+        }
+        const int local = (enemy.age - start) % interval;
+        if (local > 0x13 || local % 3 != 0) {
+            return;
+        }
+
+        const float bulletSpeed = stage01Type0AProjectileSpeed(difficulty, selectedStage_);
+        const float centerAngle = fixedAngleToRadians(enemy.secondaryAngle16 != 0 ? enemy.secondaryAngle16 : enemy.sourceAngle16);
+        const float aimCenter = aimAtPlayer(enemy.x, enemy.y);
+        enemy.secondaryAngle16 = approachAngle16(enemy.secondaryAngle16, radiansToFixedAngle(aimCenter), 0x40);
+        const float y = enemy.y - 18.0f;
+        spawnProjectileNode(4, 0, enemy.x + 24.0f, y, centerAngle, bulletSpeed, 5);
+        spawnProjectileNode(4, 0, enemy.x - 24.0f, y, centerAngle, bulletSpeed, 5);
+        spawnProjectileNode(4, 0, enemy.x, enemy.y - 34.0f, centerAngle, bulletSpeed, 5);
+        if (difficulty > 2) {
+            spawnProjectileNode(4, 0, enemy.x, enemy.y - 34.0f, centerAngle, bulletSpeed + 0.5f, 5);
+        }
+        if (difficulty > 3) {
+            spawnProjectileNode(4, 0, enemy.x, enemy.y - 34.0f, centerAngle - 0.12f, bulletSpeed, 5);
+            spawnProjectileNode(4, 0, enemy.x, enemy.y - 34.0f, centerAngle + 0.12f, bulletSpeed, 5);
+        }
+        return;
+    }
+
+    if (enemy.spawnType == 0x0b) {
+        // FUN_14007d4e0: projectile id 0, active for state-age < 200, with a
+        // repeating burst window of interval*3 frames and shots every interval.
+        if (enemy.helperState != 1 || enemy.age >= 200) return;
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        const int start = stage01Type0BShotStartFrame(difficulty);
+        const int interval = stage01Type0BShotInterval(difficulty, selectedStage_);
+        if (enemy.age < start || interval <= 0) return;
+        const int local = (enemy.age - start) % (interval * 5);
+        if (local >= interval * 3 || local % interval != 0) return;
+        const float shotX = enemy.x;
+        const float shotY = enemy.y + 18.0f;
+        const float angle = aimAtPlayer(shotX, shotY);
+        const float speed = stage01SmallProjectileSpeed(difficulty, selectedStage_, 1.9f);
+        spawnProjectileNode(0, local / interval, shotX, shotY, angle, speed, 5);
+        if (difficulty > 2) {
+            spawnProjectileNode(0, 0, shotX, shotY, angle, speed + 0.35f, 5);
+        }
+        return;
+    }
+
+    if (enemy.spawnType == 0x0c) {
+        // FUN_14007dfb0: projectile id 7, state-age < 200, burst window of
+        // roughly 0x28 frames with shots every 5 frames. It emits symmetric
+        // left/right sources and adds extra angled variants on high difficulty.
+        if (enemy.helperState != 1 || enemy.age >= 200) return;
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        const int start = stage01Type0CShotStartFrame(difficulty, selectedStage_);
+        const int interval = stage01Type0CShotInterval(difficulty, selectedStage_);
+        if (enemy.age < start || interval <= 0) return;
+        const int local = (enemy.age - start) % interval;
+        if (local > 0x27 || local % 5 != 0) return;
+        const float speed = stage01SmallProjectileSpeed(difficulty, selectedStage_, 2.1f) + static_cast<float>(local / 5) * 0.08f;
+        const float leftX = enemy.x - 24.0f;
+        const float rightX = enemy.x + 24.0f;
+        const float y = enemy.y;
+        const float leftAngle = aimAtPlayer(leftX, y);
+        const float rightAngle = aimAtPlayer(rightX, y);
+        spawnProjectileNode(7, 0, rightX, y, rightAngle, speed, 5);
+        spawnProjectileNode(7, 0, leftX, y, leftAngle, speed, 5);
+        if (difficulty > 2) {
+            spawnProjectileNode(7, 0, rightX, y, rightAngle - 0.11f, speed + 0.25f, 5);
+            spawnProjectileNode(7, 0, leftX, y, leftAngle + 0.11f, speed + 0.25f, 5);
+        }
+        return;
+    }
+
+    if (enemy.spawnType == 0x0d) {
+        // FUN_14007ea30: side-entry source that fires projectile id 0 from an
+        // offset side point whenever the global stage frame hits its difficulty
+        // interval. Original also emits a paired accelerated shot.
+        if (enemy.helperState != 1) return;
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        const int interval = stage01Type0DShotInterval(difficulty, selectedStage_);
+        if (interval <= 0 || frame_ % interval != 0) return;
+        const bool fromLeft = enemy.sourceX < 0x168;
+        const float shotX = enemy.x + (fromLeft ? -24.0f : 24.0f);
+        const float shotY = enemy.y - 20.0f;
+        const float angle = aimAtPlayer(shotX, shotY);
+        const float speed = stage01SmallProjectileSpeed(difficulty, selectedStage_, 2.0f);
+        spawnProjectileNode(0, frame_ % interval, shotX, shotY, angle, speed, 5);
+        spawnProjectileNode(0, 0, shotX, shotY, angle, speed + 0.3f, 5);
+        return;
+    }
+
+    if (enemy.spawnType == 0x0e) {
+        // FUN_14007f2c0: multipart source. It alternates projectile id 9 from
+        // left/right offsets and later emits id 0 spreads. Exact sprite child
+        // overlays are deferred.
+        if (enemy.helperState != 1) return;
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        const int cycle = enemy.age % 0x96;
+        const int fanCount = difficulty == 0 ? 4 : difficulty == 1 ? 6 : difficulty == 2 ? 10 : difficulty == 3 ? 12 : 13;
+        const float speed = stage01SmallProjectileSpeed(difficulty, selectedStage_, 2.6f);
+        if ((cycle < 0x1e && cycle % 5 == 0) || (cycle >= 0x28 && cycle < 0x46 && (cycle - 0x28) % 5 == 0)) {
+            const float side = cycle < 0x28 ? 42.0f : -42.0f;
+            const float x = enemy.x + side;
+            const float y = enemy.y + std::sin(enemy.age * 0.04f) * 18.0f;
+            spawnProjectileNode(9, 0, x, y, aimAtPlayer(x, y), speed, 7);
+            if (difficulty > 1) {
+                spawnProjectileSpread(9, 0, x, y, aimAtPlayer(x, y), speed - 0.35f, 7, 2, 0.22f + difficulty * 0.04f);
+            }
+            return;
+        }
+        if (cycle >= 0x50 && cycle < 0x78) {
+            const int interval = difficulty < 2 ? 0x28 : 0x1e;
+            if ((cycle - 0x50) % interval == 0) {
+                spawnProjectileSpread(0, cycle / std::max(1, interval), enemy.x, enemy.y + 24.0f, aimAtPlayer(enemy.x, enemy.y), speed - 0.55f, 5, fanCount, kPi * 0.85f);
+            }
+        }
+        return;
+    }
+
+    if (enemy.spawnType == 0x0f) {
+        // FUN_140080170: side setpiece with paired id 5/id 1 volleys and later
+        // denser spread phases. This keeps the confirmed paired-source shape.
+        if (enemy.helperState != 1) return;
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        const int cycle = (enemy.age - 0x28) % (difficulty == 0 ? 200 : difficulty == 1 ? 0x78 : difficulty == 2 ? 100 : 0x5a);
+        if (enemy.age < 0x28 || cycle < 0) return;
+        const int activeWindow = difficulty == 0 ? 0x1e : difficulty == 1 ? 0x28 : 0x32;
+        if (cycle >= activeWindow) return;
+        const float speed = stage01SmallProjectileSpeed(difficulty, selectedStage_, 2.3f) + cycle * 0.01f;
+        const float leftX = enemy.x - 34.0f;
+        const float rightX = enemy.x + 34.0f;
+        const float y = enemy.y - 28.0f;
+        if (cycle % 2 == 0) {
+            spawnProjectileNode(5, 0, rightX, y, aimAtPlayer(rightX, y) + std::sin(frame_ * 0.03f) * 0.08f, speed, 6);
+            spawnProjectileNode(5, 0, leftX, y, aimAtPlayer(leftX, y) - std::sin(frame_ * 0.03f) * 0.08f, speed, 6);
+        }
+        if ((cycle & 1) == 1) {
+            spawnProjectileNode(1, 0, rightX, y, aimAtPlayer(rightX, y), speed, 5);
+            spawnProjectileNode(1, 0, leftX, y, aimAtPlayer(leftX, y), speed, 5);
+        }
+        if (cycle == 0x41 || (difficulty > 2 && cycle % 0x20 == 0)) {
+            spawnProjectileSpread(0, 0, enemy.x, enemy.y + 20.0f, aimAtPlayer(enemy.x, enemy.y), speed - 0.4f, 5, 5 + difficulty * 2, kPi * 0.7f);
+        }
+        return;
+    }
+
+    if (enemy.spawnType == 0x10) {
+        // FUN_140080fb0: Stage 1 long controller. Original spawns child type
+        // 0x11 anchors and drives several large rings/spreads. Child entities
+        // are not in this runtime yet, so emit the controller's main id 0
+        // spread phases from this source.
+        if (enemy.helperState != 1) return;
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        if (enemy.age < 0x1e || enemy.age >= 900) return;
+        const int local = (enemy.age - 0x1e) % (difficulty == 0 ? 100 : difficulty == 1 ? 0x50 : difficulty == 2 ? 0x46 : difficulty == 3 ? 0x3c : 0x32);
+        if (local > 0x13 || local % 3 != 0) return;
+        int count = difficulty == 0 ? 5 : difficulty == 1 ? 7 : difficulty < 4 ? 9 : 0xb;
+        if (enemy.age > 0xf0) count += 2;
+        const float speed = stage01SmallProjectileSpeed(difficulty, selectedStage_, 2.0f) + enemy.age * 0.0006f;
+        spawnProjectileSpread(0, 0, enemy.x, enemy.y + 20.0f, aimAtPlayer(enemy.x, enemy.y), speed, 5, count, kPi * 0.75f);
+        if (difficulty > 2) {
+            spawnProjectileSpread(0, 0, enemy.x, enemy.y + 20.0f, aimAtPlayer(enemy.x, enemy.y), speed - 0.35f, 5, std::max(2, count - 1), kPi * 0.55f);
+        }
+        return;
+    }
+
+    if (enemy.spawnType == 0x06 || enemy.spawnType == 0x08) {
+        // FUN_140082d90: common marker/emitter. It can spawn child entities;
+        // here the marker itself emits the confirmed id 0 spread cadence.
+        if (enemy.helperState != 1) return;
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        const int start = difficulty == 0 ? 0x28 : 0x1e;
+        const int interval = difficulty == 0 ? 100 : difficulty == 1 ? 0x50 : difficulty < 4 ? 0x3c : 0x32;
+        if (enemy.age < start || enemy.age >= 0xf0 || interval <= 0) return;
+        const int local = (enemy.age - start) % interval;
+        if (local >= 0x1e || local % 5 != 0) return;
+        const int count = difficulty == 0 ? 1 : difficulty == 1 ? 3 : difficulty < 4 ? 5 : 7;
+        const float speed = stage01SmallProjectileSpeed(difficulty, selectedStage_, 2.0f) + local * 0.01f;
+        spawnProjectileSpread(0, 0, enemy.x, enemy.y + 26.0f, fixedAngleToRadians(enemy.secondaryAngle16 ? enemy.secondaryAngle16 : enemy.sourceAngle16), speed, 5, count, kPi * 0.6f);
+        if (difficulty > 2) {
+            spawnProjectileSpread(0, 0, enemy.x, enemy.y + 26.0f, fixedAngleToRadians(enemy.sourceAngle16), speed - 0.45f, 5, count, kPi * 0.5f);
+        }
+        return;
+    }
+
+    // Stage 01 projectile emission belongs in the per-type helpers above once
+    // their original callsites are ported. Until then, keep the old generic
+    // playable fallback separate so it is not mistaken for original behavior.
+    emitGenericProjectiles(enemy, activeAge);
 }
 
 void StageRuntime::updateStage04Enemy(StageEnemy& enemy, int activeAge) {
