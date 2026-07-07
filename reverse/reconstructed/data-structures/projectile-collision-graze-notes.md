@@ -114,6 +114,21 @@ Within `state_14_replay_demo_gameplay_update_candidate` the relevant sequence is
 
 Evidence anchors: projectile update switch at `reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/1400bca30_state_14_replay_demo_gameplay_update_candidate.c:751` through `:854`; `FUN_1400cd750` call at `:866`; projectile cleanup at `:963` through `:994`; player hit/graze call at `:995` through `:1004`.
 
+## Current reconstruction status
+
+`reverse/reconstructed/project/src/stage_runtime.cpp` now splits collision handling so enemy projectile player-hit/graze is separate from player offense:
+
+- `handleEnemyProjectilePlayerHitAndGraze()` models direct player hits and graze/near-miss candidate handling from `FUN_1400cbd30`.
+- `StageProjectile::grazeOrHitProcessed` is now consumed by runtime graze logic so each projectile only increments `player_.graze` once.
+- Offensive player-shot/player-side-object hits no longer increment `player_.graze`; this keeps the runtime value aligned with the projectile near-miss evidence rather than using it as a generic activity counter.
+- `handlePlayerSideObjectProjectileCancels()` models the `FUN_1400cd750` cancel path and emits reward item types `3/4` at cancelled projectile positions.
+
+Caveats:
+
+- Runtime graze margin/radii are first-pass approximations pending exact constants from `FUN_1400cbd30`.
+- Original graze effects, sounds, and all auxiliary counters remain deferred.
+- The user-facing term “buzz” remains unconfirmed; current docs/code should describe this as a graze/near-miss candidate.
+
 ## Rename candidates
 
 | Address | Current | Candidate | Confidence |

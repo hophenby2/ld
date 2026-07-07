@@ -61,6 +61,7 @@ private:
         int invulnerableFrames = 0;
         int lives = 3;
         bool focused = false;
+        bool specialInputHeld = false;
     };
 
     struct StageEnemy {
@@ -189,9 +190,20 @@ private:
     void updateProjectileExpandingSpiralPair(StageProjectile& projectile);
     static void updateProjectileVelocity(StageProjectile& projectile);
     void updateRewardItems();
+    int stockThresholdForCurrentConfig() const;
+    void addRunScore(int amount);
+    void addSpecialGauge(int amount);
+    void collectRewardItem(const RewardItem& item);
+    void processStockProgressAfterGain(int progressGain);
+    void spawnEnemyDeathRewardBurst(const StageEnemy& enemy);
+    void updateSpecialGaugeAction();
     void updatePlayerSideObjects();
     void updatePlayerShots();
     void handleCollisions();
+    void handlePlayerSideObjectEnemyCollisions();
+    void handlePlayerShotEnemyCollisions();
+    void handlePlayerSideObjectProjectileCancels();
+    void handleEnemyProjectilePlayerHitAndGraze();
     void emitPlayerNormalShot();
     void spawnPlayerSideObject(int type, float x, float y, float speedOrScale, std::uint16_t angle16, int radiusOrLifetime, int auxRadiusOrScale);
     int baseOptionShotTypeForConfig() const;

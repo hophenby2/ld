@@ -117,8 +117,28 @@ Evidence examples:
 | `0x1400ca6d0` | `FUN_1400ca6d0` | `spawn_reward_item_candidate` | High |
 | `0x1400ca7b0` | `FUN_1400ca7b0` | `update_reward_items_candidate` | High |
 
+## Current reconstruction status
+
+`reverse/reconstructed/project/src/stage_runtime.cpp` now models the reward list with a compact vector-backed `RewardItem` runtime. This remains structurally simpler than the original linked list, but the collection effects now follow the evidence table from `FUN_1400ca7b0`:
+
+| Item type | Runtime collection effect | Evidence status |
+|---:|---|---|
+| `0`, `3` | `score += 1 * scoreItemBaseValue`, small special-gauge gain | Matches the `1x` score tier from `FUN_1400ca7b0`; exact gauge delta is still first-pass. |
+| `1`, `4` | `score += 5 * scoreItemBaseValue`, medium special-gauge gain | Matches the `5x` score tier; exact gauge delta is still first-pass. |
+| `2`, `5` | `score += 10 * scoreItemBaseValue`, larger special-gauge gain | Matches the `10x` score tier; exact gauge delta is still first-pass. |
+| `6` | Adds one stock-progress threshold chunk and `10x` score proxy | Models `DAT_140e45d88` progress; exact type `0x16` effect/sound deferred. |
+| `7` | Increments token stock up to `9` | Models `DAT_140e445f8`; exact type `0x17` effect/sound deferred. |
+| `8` | Adds `99999` stock progress and sets token stock to `9` | Matches large-stock/token evidence; exact visuals deferred. |
+
+Spawn/update status:
+
+- Enemy defeat now routes through a compact `spawnEnemyDeathRewardBurst()` approximation of `FUN_14007b010`, emitting type `0/1/2` collectibles instead of directly awarding all score/token/gauge in collision code.
+- Stage 1 type `0x10` still emits the known type `6` stock/special reward.
+- Player-side object vs enemy projectile cancellation now emits type `3/4` drops as a first-pass model of `FUN_1400cd750`.
+- Original linked-list allocation, exact item movement/bounce, `Item.png` frame selection, collection sounds, score popups, and effect nodes remain deferred.
+
 ## Next targets
 
-1. Build a `RewardItem` type table for IDs `0..8`, separating ordinary score-item tiers from special rewards.
+1. Decode exact reward-item gauge deltas and homing/bounce constants from `FUN_1400ca7b0`.
 2. Cross-reference HUD graphics around `DAT_140e46b38`, `DAT_140e46b3c`, `DAT_140e46b40`, `DAT_140e46b44`, and `DAT_140e46b50` to refine the reward/HUD globals named in `reward-hud-globals.md`.
 3. Fold these list names into Ghidra rename scripts once confidence is acceptable.

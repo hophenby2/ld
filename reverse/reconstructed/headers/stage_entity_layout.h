@@ -63,6 +63,21 @@ struct ProjectileNode {
 };
 static_assert(sizeof(ProjectileNode) == 0x50, "ProjectileNode layout size must match allocation");
 
+struct RewardItemNode {
+    int32_t active;                 // +0x00
+    int32_t age;                    // +0x04
+    int32_t item_type;              // +0x08: 0..8 reward/collectible switch key.
+    float x;                        // +0x0c
+    float y;                        // +0x10
+    FixedAngle16 angle;             // +0x14
+    uint16_t field_16;              // +0x16: padding/alignment for following double.
+    double speed;                   // +0x18
+    float radius_or_scale;          // +0x20
+    int32_t homing_or_collect_flag; // +0x24: set by auto-collect / collection logic.
+    RewardItemNode* next;           // +0x28: DAT_140e46e90 list next.
+};
+static_assert(sizeof(RewardItemNode) == 0x30, "RewardItemNode layout size must match allocation");
+
 struct EffectNode {
     int32_t active;                 // +0x00
     int32_t age;                    // +0x04

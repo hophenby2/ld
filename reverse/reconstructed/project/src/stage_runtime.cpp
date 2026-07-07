@@ -17,6 +17,15 @@ constexpr int kFixedAngleFullCircle = 0x10000;
 constexpr int kProjectileCap = 0x800;
 constexpr int kRewardItemCap = 0x200;
 constexpr int kPlayerSideObjectCap = 0x100;
+constexpr int kSpecialGaugeReady = 50000;
+constexpr int kSpecialGaugeCooldownFrames = 600;
+constexpr int kSpecialTokenCap = 9;
+constexpr int kFallbackStockThreshold = 30000;
+constexpr int kGrazeMargin = 24;
+constexpr float kRewardBurstSpeed = 2.4f;
+constexpr float kRewardBurstSpread = 0.42f;
+constexpr float kSpecialCancelRadius = 150.0f;
+constexpr float kSpecialCancelRadiusSq = kSpecialCancelRadius * kSpecialCancelRadius;
 constexpr float kPlayLeft = static_cast<float>(notes::gameplay_layout::kPlayLocalRect.x);
 constexpr float kPlayRight = static_cast<float>(notes::gameplay_layout::kPlayLocalRect.right());
 constexpr float kPlayTop = static_cast<float>(notes::gameplay_layout::kPlayLocalRect.y);
@@ -1217,6 +1226,7 @@ void StageRuntime::updatePlayer() {
     else {
         player_.shotTimer = 0;
     }
+    updateSpecialGaugeAction();
 }
 
 void StageRuntime::updateEnemies() {
@@ -2301,12 +2311,13 @@ void StageRuntime::updateRewardItems() {
             continue;
         }
         ++item.age;
-        if (!item.homing && (item.age > 30 || player_.y < 180.0f)) {
+        const bool ordinaryScoreItem = item.itemType >= 0 && item.itemType <= 5;
+        if (!item.homing && (ordinaryScoreItem || item.itemType < 6) && (item.age > 30 || player_.y < 180.0f)) {
             item.homing = true;
         }
         if (item.homing) {
             item.angle16 = approachAngle16(item.angle16, radiansToFixedAngle(std::atan2(player_.y - item.y, player_.x - item.x)), 0x900);
-            item.speed = std::min(9.0f, item.speed + 0.22f);
+            item.speed = std::min(12.0f, item.speed + 0.22f);
         }
         else {
             item.speed = std::max(0.6f, item.speed - 0.015f);
@@ -2317,27 +2328,125 @@ void StageRuntime::updateRewardItems() {
         const int collectRadius = item.radiusOrScale + (player_.focused ? 5 : 8);
         if (distanceSquared(item.x, item.y, player_.x, player_.y) <= static_cast<float>(collectRadius * collectRadius)) {
             item.active = false;
-            if (item.itemType == 6) {
-                // FUN_1400ca7b0 type 6 adds one stock threshold chunk via
-                // DAT_140e45d88 when stock level is below the cap, then leaves
-                // the exact effect-node 0x16 visual to the deferred effect list.
-                const int threshold = 30000;
-                if (player_.lives < 3) {
-                    player_.stockProgress = std::min(threshold * 3, player_.stockProgress + threshold);
-                    ++player_.lives;
-                }
-                else {
-                    player_.stockProgress = std::min(threshold * 3, player_.stockProgress + threshold / 3);
-                }
-                player_.specialGauge = std::min(50000, player_.specialGauge + 3000);
-                player_.score += player_.scoreItemBaseValue * 10;
+            collectRewardItem(item);
+        }
+    }
+}
+
+int StageRuntime::stockThresholdForCurrentConfig() const {
+    // FUN_14010e250 indexes an original difficulty/route threshold table. The
+    // exact table is still pending, so this is a conservative runtime proxy for
+    // DAT_140e45d88 progress chunks until that table is decoded.
+    return kFallbackStockThreshold;
+}
+
+void StageRuntime::addRunScore(int amount) {
+    player_.score = std::max(0, player_.score + amount);
+}
+
+void StageRuntime::addSpecialGauge(int amount) {
+    // DAT_140e45d18 can be negative during the original special cooldown; reward
+    // collection does not refill that cooldown state in this first-pass model.
+    if (player_.specialGauge < 0 || amount <= 0) {
+        return;
+    }
+    player_.specialGauge = std::min(kSpecialGaugeReady, player_.specialGauge + amount);
+}
+
+void StageRuntime::processStockProgressAfterGain(int progressGain) {
+    const int threshold = stockThresholdForCurrentConfig();
+    const int cap = threshold * 3;
+    player_.stockProgress = std::min(cap, player_.stockProgress + std::max(0, progressGain));
+    while (player_.stockProgress >= threshold && player_.lives < 3) {
+        player_.stockProgress -= threshold;
+        ++player_.lives;
+    }
+}
+
+void StageRuntime::collectRewardItem(const RewardItem& item) {
+    // FUN_1400ca7b0 reward collection table: 0/3 = 1x base, 1/4 = 5x,
+    // 2/5 = 10x; 6 feeds stock progress, 7 token stock, 8 large stock/token.
+    switch (item.itemType) {
+    case 0:
+    case 3:
+        addRunScore(player_.scoreItemBaseValue);
+        addSpecialGauge(300);
+        break;
+    case 1:
+    case 4:
+        addRunScore(player_.scoreItemBaseValue * 5);
+        addSpecialGauge(900);
+        break;
+    case 2:
+    case 5:
+        addRunScore(player_.scoreItemBaseValue * 10);
+        addSpecialGauge(1800);
+        break;
+    case 6:
+        processStockProgressAfterGain(stockThresholdForCurrentConfig());
+        addSpecialGauge(3000);
+        addRunScore(player_.scoreItemBaseValue * 10);
+        break;
+    case 7:
+        player_.tokenStock = std::min(kSpecialTokenCap, player_.tokenStock + 1);
+        break;
+    case 8:
+        processStockProgressAfterGain(99999);
+        player_.tokenStock = kSpecialTokenCap;
+        break;
+    default:
+        addRunScore(player_.scoreItemBaseValue);
+        addSpecialGauge(300);
+        break;
+    }
+}
+
+void StageRuntime::spawnEnemyDeathRewardBurst(const StageEnemy& enemy) {
+    // Compact runtime approximation of FUN_14007b010: original emits type 2,
+    // then 1, then 0 reward items based on entity payout and gauge state.
+    const bool largeEnemy = enemy.radius >= 45 || enemy.sourceDispatchKind >= 24 || enemy.spawnType == 0x0e ||
+                            enemy.spawnType == 0x0f || enemy.spawnType == 0x10 || enemy.spawnType == 0x138;
+    const int count = largeEnemy ? 5 : 2 + (enemy.entityId % 2);
+    for (int i = 0; i < count; ++i) {
+        const int itemType = largeEnemy && i == 0 ? 2 : (largeEnemy && i < 3 ? 1 : 0);
+        const float angle = -kPi * 0.5f + (static_cast<float>(i) - static_cast<float>(count - 1) * 0.5f) * kRewardBurstSpread;
+        spawnRewardItem(itemType, enemy.x, enemy.y, radiansToFixedAngle(angle), kRewardBurstSpeed + 0.18f * i, 12);
+    }
+    if (selectedStage_ == 1 && enemy.spawnType == 0x10) {
+        spawnRewardItem(6, enemy.x, enemy.y, radiansToFixedAngle(-kPi * 0.5f), 2.2f, 18);
+    }
+    ++player_.keyStateCount;
+}
+
+void StageRuntime::updateSpecialGaugeAction() {
+    if (player_.specialGauge < 0) {
+        ++player_.specialGauge;
+        if (player_.specialGauge > 0) {
+            player_.specialGauge = 0;
+        }
+        player_.specialInputHeld = CheckHitKey(KEY_INPUT_X) != 0;
+        return;
+    }
+
+    const bool specialPressed = CheckHitKey(KEY_INPUT_X) != 0;
+    if (specialPressed && !player_.specialInputHeld && player_.specialGauge >= kSpecialGaugeReady) {
+        // FUN_140106be0 sets DAT_140e45d18 negative and creates special/cancel
+        // player-side objects. This first-pass scaffold uses an existing visible
+        // player-side object family and lets the cancel helper produce drops.
+        player_.specialGauge = -kSpecialGaugeCooldownFrames;
+        spawnPlayerSideObject(10, player_.x, player_.y - 24.0f, 0.0f, radiansToFixedAngle(-kPi * 0.5f), 45, 48);
+        for (auto& projectile : enemyProjectiles_) {
+            if (!projectile.active) {
+                continue;
             }
-            else {
-                player_.score += player_.scoreItemBaseValue;
-                player_.specialGauge = std::min(50000, player_.specialGauge + 300);
+            if (distanceSquared(projectile.x, projectile.y, player_.x, player_.y) <= kSpecialCancelRadiusSq) {
+                projectile.active = false;
+                projectile.grazeOrHitProcessed = true;
+                spawnRewardItem(4, projectile.x, projectile.y, radiansToFixedAngle(-kPi * 0.5f), 2.0f, 10);
             }
         }
     }
+    player_.specialInputHeld = specialPressed;
 }
 
 void StageRuntime::updatePlayerSideObjects() {
@@ -2359,7 +2468,7 @@ void StageRuntime::updatePlayerSideObjects() {
 
 void StageRuntime::emitPlayerNormalShot() {
     const std::uint16_t up = radiansToFixedAngle(-kPi * 0.5f);
-    const int mainType = player_.shotVariant != 0 || player_.specialGauge >= 50000 ? 1 : 0;
+    const int mainType = player_.shotVariant != 0 || player_.specialGauge >= kSpecialGaugeReady ? 1 : 0;
     spawnPlayerSideObject(mainType, player_.x - 10.0f, player_.y - 22.0f, 13.5f, up, 0x82, 8);
     spawnPlayerSideObject(mainType, player_.x + 10.0f, player_.y - 22.0f, 13.5f, up, 0x82, 8);
 
@@ -2467,6 +2576,13 @@ void StageRuntime::updatePlayerShots() {
 }
 
 void StageRuntime::handleCollisions() {
+    handlePlayerSideObjectEnemyCollisions();
+    handlePlayerShotEnemyCollisions();
+    handlePlayerSideObjectProjectileCancels();
+    handleEnemyProjectilePlayerHitAndGraze();
+}
+
+void StageRuntime::handlePlayerSideObjectEnemyCollisions() {
     for (auto& object : playerSideObjects_) {
         if (!playerSideObjectCanHitEnemy(object)) {
             continue;
@@ -2479,24 +2595,19 @@ void StageRuntime::handleCollisions() {
             if (distanceSquared(object.x, object.y, enemy.x, enemy.y) <= static_cast<float>(radius * radius)) {
                 object.active = false;
                 enemy.hp -= playerSideObjectDamage(object);
-                player_.specialGauge = std::min(50000, player_.specialGauge + 90);
+                addSpecialGauge(90);
                 player_.scoreItemBaseValue = std::min(999999, player_.scoreItemBaseValue + 1);
-                ++player_.graze;
                 if (enemy.hp <= 0) {
+                    spawnEnemyDeathRewardBurst(enemy);
                     enemy.active = false;
-                    if (enemy.spawnType == 0x10) {
-                        spawnRewardItem(6, enemy.x, enemy.y, radiansToFixedAngle(-kPi * 0.5f), 2.2f, 18);
-                    }
-                    player_.score += 1000 + enemy.spawnType * 10;
-                    player_.tokenStock = std::min(notes::hud_layout::kMaxTokens, player_.tokenStock + 1);
-                    ++player_.keyStateCount;
-                    player_.specialGauge = std::min(50000, player_.specialGauge + 1200);
                 }
                 break;
             }
         }
     }
+}
 
+void StageRuntime::handlePlayerShotEnemyCollisions() {
     for (auto& shot : playerShots_) {
         if (!shot.active) {
             continue;
@@ -2509,39 +2620,68 @@ void StageRuntime::handleCollisions() {
             if (distanceSquared(shot.x, shot.y, enemy.x, enemy.y) <= static_cast<float>(radius * radius)) {
                 shot.active = false;
                 enemy.hp -= 2;
-                player_.specialGauge = std::min(50000, player_.specialGauge + 180);
+                addSpecialGauge(180);
                 player_.scoreItemBaseValue = std::min(999999, player_.scoreItemBaseValue + 1);
-                ++player_.graze;
                 if (enemy.hp <= 0) {
+                    spawnEnemyDeathRewardBurst(enemy);
                     enemy.active = false;
-                    if (enemy.spawnType == 0x10) {
-                        spawnRewardItem(6, enemy.x, enemy.y, radiansToFixedAngle(-kPi * 0.5f), 2.2f, 18);
-                    }
-                    player_.score += 1000 + enemy.spawnType * 10;
-                    player_.tokenStock = std::min(notes::hud_layout::kMaxTokens, player_.tokenStock + 1);
-                    ++player_.keyStateCount;
-                    player_.specialGauge = std::min(50000, player_.specialGauge + 1200);
                 }
                 break;
             }
         }
     }
+}
 
-    if (player_.invulnerableFrames == 0) {
+void StageRuntime::handlePlayerSideObjectProjectileCancels() {
+    // FUN_1400cd750 cancels enemy projectiles through selected player-side
+    // objects and emits reward item types 3/4. The exact original type bitmask is
+    // deferred; this runtime uses active player-side object collision radii.
+    for (auto& object : playerSideObjects_) {
+        if (!object.active || object.auxRadiusOrScale <= 0) {
+            continue;
+        }
+        const bool largerCancel = object.type >= 6 || object.auxRadiusOrScale >= 24;
         for (auto& projectile : enemyProjectiles_) {
-            const int radius = projectile.radius + (player_.focused ? 3 : 6);
-            if (distanceSquared(projectile.x, projectile.y, player_.x, player_.y) <= static_cast<float>(radius * radius)) {
-                projectile.active = false;
-                --player_.lives;
-                player_.invulnerableFrames = 180;
-                player_.x = static_cast<float>(notes::gameplay_layout::kPlayerStart.x);
-                player_.y = static_cast<float>(notes::gameplay_layout::kPlayerStart.y);
-                if (player_.lives < 0) {
-                    player_.lives = 3;
-                    reset();
-                }
-                break;
+            if (!projectile.active || !projectile.collisionEnabled) {
+                continue;
             }
+            const int radius = object.auxRadiusOrScale + projectile.radius;
+            if (distanceSquared(object.x, object.y, projectile.x, projectile.y) <= static_cast<float>(radius * radius)) {
+                projectile.active = false;
+                projectile.grazeOrHitProcessed = true;
+                spawnRewardItem(largerCancel ? 4 : 3, projectile.x, projectile.y, radiansToFixedAngle(-kPi * 0.5f), 1.8f, 10);
+            }
+        }
+    }
+}
+
+void StageRuntime::handleEnemyProjectilePlayerHitAndGraze() {
+    // FUN_1400cbd30 handles enemy projectile collision and graze/near-miss. This
+    // keeps `graze` tied to bullet proximity rather than offensive hits.
+    for (auto& projectile : enemyProjectiles_) {
+        if (!projectile.active || !projectile.collisionEnabled) {
+            continue;
+        }
+        const int hitRadius = projectile.radius + (player_.focused ? 3 : 6);
+        const float distSq = distanceSquared(projectile.x, projectile.y, player_.x, player_.y);
+        if (player_.invulnerableFrames == 0 && distSq <= static_cast<float>(hitRadius * hitRadius)) {
+            projectile.active = false;
+            projectile.grazeOrHitProcessed = true;
+            --player_.lives;
+            player_.invulnerableFrames = 180;
+            player_.x = static_cast<float>(notes::gameplay_layout::kPlayerStart.x);
+            player_.y = static_cast<float>(notes::gameplay_layout::kPlayerStart.y);
+            if (player_.lives < 0) {
+                player_.lives = 3;
+                reset();
+            }
+            break;
+        }
+        const int grazeRadius = hitRadius + kGrazeMargin;
+        if (!projectile.grazeOrHitProcessed && distSq <= static_cast<float>(grazeRadius * grazeRadius)) {
+            projectile.grazeOrHitProcessed = true;
+            ++player_.graze;
+            addRunScore(10);
         }
     }
 }
@@ -2876,7 +3016,8 @@ void StageRuntime::drawStateRows() const {
 }
 
 void StageRuntime::drawDreamGauge(int x, int y, int value, int maxValue) const {
-    const float ratio = maxValue <= 0 ? 0.0f : clampFloat(static_cast<float>(value) / static_cast<float>(maxValue), 0.0f, 1.0f);
+    const bool coolingDown = value < 0;
+    const float ratio = maxValue <= 0 || coolingDown ? 0.0f : clampFloat(static_cast<float>(value) / static_cast<float>(maxValue), 0.0f, 1.0f);
     if (!dreamGaugeFrames_.empty() && dreamGaugeFrames_.front() != -1) {
         DrawRotaGraphF(static_cast<float>(x + notes::hud_layout::kDreamGaugePreviewCenterOffsetX),
                        static_cast<float>(y + notes::hud_layout::kDreamGaugePreviewCenterOffsetY),
@@ -2892,7 +3033,11 @@ void StageRuntime::drawDreamGauge(int x, int y, int value, int maxValue) const {
     const int width = notes::hud_layout::kGaugeBarWidth;
     const int height = notes::hud_layout::kGaugeBarHeight;
     DrawBox(x, y + 16, x + width, y + 16 + height, GetColor(32, 36, 64), TRUE);
-    DrawBox(x + 2, y + 18, x + 2 + static_cast<int>((width - 4) * ratio), y + 16 + height - 2, GetColor(100, 220, 255), TRUE);
+    const int gaugeColor = coolingDown ? GetColor(255, 110, 140) : GetColor(100, 220, 255);
+    const int fillWidth = coolingDown
+                              ? static_cast<int>((width - 4) * clampFloat(static_cast<float>(-value) / static_cast<float>(kSpecialGaugeCooldownFrames), 0.0f, 1.0f))
+                              : static_cast<int>((width - 4) * ratio);
+    DrawBox(x + 2, y + 18, x + 2 + fillWidth, y + 16 + height - 2, gaugeColor, TRUE);
 }
 
 void StageRuntime::drawDataWindow2Tokens(int x, int y, int activeCount, int maxCount) const {

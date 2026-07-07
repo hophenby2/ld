@@ -130,8 +130,24 @@ Interpretation:
 | `DAT_140e46b24` | `g_key_state_count_candidate` | Medium |
 | `DAT_140e441b8` | `g_left_key_state_hud_enabled_candidate` | Medium |
 
+## Current reconstruction status
+
+`reverse/reconstructed/project/src/stage_runtime.cpp` now maps the known globals into `StageRuntime::PlayerState` more directly:
+
+| Runtime field | Original global candidate | Status |
+|---|---|---|
+| `player_.score` | `DAT_140e44590` | Updated through reward item collection tiers instead of direct enemy-kill scoring. |
+| `player_.scoreItemBaseValue` | `DAT_1407c77a8` | Still a runtime-probe value, incremented on offensive hits; exact original update rules need more xrefs. |
+| `player_.specialGauge` | `DAT_140e45d18` | Supports positive charging, `50000` ready threshold, and negative `-600..0` cooldown scaffold. |
+| `player_.tokenStock` | `DAT_140e445f8` | Type `7`/`8` reward collection now updates it with cap `9`. |
+| `player_.stockProgress` | `DAT_140e45d88` | Type `6`/`8` collection now feeds this progress value via a fallback threshold. |
+| `player_.lives` | `DAT_140e45d34` proxy | Still a playable runtime proxy for the capped stock-level candidate, not a final life-label rename. |
+| `player_.graze` | graze/near-miss counters in `FUN_1400cbd30` | Now increments from enemy-projectile near-miss, not offensive hits. |
+
+Deferred: exact `DAT_140e45d20` flash timer, exact stock threshold table, `9999999` gauge state, right-HUD `State`/`DataWindow2` frame semantics, and final in-game names for stock/buzz/hyper-like concepts.
+
 ## Next targets
 
 1. Cross-reference HUD graphics around `DAT_140e46b38`, `DAT_140e46b3c`, `DAT_140e46b40`, `DAT_140e46b44`, and `DAT_140e46b50` to name the HUD labels/icons for score, gauge, stock, and token count.
-2. Build a compact `RewardItem` type table (`0..8`) with reward deltas and source helpers now that the target globals are named.
+2. Decode exact reward-item gauge deltas and stock thresholds from `FUN_1400ca7b0` / `FUN_14010e250`.
 3. Inspect result-screen text and save fields to decide whether `stock_level` is best named life, shield, guard, or another game-specific term.

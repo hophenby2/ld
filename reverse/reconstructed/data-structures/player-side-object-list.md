@@ -116,6 +116,15 @@ Do not confuse the three nearby linked lists:
 | `0x140109780` | `FUN_140109780` | `update_player_side_objects_candidate` | High |
 | `0x1400cd750` | `FUN_1400cd750` | `check_player_side_object_vs_projectiles_candidate` | Medium-high |
 
+## Current reconstruction status
+
+`reverse/reconstructed/project/src/stage_runtime.cpp` now uses the vector-backed `PlayerSideObject` runtime for two evidence-backed roles:
+
+- offensive collision with stage enemies through `handlePlayerSideObjectEnemyCollisions()`;
+- first-pass enemy projectile cancellation through `handlePlayerSideObjectProjectileCancels()`, emitting reward item type `3` for smaller/default cancel hits and type `4` for larger/special cancel hits.
+
+The special-gauge action scaffold in `StageRuntime::updateSpecialGaugeAction()` also spawns an existing player-side object family when `specialGauge >= 50000`, then enters a `-600..0` cooldown. This is a conservative reconstruction of the `player_update_input_movement_candidate` evidence; the exact original special/hyper label, type `0x18` chain, and bitmask `0x63737000` filtering remain deferred.
+
 ## Next targets
 
 1. Build a `RewardItem` type table for the `DAT_140e46e90` list now identified in `reward-item-list.md`.
