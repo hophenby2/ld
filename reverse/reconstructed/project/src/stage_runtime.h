@@ -58,9 +58,15 @@ public:
     bool initialized() const { return initialized_; }
     int selectedStage() const { return selectedStage_; }
     int frame() const { return frame_; }
+    int score() const { return player_.score; }
     int enemiesAlive() const;
     int enemyProjectilesAlive() const;
-    bool stageComplete() const { return stage01ClearComplete_; }
+    bool stageComplete() const {
+        if (selectedStage_ == 1) return stage01ClearComplete_;
+        if (selectedStage_ == 2) return stage02ClearComplete_;
+        if (selectedStage_ == 3) return stage03ClearComplete_;
+        return false;
+    }
 
 private:
     enum class InputAction : int {
@@ -251,9 +257,18 @@ private:
                                float offsetX, float offsetY, int hitPoints, const char* note);
     void spawnStage01MarkerSatellite(StageEnemy& parent, int childIndex, float offsetX, float offsetY, int hitPoints, const char* note);
     void spawnStage02Type21Child(const StageEnemy& parent, int childIndex, float x, float yOffset);
+    bool spawnStage02BossChild(StageEnemy& parent, int spawnType, int childIndex,
+                               float offsetOrRadiusX, float offsetY,
+                               std::uint16_t orbitAngle, const char* note);
     void spawnStage03Satellite(const StageEnemy& parent, int spawnType, int childIndex,
                                float offsetX, float offsetY, int angle16);
     void spawnStage03Type2FChild(const StageEnemy& parent);
+    bool spawnStage03BossChild(StageEnemy& parent, int spawnType, int childIndex,
+                               float offsetOrTargetX, float offsetOrTargetY,
+                               int hitPoints, int kind, double speed, int radius,
+                               std::uint16_t angle16, const char* note);
+    void spawnStage03DeathNode(const StageEnemy& enemy, int hitPoints,
+                               int ownerEntityId);
     void spawnStage04CarrierChild(const StageEnemy& parent, int spawnType);
     void spawnStage04Type3DChild(const StageEnemy& parent, int childIndex, float offsetX, float offsetY);
     StageEnemy* findEnemyById(int entityId);
@@ -265,7 +280,8 @@ private:
     void updateStage01Type0B(StageEnemy& enemy, int activeAge);
     void updateStage01Type0C(StageEnemy& enemy, int activeAge);
     void updateStage01Type0D(StageEnemy& enemy, int activeAge);
-    void updateStage01SmallChaser(StageEnemy& enemy, int activeAge, int enterFrames, int trackFrames, int turnStep, int exitTurnStep, double initialSpeed, double floorSpeed = 1.0);
+    void updateStage01Type0E(StageEnemy& enemy);
+    void updateStage01Type0F(StageEnemy& enemy);
     void updateStage01Setpiece(StageEnemy& enemy, int activeAge);
     void updateStage01Marker(StageEnemy& enemy, int activeAge);
     void updateStage01MarkerSatellite(StageEnemy& enemy, int activeAge);
@@ -283,6 +299,11 @@ private:
     void updateStage02Type1F(StageEnemy& enemy);
     void updateStage02Type20(StageEnemy& enemy);
     void updateStage02Type21(StageEnemy& enemy);
+    void updateStage02Boss(StageEnemy& enemy);
+    void updateStage02BossChild(StageEnemy& enemy);
+    void updatePostDeathCounterEntity(StageEnemy& enemy);
+    void emitStage02BossProjectiles(StageEnemy& enemy);
+    void emitStage02BossChildProjectiles(StageEnemy& enemy, const StageEnemy& parent);
     void spawnStage02DeathExplosionChain(const StageEnemy& enemy);
     void spawnStageEffect(int type, int graphHandle, int graphExtent, int drawLayer,
                           float x, float y, std::uint16_t angle16,
@@ -299,6 +320,14 @@ private:
     void updateStage03Type2D(StageEnemy& enemy);
     void updateStage03Type2E(StageEnemy& enemy);
     void updateStage03Type2F(StageEnemy& enemy);
+    void updateStage03Boss(StageEnemy& enemy);
+    void emitStage03BossProjectiles(StageEnemy& enemy);
+    void updateStage03BossChild(StageEnemy& enemy);
+    void updateStage03Type30(StageEnemy& enemy, StageEnemy& parent);
+    void updateStage03Type31(StageEnemy& enemy, StageEnemy& parent);
+    void updateStage03Type32Or33(StageEnemy& enemy, StageEnemy& parent);
+    void updateStage03Type34(StageEnemy& enemy, StageEnemy& parent);
+    void updateStage03DeathNode(StageEnemy& enemy);
     void updateStage04Enemy(StageEnemy& enemy, int activeAge);
     void emitStage04Projectiles(StageEnemy& enemy, int activeAge);
     void finishStage04CarrierSharedHp(StageEnemy& enemy);
@@ -320,6 +349,8 @@ private:
     void collectRewardItem(const RewardItem& item);
     void processStockProgressAfterGain(int progressGain);
     void spawnEnemyDeathRewardBurst(const StageEnemy& enemy, int payoutWindow = 0);
+    void spawnEnemyDeathEffects(const StageEnemy& enemy, int mode);
+    void spawnPostDeathCounterEntity(const StageEnemy& enemy, double lifetime);
     void updateSpecialGaugeAction();
     void updateSpecialGaugeState();
     bool settlePendingPlayerHit();
@@ -352,6 +383,8 @@ private:
     void drawEnemies() const;
     bool drawStage01BossExact(const StageEnemy& enemy, float x, float y) const;
     bool drawType0AExact(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage01Type0EExact(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage01Type0FExact(const StageEnemy& enemy, float x, float y) const;
     bool drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, float y) const;
     bool drawStage02Type19Exact(const StageEnemy& enemy, float x, float y) const;
     bool drawStage02Type1AExact(const StageEnemy& enemy, float x, float y) const;
@@ -361,8 +394,11 @@ private:
     bool drawStage02Type1FExact(const StageEnemy& enemy, float x, float y) const;
     bool drawStage02Type20Exact(const StageEnemy& enemy, float x, float y) const;
     bool drawStage02Type21Exact(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage02BossExact(const StageEnemy& enemy, float x, float y) const;
+    void drawStage02BossHud() const;
     void drawEnemyGaugeExact(const StageEnemy& enemy, int mode, float x, float y) const;
     bool drawStage03EnemyExact(const StageEnemy& enemy, float x, float y) const;
+    void drawStage03BossHud() const;
     bool drawStage04EnemyExact(const StageEnemy& enemy, float x, float y) const;
     void drawOriginalMode7Node(int handle, float x, float y, std::uint16_t angle16, double scaleX, double scaleY, bool reverseX) const;
     void drawStageEffects(bool foreground) const;
@@ -409,9 +445,16 @@ private:
     int item3SoundHandle_ = -1;
     int extendSoundHandle_ = -1;
     int blast1SoundHandle_ = -1;
+    int enemyDown1SoundHandle_ = -1;
+    int enemyDown2SoundHandle_ = -1;
+    int enemyDown3SoundHandle_ = -1;
     std::vector<int> enemyGaugeFrames_;
     int enemyGaugeFillHandle_ = -1;
     std::vector<int> bossFrames_;
+    std::vector<int> bossGaugeFrames_;
+    std::vector<int> bossNameFrames_;
+    std::vector<int> textBoxFrames_;
+    std::vector<int> textIconFrames_;
     std::vector<int> bulletFrames_;
     std::vector<int> stageBack1Frames_;
     std::vector<int> stageBack1bFrames_;
@@ -455,6 +498,28 @@ private:
     bool stage01ClearStarted_ = false;
     bool stage01ClearTransition_ = false;
     bool stage01ClearComplete_ = false;
+    int stage02BossPhaseMode_ = 0;
+    int stage02BossMaxHp_ = 100000;
+    int stage02BossCountdown_ = 0;
+    int stage02BossCountdownDraw_ = 0;
+    int stage02BossBreaksRemaining_ = 4;
+    int stage02BossPhaseIndex_ = 0;
+    float stage02BossTargetX_ = 360.0f;
+    float stage02BossTargetY_ = 180.0f;
+    bool stage02ClearStarted_ = false;
+    bool stage02ClearTransition_ = false;
+    bool stage02ClearComplete_ = false;
+    int stage03BossPhaseMode_ = 0;
+    int stage03BossMaxHp_ = 100000;
+    int stage03BossCountdown_ = 0;
+    int stage03BossCountdownDraw_ = 0;
+    int stage03BossBreaksRemaining_ = 4;
+    int stage03BossPhaseIndex_ = 0;
+    float stage03BossTargetX_ = 360.0f;
+    float stage03BossTargetY_ = 200.0f;
+    bool stage03ClearStarted_ = false;
+    bool stage03ClearTransition_ = false;
+    bool stage03ClearComplete_ = false;
     int stage01EndFrame_ = 5700;
     int nextEntityId_ = 1;
 };

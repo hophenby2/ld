@@ -92,10 +92,11 @@ the effective Help level for record index `DAT_140e41abc + 11` is zero. Stage
 explicit-value folding.
 
 The caller routes a true result to main state `0x10`; false goes to `0x23`.
-The reconstructed app currently exposes only a single `stageComplete()` boolean
-and directly returns to the frontend. It has no equivalents for
-`DAT_140e4680c`, result states `0x10/0x23`, or the stage-10 record, so no result
-predicate is guessed into `StageRuntime` yet.
+The reconstructed app currently exposes only a single `stageComplete()` boolean.
+Practice completion now returns to original state `0x05` (Alternate Setup), but
+normal and continuous routes still lack equivalents for `DAT_140e4680c`, result
+states `0x10/0x20/0x22/0x23`, and the stage-10 record. No result predicate is
+guessed into `StageRuntime` yet.
 
 Evidence: `140135330_result_route_predicate_candidate.c:11-60` and
 `1400fcd20_state_2c_auto_gameplay_branch_candidate.c:695-711`.

@@ -184,15 +184,20 @@ inline constexpr PointI kDefaultText2{45, 680};
 } // namespace prompt_helper_evidence
 
 namespace stage_select_evidence {
-// Confirmed resources in 1400d5d50_state_04_gameplay_update_candidate.c;
-// exact map layout coordinates are unresolved until fVar38/fVar44/local_290
-// and local_218 DAT_14053-derived arrays are decoded.
+// Confirmed state_04 world-map transform and per-node composition.
 inline constexpr int kStageFrameLayer = 0x4b;
-inline constexpr int kMapMenuLayer = 0x50;
-inline constexpr PointI kMapFocusOffset{635, 320};
-inline constexpr PointI kStageNode1{0, 0};
-inline constexpr PointI kStageNode2{750, -320};
-inline constexpr PointI kStageNode4{95, -345};
+inline constexpr int kMapMenuLayer = 0x4b;
+inline constexpr PointI kMapFocusOffset{640, 320};
+inline constexpr int kVisibleLeft = -640;
+inline constexpr int kVisibleRight = 1920;
+inline constexpr int kMapMenuYOffset = -240;
+inline constexpr int kStageFrame2YOffset = -50;
+inline constexpr int kStageTintAlpha = 0xbf; // int(0xff * 0.75).
+inline constexpr int kMapMenuEntryFrame = 30;
+inline constexpr int kStageFrame2EntryFrame = 35;
+inline constexpr PointI kStandCenter{200, 480};
+inline constexpr PointI kLeftArrow{400, 320};
+inline constexpr PointI kRightArrow{880, 320};
 } // namespace stage_select_evidence
 
 namespace stage_setup_provisional_layout {
@@ -211,27 +216,26 @@ inline constexpr PointI kBaseMapMenu2{590, 460};      // MapMenu2 frame 4, layer
 inline constexpr PointI kDifficultyMapMenu2{640, 530}; // MapMenu2 frame 6+difficulty, layer 0x54.
 inline constexpr PointI kCounterMapMenu2{640, 580};    // MapMenu2 frame 5, layer 0x55.
 inline constexpr PointI kCounterArrow{730, 580};       // Effect_s frame 1, layer 0x52.
-inline constexpr PointI kDifficultyTips{790, 372};     // DifficultyTips frame difficulty; DAT_14053af60 unresolved.
+inline constexpr PointI kDifficultyTips{850, 450};
+inline constexpr PointI kLeftDifficultyArrow{500, 530};
+inline constexpr PointI kRightDifficultyArrow{780, 530};
+inline constexpr double kDifficultyArrowScale = 0.8;
+inline constexpr double kCounterArrowScale = 0.5;
 inline constexpr int kLayerSwitchCommitFrames = 10;
 inline constexpr int kLaunchCommitFrames = 100;
 inline constexpr int kMapMenu2BaseFrame = 4;
 inline constexpr int kMapMenu2CounterFrame = 5;
 inline constexpr int kMapMenu2DifficultyBaseFrame = 6;
 inline constexpr int kMapMenu2LockedFrame = 12;
+inline constexpr int kMapMenu2SpecialDifficultyFrame = 11;
+inline constexpr int kMapMenu2SpecialLockedFrame = 13;
+inline constexpr int kSpecialDifficultyTipsFrame = 5;
 inline constexpr int kArrowEffectFrame = 1; // DAT_140e41934 = Effect_s frame 1.
+inline constexpr int kLockedFixedAngle = 0xf000;
+inline constexpr int kLeftFixedAngle = 0x8000;
+inline constexpr int kCounterOffFixedAngle = 0xc000;
+inline constexpr int kCounterOnFixedAngle = 0x4000;
 } // namespace difficulty_overlay_evidence
-
-namespace stage_select_provisional_layout {
-// Practical map-select anchors only. Exact original state_04 node coordinates
-// require decoding local_218/fVar38/fVar44/local_290 and DAT_14053 data blocks.
-inline constexpr PointI kSelectedPreviewCenter{900, 180};
-inline constexpr double kSelectedPreviewScale = 0.72;
-inline constexpr PointI kMapMenuOrigin{730, 330};
-inline constexpr PointI kMapMenu2Origin{810, 410};
-inline constexpr PointI kStandCenter{1085, 438};
-inline constexpr double kStandScale = 0.36;
-inline constexpr PointI kProvisionalNote{720, 642};
-} // namespace stage_select_provisional_layout
 
 namespace hud_evidence {
 // Resource identities and core right-panel anchors are confirmed from FUN_1400c2860;

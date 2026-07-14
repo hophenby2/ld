@@ -269,7 +269,10 @@ int App::runSmokeTestLoop() {
         drawSmokeTestFrame();
         ScreenFlip();
         if (completeGameplayAfterDraw && resources_) {
-            frontendRuntime_.completeGameplay(*resources_);
+            frontendRuntime_.completeGameplay(
+                *resources_,
+                stageRuntime_.score(),
+                stageRuntime_.frame());
             diagnosticsPage_ = 0;
         }
         ++displayFrame_;

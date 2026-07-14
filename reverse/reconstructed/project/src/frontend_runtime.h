@@ -26,9 +26,14 @@ public:
         KeyConfig = 0x0d,
         ReplayList = 0x0e,
         ReplayStageSelect = 0x0f,
+        ResultSubmit = 0x10,
         Ranking = 0x11,
         RankingNotice = 0x12,
         Gameplay = 0x14,
+        ResultSummary = 0x20,
+        TrialContinue = 0x22,
+        ReplayPrompt = 0x23,
+        ReplaySave = 0x24,
     };
 
     struct GameplayRequest {
@@ -58,7 +63,7 @@ public:
     void initialize(ResourceManager& resources, const SaveConfigState& saveConfigState);
     void update(ResourceManager& resources);
     void draw(const ResourceManager& resources) const;
-    void completeGameplay(ResourceManager& resources);
+    void completeGameplay(ResourceManager& resources, int score = 0, int elapsedFrames = 0);
 
     GameplayRequest consumeGameplayRequest();
     MainState state() const { return state_; }
@@ -116,8 +121,13 @@ private:
     void updateKeyConfig(ResourceManager& resources, const InputSnapshot& input);
     void updateReplayList(ResourceManager& resources, const InputSnapshot& input);
     void updateReplayStageSelect(ResourceManager& resources, const InputSnapshot& input);
+    void updateResultSubmit(ResourceManager& resources, const InputSnapshot& input);
     void updateRanking(ResourceManager& resources, const InputSnapshot& input);
     void updateRankingNotice(ResourceManager& resources, const InputSnapshot& input);
+    void updateResultSummary(ResourceManager& resources, const InputSnapshot& input);
+    void updateTrialContinue(ResourceManager& resources, const InputSnapshot& input);
+    void updateReplayPrompt(ResourceManager& resources, const InputSnapshot& input);
+    void updateReplaySave(ResourceManager& resources, const InputSnapshot& input);
     void updateTransition(ResourceManager& resources);
 
     void drawTitleMenu(const ResourceManager& resources) const;
@@ -134,8 +144,13 @@ private:
     void drawKeyConfig(const ResourceManager& resources) const;
     void drawReplayList(const ResourceManager& resources) const;
     void drawReplayStageSelect(const ResourceManager& resources) const;
+    void drawResultSubmit(const ResourceManager& resources) const;
     void drawRanking(const ResourceManager& resources) const;
     void drawRankingNotice(const ResourceManager& resources) const;
+    void drawResultSummary(const ResourceManager& resources) const;
+    void drawTrialContinue(const ResourceManager& resources) const;
+    void drawReplayPrompt(const ResourceManager& resources) const;
+    void drawReplaySave(const ResourceManager& resources) const;
     void drawTransitionOverlay(const ResourceManager& resources) const;
 
     void loadSaveBackedState(const SaveConfigState& saveConfigState);
@@ -148,14 +163,19 @@ private:
     void ensureEnemyEncyclopediaGraphs(ResourceManager& resources) const;
     void ensureManualGraphs(ResourceManager& resources) const;
     void ensureRankingGraphs(ResourceManager& resources) const;
+    void ensureResultGraphs(ResourceManager& resources) const;
     void scanReplaySlots(const ResourceManager& resources);
     void playSound(ResourceManager& resources, const char* id) const;
     void ensureTitleBgm(ResourceManager& resources);
     void stopTitleBgm(ResourceManager& resources);
+    void startResultBgm(ResourceManager& resources);
+    void stopResultBgm(ResourceManager& resources);
     void beginConfirmTransition(MainState target);
     void beginCancelTransition(MainState target);
     void moveCursor(ResourceManager& resources, int delta, int count);
     void refreshOptionSlots();
+    int resultHelpLevel() const;
+    bool shouldPromptResultSubmit() const;
 
     MainState state_ = MainState::TitleMenu;
     MainState pendingState_ = MainState::TitleMenu;
@@ -179,6 +199,9 @@ private:
     int previousSetupCursor_ = 0;
     int selectedStage_ = 1;
     int stageOverlayState_ = 0;
+    int stageLayerTransitionTimer_ = 0;
+    int stageDifficultyAnimationTimer_ = 0;
+    int stageCounterAnimationTimer_ = 0;
     int selectedDifficulty_ = 2;
     int counterMode_ = 0;
     std::array<int, 15> maxUnlockedDifficultyByStage_{{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}};
@@ -224,6 +247,13 @@ private:
     int replayStageChoice_ = 1;
     int rankingCursor_ = 0;
     int rankingValue_ = 0;
+    int resultScore_ = 0;
+    int resultElapsedFrames_ = 0;
+    int resultNextStage_ = 1;
+    int resultPhase_ = 0;
+    int resultPhaseTransitionTimer_ = 0;
+    int resultRouteCompletion_ = 0;
+    bool resultBgmStarted_ = false;
     std::vector<std::uint8_t> saveBackingBytes_;
     GameplayRequest gameplayRequest_;
 

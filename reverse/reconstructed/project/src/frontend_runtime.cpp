@@ -51,6 +51,8 @@ constexpr const char* kKeyboardPromptPath = "media\\system\\KerboardPromot.png";
 constexpr const char* kControllerPromptPath = "media\\system\\KerPromotButton.png";
 constexpr const char* kRankingNoticePath = "media\\system\\RankingNotice.png";
 constexpr const char* kResultMenuPath = "media\\player\\Result.png";
+constexpr const char* kStageClearPath = "media\\player\\StageClear.png";
+constexpr const char* kNumLargePath = "media\\system\\Num_l.png";
 
 constexpr std::array<int, 11> kDefaultKeyBindings{{
     KEY_INPUT_UP, KEY_INPUT_DOWN, KEY_INPUT_RIGHT, KEY_INPUT_LEFT,
@@ -115,10 +117,22 @@ constexpr std::array<const char*, 4> kAchievementNoticePaths{{
     "media\\gallery\\NoticeText3_ch1.png",
     "media\\gallery\\NoticeText3_ch2.png",
 }};
+constexpr std::array<const char*, 4> kPauseMenuPaths{{
+    "media\\player\\PauseMenu.png",
+    "media\\player\\PauseMenu_eng.png",
+    "media\\player\\PauseMenu_ch1.png",
+    "media\\player\\PauseMenu_ch2.png",
+}};
 
 struct StageNode {
     float x = 0.0f;
     float y = 0.0f;
+};
+
+struct StageTint {
+    int red = 255;
+    int green = 255;
+    int blue = 255;
 };
 
 // local_218 and its contiguous stack aliases in state_04 form this world map.
@@ -142,6 +156,26 @@ constexpr std::array<StageNode, 15> kStageNodes{{
     {9750.0f, -640.0f},
 }};
 
+// state_04 rebuilds this stage-id-indexed RGB table on the stack from the
+// blocks at 0x14053b820..0x14053b928 before drawing StageFrame[1].
+constexpr std::array<StageTint, 15> kStageTints{{
+    {255, 255, 255},
+    {128, 255, 255},
+    {255, 255, 128},
+    {255, 128, 192},
+    {128, 128, 255},
+    {128, 128, 128},
+    {192, 128, 255},
+    {128, 255, 255},
+    {255, 128, 128},
+    {64, 64, 64},
+    {128, 128, 255},
+    {128, 255, 255},
+    {255, 128, 128},
+    {255, 128, 255},
+    {255, 255, 128},
+}};
+
 int wrapIndex(int value, int count) {
     if (count <= 0) {
         return 0;
@@ -155,6 +189,33 @@ StageNode stageNode(int stage) {
         return {};
     }
     return kStageNodes[static_cast<std::size_t>(stage)];
+}
+
+StageTint stageTint(int stage) {
+    if (stage < 0 || stage >= static_cast<int>(kStageTints.size())) {
+        return {};
+    }
+    return kStageTints[static_cast<std::size_t>(stage)];
+}
+
+double delayedStageElementScale(int frame, int startFrame) {
+    if (frame < startFrame) {
+        return 0.0;
+    }
+    if (frame < startFrame + 12) {
+        return std::sin(static_cast<double>(frame - startFrame) *
+                        static_cast<double>(kPi) / 24.0);
+    }
+    return 1.0;
+}
+
+double fourFramePulse(int timer, double amplitude) {
+    return std::sin(static_cast<double>(std::abs(timer)) *
+                    static_cast<double>(kPi) / 4.0) * amplitude;
+}
+
+double fixedAngleRadians(int fixedAngle) {
+    return static_cast<double>(fixedAngle) * static_cast<double>(kPi) / 32768.0;
 }
 
 int minimumStageForRoute(int routeMode, bool trialExtraUnlocked) {
@@ -211,6 +272,45 @@ int practicePhaseMax(int stage) {
         : 5;
 }
 
+std::array<int, 2> trialNextStageRange(int stage) {
+    if (stage == 1) {
+        return {{2, 3}};
+    }
+    if (stage == 2 || stage == 3) {
+        return {{4, 5}};
+    }
+    if (stage == 4 || stage == 5) {
+        return {{6, 7}};
+    }
+    if (stage == 6 || stage == 7) {
+        return {{8, 8}};
+    }
+    if (stage == 8) {
+        return {{9, 9}};
+    }
+    const int next = std::clamp(stage + 1, 1, 9);
+    return {{next, next}};
+}
+
+int helpLevelForProgress(int helpMode, int progress) {
+    if (helpMode != 0) {
+        return helpMode >= 1 && helpMode <= 5 ? helpMode : 0;
+    }
+    if (progress < 3) {
+        return 0;
+    }
+    if (progress < 6) {
+        return 1;
+    }
+    if (progress < 8) {
+        return 2;
+    }
+    if (progress < 10) {
+        return 3;
+    }
+    return progress < 12 ? 4 : 5;
+}
+
 template <std::size_t N>
 int maxDifficultyForStage(const std::array<int, N>& unlocked, int stage) {
     if (stage >= 0 && stage < static_cast<int>(unlocked.size())) {
@@ -228,6 +328,20 @@ void drawFrameScaledAlpha(const ResourceManager& resources, const char* id, int 
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 }
 
+void drawFrameTinted(const ResourceManager& resources, const char* id, int frame,
+                     float cx, float cy, double scale, double angle,
+                     StageTint tint, int alpha) {
+    const int handle = resources.graphFrameById(id, frame);
+    if (handle == -1) {
+        return;
+    }
+    SetDrawBright(tint.red, tint.green, tint.blue);
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+    DrawRotaGraphF(cx, cy, scale, angle, handle, TRUE);
+    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    SetDrawBright(255, 255, 255);
+}
+
 void drawPathFrameScaledAlpha(const ResourceManager& resources, const char* path, int frame,
                               float cx, float cy, double scale, int alpha) {
     const int handle = resources.graphFrame(path, frame);
@@ -236,6 +350,19 @@ void drawPathFrameScaledAlpha(const ResourceManager& resources, const char* path
         DrawRotaGraphF(cx, cy, scale, 0.0, handle, TRUE);
     }
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+}
+
+void drawPathFrameBrightness(const ResourceManager& resources, const char* path, int frame,
+                             float cx, float cy, int brightness, int alpha = 255) {
+    const int handle = resources.graphFrame(path, frame);
+    if (handle == -1) {
+        return;
+    }
+    SetDrawBright(brightness, brightness, brightness);
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+    DrawRotaGraphF(cx, cy, 1.0, 0.0, handle, TRUE);
+    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    SetDrawBright(255, 255, 255);
 }
 
 void drawConfigNumber(const ResourceManager& resources, float rightX, float y, int value, bool percent, int alpha) {
@@ -254,6 +381,18 @@ void drawConfigNumber(const ResourceManager& resources, float rightX, float y, i
 
 const char* localizedPath(const std::array<const char*, 4>& paths, int language) {
     return paths[static_cast<std::size_t>(std::clamp(language, 0, 3))];
+}
+
+void drawLargeNumber(const ResourceManager& resources, long long value,
+                     float rightX, float y, int alpha) {
+    value = std::max(0LL, value);
+    float x = rightX;
+    do {
+        drawPathFrameScaledAlpha(resources, kNumLargePath,
+                                 static_cast<int>(value % 10), x, y, 1.0, alpha);
+        value /= 10;
+        x -= 45.0f;
+    } while (value > 0);
 }
 
 void drawFrontendBackdrop(const ResourceManager& resources, int menuTitleFrame, int language) {
@@ -513,6 +652,9 @@ void FrontendRuntime::initialize(ResourceManager& resources, const SaveConfigSta
     previousSetupCursor_ = 0;
     selectedStage_ = 1;
     stageOverlayState_ = 0;
+    stageLayerTransitionTimer_ = 0;
+    stageDifficultyAnimationTimer_ = 0;
+    stageCounterAnimationTimer_ = 0;
     selectedDifficulty_ = notes::difficulty_overlay_evidence::kDefaultDifficulty;
     counterMode_ = 0;
     savedStageByRoute_ = {{1, 11}};
@@ -552,6 +694,13 @@ void FrontendRuntime::initialize(ResourceManager& resources, const SaveConfigSta
     replayStageChoice_ = 1;
     rankingCursor_ = 0;
     rankingValue_ = 0;
+    resultScore_ = 0;
+    resultElapsedFrames_ = 0;
+    resultNextStage_ = 1;
+    resultPhase_ = 0;
+    resultPhaseTransitionTimer_ = 0;
+    resultRouteCompletion_ = 0;
+    resultBgmStarted_ = false;
     loadSaveBackedState(saveConfigState);
     loadMissingFrontendGraphs(resources);
     setupGroup_ = std::clamp(setupGroup_, 0, 2);
@@ -606,9 +755,37 @@ void FrontendRuntime::update(ResourceManager& resources) {
     case MainState::KeyConfig: updateKeyConfig(resources, input); break;
     case MainState::ReplayList: updateReplayList(resources, input); break;
     case MainState::ReplayStageSelect: updateReplayStageSelect(resources, input); break;
+    case MainState::ResultSubmit: updateResultSubmit(resources, input); break;
     case MainState::Ranking: updateRanking(resources, input); break;
     case MainState::RankingNotice: updateRankingNotice(resources, input); break;
     case MainState::Gameplay: break;
+    case MainState::ResultSummary: updateResultSummary(resources, input); break;
+    case MainState::TrialContinue: updateTrialContinue(resources, input); break;
+    case MainState::ReplayPrompt: updateReplayPrompt(resources, input); break;
+    case MainState::ReplaySave: updateReplaySave(resources, input); break;
+    }
+
+    if (state_ == MainState::StageSelect) {
+        if (stageLayerTransitionTimer_ == notes::difficulty_overlay_evidence::kLayerSwitchCommitFrames ||
+            stageLayerTransitionTimer_ == -notes::difficulty_overlay_evidence::kLayerSwitchCommitFrames) {
+            stageLayerTransitionTimer_ = 0;
+        }
+        else if (stageLayerTransitionTimer_ > 0) {
+            ++stageLayerTransitionTimer_;
+        }
+        else if (stageLayerTransitionTimer_ < 0) {
+            --stageLayerTransitionTimer_;
+        }
+
+        if (stageDifficultyAnimationTimer_ > 0) {
+            --stageDifficultyAnimationTimer_;
+        }
+        else if (stageDifficultyAnimationTimer_ < 0) {
+            ++stageDifficultyAnimationTimer_;
+        }
+        if (stageCounterAnimationTimer_ > 0) {
+            --stageCounterAnimationTimer_;
+        }
     }
 }
 
@@ -628,9 +805,14 @@ void FrontendRuntime::draw(const ResourceManager& resources) const {
     case MainState::KeyConfig: drawKeyConfig(resources); break;
     case MainState::ReplayList: drawReplayList(resources); break;
     case MainState::ReplayStageSelect: drawReplayStageSelect(resources); break;
+    case MainState::ResultSubmit: drawResultSubmit(resources); break;
     case MainState::Ranking: drawRanking(resources); break;
     case MainState::RankingNotice: drawRankingNotice(resources); break;
     case MainState::Gameplay: break;
+    case MainState::ResultSummary: drawResultSummary(resources); break;
+    case MainState::TrialContinue: drawTrialContinue(resources); break;
+    case MainState::ReplayPrompt: drawReplayPrompt(resources); break;
+    case MainState::ReplaySave: drawReplaySave(resources); break;
     }
     drawTransitionOverlay(resources);
 }
@@ -641,9 +823,34 @@ FrontendRuntime::GameplayRequest FrontendRuntime::consumeGameplayRequest() {
     return request;
 }
 
-void FrontendRuntime::completeGameplay(ResourceManager& resources) {
-    setState(MainState::StageSelect, 0);
-    ensureTitleBgm(resources);
+void FrontendRuntime::completeGameplay(ResourceManager& resources, int score, int elapsedFrames) {
+    resultScore_ = std::max(0, score);
+    resultElapsedFrames_ = std::max(0, elapsedFrames);
+    resultRouteCompletion_ = 0;
+    if (routeMode_ == 1) {
+        if (selectedStage_ == 8 || selectedStage_ == 10) {
+            resultRouteCompletion_ = 1;
+        }
+        else if (selectedStage_ == 9) {
+            resultRouteCompletion_ = 2;
+        }
+    }
+    ensureResultGraphs(resources);
+    stopTitleBgm(resources);
+
+    // FUN_1400c6e10 routes Practice directly to 0x23. Early Trial stages use
+    // 0x22 to choose the next stage; completed normal runs pass through 0x20.
+    if (routeMode_ == 2) {
+        setState(MainState::ReplayPrompt, 0);
+        return;
+    }
+    if (routeMode_ == 1 && selectedStage_ >= 1 && selectedStage_ <= 5) {
+        setState(MainState::TrialContinue, 0);
+        return;
+    }
+
+    setState(MainState::ResultSummary, 0);
+    startResultBgm(resources);
 }
 
 FrontendRuntime::InputSnapshot FrontendRuntime::readInput() {
@@ -733,6 +940,9 @@ FrontendRuntime::TransitionSpec FrontendRuntime::currentTransitionSpec() const {
             : TransitionSpec{0x32, 10};
     case MainState::ReplayStageSelect:
         return {0x20, 0x20};
+    case MainState::ResultSubmit:
+    case MainState::ReplayPrompt:
+        return {0x3c, 0x14};
     case MainState::Ranking:
         return pendingState_ == MainState::RankingNotice
             ? TransitionSpec{10, 10}
@@ -741,6 +951,12 @@ FrontendRuntime::TransitionSpec FrontendRuntime::currentTransitionSpec() const {
         return {1, 1};
     case MainState::Gameplay:
         break;
+    case MainState::ResultSummary:
+        return {0x50, 0x28};
+    case MainState::TrialContinue:
+        return {100, 0x3c};
+    case MainState::ReplaySave:
+        return {0x28, 10};
     }
     return {0x3c, 0x14};
 }
@@ -762,6 +978,9 @@ void FrontendRuntime::setState(MainState state, int cursor) {
     selectionDirtyTimer_ = 0;
     if (state == MainState::StageSelect) {
         stageOverlayState_ = 0;
+        stageLayerTransitionTimer_ = 0;
+        stageDifficultyAnimationTimer_ = 0;
+        stageCounterAnimationTimer_ = 0;
         const int routeIndex = routeMode_ == 1 ? 1 : 0;
         const int minimum = minimumStageForRoute(routeMode_, trialExtraUnlocked_);
         const int maximum = std::max(minimum, maxUnlockedStageByRoute_[static_cast<std::size_t>(routeIndex)]);
@@ -797,6 +1016,22 @@ void FrontendRuntime::setState(MainState state, int cursor) {
     }
     else if (state == MainState::Ranking) {
         rankingCursor_ = cursor_;
+    }
+    else if (state == MainState::ResultSubmit || state == MainState::ReplayPrompt) {
+        cursor_ = std::clamp(cursor_, 0, 1);
+    }
+    else if (state == MainState::ResultSummary) {
+        cursor_ = 0;
+    }
+    else if (state == MainState::TrialContinue) {
+        const auto range = trialNextStageRange(selectedStage_);
+        resultNextStage_ = std::clamp(resultNextStage_, range[0], range[1]);
+        resultPhase_ = 0;
+        resultPhaseTransitionTimer_ = 0;
+    }
+    else if (state == MainState::ReplaySave) {
+        cursor_ = std::clamp(cursor_, 0, kReplaySlotCount - 1);
+        replaySlotIndex_ = cursor_;
     }
 }
 
@@ -938,9 +1173,12 @@ void FrontendRuntime::updateStageSetup(ResourceManager& resources, const InputSn
 }
 
 void FrontendRuntime::updateStageSelect(ResourceManager& resources, const InputSnapshot& input) {
-    if (frame_ <= notes::difficulty_overlay_evidence::kInputEnableFrame) {
+    if (frame_ <= notes::difficulty_overlay_evidence::kInputEnableFrame ||
+        stageLayerTransitionTimer_ != 0) {
         return;
     }
+
+    const bool specialStage = routeMode_ == 1 && selectedStage_ == 10;
 
     if (stageOverlayState_ == 0) {
         if ((input.leftRepeat || input.rightRepeat) && stageCameraTimer_ == 0) {
@@ -959,11 +1197,11 @@ void FrontendRuntime::updateStageSelect(ResourceManager& resources, const InputS
         }
         if (input.confirm && stageCameraTimer_ == 0) {
             stageOverlayState_ = 1;
-            selectionDirtyTimer_ = notes::difficulty_overlay_evidence::kLayerSwitchCommitFrames;
+            stageLayerTransitionTimer_ = 1;
             playSound(resources, "SE_se_Enter");
             return;
         }
-        if (input.cancel) {
+        if (input.cancel && stageCameraTimer_ == 0) {
             playSound(resources, "SE_se_Cancel");
             beginCancelTransition(MainState::StageSetup);
         }
@@ -973,37 +1211,35 @@ void FrontendRuntime::updateStageSelect(ResourceManager& resources, const InputS
     if (stageOverlayState_ == 1) {
         if (input.cancel) {
             stageOverlayState_ = 0;
-            selectionDirtyTimer_ = notes::difficulty_overlay_evidence::kLayerSwitchCommitFrames;
+            stageLayerTransitionTimer_ = -1;
             playSound(resources, "SE_se_Cancel");
             return;
         }
-        if (input.leftRepeat || input.rightRepeat) {
+        if (!specialStage && (input.leftRepeat || input.rightRepeat)) {
             const int delta = input.rightRepeat ? 1 : -1;
             const int next = selectedDifficulty_ + delta;
             if (next >= 0 && next < notes::difficulty_overlay_evidence::kDifficultyCount) {
                 selectedDifficulty_ = next;
-                selectionDirtyTimer_ = 4;
+                stageDifficultyAnimationTimer_ = delta > 0 ? 4 : -4;
                 playSound(resources, "SE_se_Select");
-            }
-            else {
-                playSound(resources, "SE_se_Error");
+                return;
             }
         }
         if (input.up && counterUnlocked_ && counterMode_ == 0) {
             counterMode_ = 1;
-            selectionDirtyTimer_ = 4;
+            stageCounterAnimationTimer_ = 4;
             playSound(resources, "SE_se_Select");
             return;
         }
         if (input.down && counterUnlocked_ && counterMode_ == 1) {
             counterMode_ = 0;
-            selectionDirtyTimer_ = 4;
+            stageCounterAnimationTimer_ = 4;
             playSound(resources, "SE_se_Select");
             return;
         }
         if (input.confirm) {
             const int maxUnlocked = maxDifficultyForStage(maxUnlockedDifficultyByStage_, selectedStage_);
-            if (selectedDifficulty_ <= maxUnlocked) {
+            if (specialStage || selectedDifficulty_ <= maxUnlocked) {
                 stageOverlayState_ = 2;
                 const int routeIndex = routeMode_ == 1 ? 1 : 0;
                 savedStageByRoute_[static_cast<std::size_t>(routeIndex)] = selectedStage_;
@@ -1408,6 +1644,177 @@ void FrontendRuntime::updateReplayStageSelect(ResourceManager& resources, const 
     if (input.confirm) {
         // State 0x0f loads recorded input and hands it to 0x14. StageRuntime does
         // not yet expose that input stream, so launching normal play would be false.
+        playSound(resources, "SE_se_Error");
+    }
+}
+
+void FrontendRuntime::updateResultSubmit(ResourceManager& resources, const InputSnapshot& input) {
+    if (frame_ <= 0x1f) {
+        return;
+    }
+    if (input.upRepeat && downHeldFrames_ == 0) {
+        moveCursor(resources, -1, 2);
+        return;
+    }
+    if (input.downRepeat && upHeldFrames_ == 0) {
+        moveCursor(resources, 1, 2);
+        return;
+    }
+    if (input.cancel) {
+        cursor_ = 1;
+        playSound(resources, "SE_se_Cancel");
+        beginConfirmTransition(MainState::ReplayPrompt);
+        return;
+    }
+    if (input.confirm) {
+        // The original submits through Steam only for row 0. The local Steam
+        // layer has no leaderboard transport, but both rows continue to 0x23.
+        playSound(resources, "SE_se_Enter");
+        beginConfirmTransition(MainState::ReplayPrompt);
+    }
+}
+
+void FrontendRuntime::updateResultSummary(ResourceManager& resources, const InputSnapshot& input) {
+    if (frame_ <= 0x167 || !input.confirm) {
+        return;
+    }
+    playSound(resources, "SE_se_Enter");
+    beginConfirmTransition(shouldPromptResultSubmit()
+        ? MainState::ResultSubmit
+        : MainState::ReplayPrompt);
+}
+
+int FrontendRuntime::resultHelpLevel() const {
+    // State 0x04 stores Trial map ids 10..14, while gameplay converts ordinary
+    // Trial ids to submode 0..3. The ordinary result record index is therefore
+    // the saved map id itself: submode + 11.
+    const int trialMapStage = std::clamp(savedStageByRoute_[1], 10, 14);
+    if (selectedStage_ != 10 && trialMapStage == 14) {
+        return 0;
+    }
+
+    const std::size_t recordOffset = selectedStage_ == 10
+        ? 0x181c + static_cast<std::size_t>(setupGroup_ * 50 + 2) * 4
+        : 0xac + static_cast<std::size_t>(
+            (trialMapStage * 3 + setupGroup_) * 50 + selectedDifficulty_) * 4;
+    std::int32_t progress = 0;
+    if (recordOffset + sizeof(progress) <= saveBackingBytes_.size()) {
+        std::memcpy(&progress, saveBackingBytes_.data() + recordOffset, sizeof(progress));
+    }
+    return helpLevelForProgress(helpMode_, static_cast<int>(progress));
+}
+
+bool FrontendRuntime::shouldPromptResultSubmit() const {
+    // Direct transcription of FUN_140135330's live-run gates. Replay snapshots
+    // are outside FrontendRuntime, so only the save-backed Help path applies.
+    return routeMode_ == 1 && resultRouteCompletion_ != 0 && resultHelpLevel() == 0;
+}
+
+void FrontendRuntime::updateTrialContinue(ResourceManager& resources, const InputSnapshot& input) {
+    if (resultPhaseTransitionTimer_ != 0) {
+        resultPhaseTransitionTimer_ += resultPhaseTransitionTimer_ > 0 ? 1 : -1;
+        if (std::abs(resultPhaseTransitionTimer_) >= 10) {
+            resultPhaseTransitionTimer_ = 0;
+        }
+        return;
+    }
+    if (frame_ <= 0x3b) {
+        return;
+    }
+
+    if (resultPhase_ == 0) {
+        const auto range = trialNextStageRange(selectedStage_);
+        if (input.leftRepeat && resultNextStage_ > range[0]) {
+            --resultNextStage_;
+            playSound(resources, "SE_se_Select");
+            return;
+        }
+        if (input.rightRepeat && resultNextStage_ < range[1]) {
+            ++resultNextStage_;
+            playSound(resources, "SE_se_Select");
+            return;
+        }
+        if (input.confirm) {
+            resultPhase_ = 1;
+            resultPhaseTransitionTimer_ = 1;
+            playSound(resources, "SE_se_Enter");
+        }
+        return;
+    }
+
+    if (resultPhase_ == 1 && input.cancel) {
+        resultPhase_ = 0;
+        resultPhaseTransitionTimer_ = -1;
+        playSound(resources, "SE_se_Cancel");
+        return;
+    }
+    if (resultPhase_ == 1 && input.confirm) {
+        resultPhase_ = 2;
+        playSound(resources, "SE_se_Enter");
+        beginConfirmTransition(MainState::Gameplay);
+    }
+}
+
+void FrontendRuntime::updateReplayPrompt(ResourceManager& resources, const InputSnapshot& input) {
+    if (frame_ <= 0x1f) {
+        return;
+    }
+    if (input.upRepeat && downHeldFrames_ == 0) {
+        moveCursor(resources, -1, 2);
+        return;
+    }
+    if (input.downRepeat && upHeldFrames_ == 0) {
+        moveCursor(resources, 1, 2);
+        return;
+    }
+
+    const auto returnState =
+        routeMode_ == 2 ? MainState::AlternateSetup : MainState::StageSelect;
+    if (input.cancel) {
+        cursor_ = 1;
+        playSound(resources, "SE_se_Cancel");
+        beginConfirmTransition(returnState);
+        return;
+    }
+    if (!input.confirm) {
+        return;
+    }
+
+    playSound(resources, "SE_se_Enter");
+    if (cursor_ == 0) {
+        replaySlotIndex_ = 0;
+        scanReplaySlots(resources);
+        beginConfirmTransition(MainState::ReplaySave);
+    }
+    else {
+        beginConfirmTransition(returnState);
+    }
+}
+
+void FrontendRuntime::updateReplaySave(ResourceManager& resources, const InputSnapshot& input) {
+    if (frame_ <= 0x1f) {
+        return;
+    }
+    if (input.upRepeat) {
+        moveCursor(resources, -1, kReplaySlotCount);
+        replaySlotIndex_ = cursor_;
+        return;
+    }
+    if (input.downRepeat) {
+        moveCursor(resources, 1, kReplaySlotCount);
+        replaySlotIndex_ = cursor_;
+        return;
+    }
+    if (input.cancel) {
+        playSound(resources, "SE_se_Cancel");
+        beginCancelTransition(routeMode_ == 2
+            ? MainState::AlternateSetup
+            : MainState::StageSelect);
+        return;
+    }
+    if (input.confirm) {
+        // State 0x25 needs the captured input stream and replay payload. Refuse
+        // to create a corrupt LD_replayXX.dat until StageRuntime records it.
         playSound(resources, "SE_se_Error");
     }
 }
@@ -1823,6 +2230,9 @@ void FrontendRuntime::updateTransition(ResourceManager& resources) {
         PostQuitMessage(0);
         return;
     }
+    if (source == MainState::TrialContinue && target == MainState::Gameplay) {
+        selectedStage_ = resultNextStage_;
+    }
 
     if (source == MainState::ConfigMenu) {
         saveSystemConfig(resources);
@@ -1874,6 +2284,10 @@ void FrontendRuntime::updateTransition(ResourceManager& resources) {
             targetCursor = 6;
         }
     }
+    else if (target == MainState::AlternateSetup &&
+             (source == MainState::ReplayPrompt || source == MainState::ReplaySave)) {
+        targetCursor = 8;
+    }
     setState(target, targetCursor);
     if ((source == MainState::Achievement || source == MainState::EnemyEncyclopedia) &&
         target == MainState::Gallery) {
@@ -1883,7 +2297,13 @@ void FrontendRuntime::updateTransition(ResourceManager& resources) {
         // state_0f restores state_0e at frame 0x3d after its -0x20 cancel timer.
         frame_ = 0x3d;
     }
+    if ((target == MainState::StageSelect || target == MainState::AlternateSetup) &&
+        (source == MainState::ReplayPrompt || source == MainState::ReplaySave)) {
+        stopResultBgm(resources);
+        ensureTitleBgm(resources);
+    }
     if (target == MainState::Gameplay) {
+        resultRouteCompletion_ = 0;
         refreshOptionSlots();
         gameplayRequest_ = {};
         gameplayRequest_.requested = true;
@@ -2053,70 +2473,147 @@ void FrontendRuntime::drawStageSelect(const ResourceManager& resources) const {
         DrawGraph(0, 0, menuTitle, TRUE);
     }
 
-    drawFrameScaledAlpha(resources, "GFX_system_Stand", setupGroup_ * 10, 200.0f, 480.0f, 1.0, 0x80);
+    const float standY = static_cast<float>(notes::stage_select_evidence::kStandCenter.y) +
+        6.0f * std::sin(static_cast<float>(frame_) * kPi / 90.0f);
+    drawFrameScaledAlpha(resources, "GFX_system_Stand", setupGroup_ * 10,
+                         static_cast<float>(notes::stage_select_evidence::kStandCenter.x),
+                         standY, 1.0, 0x80);
 
     const int routeIndex = routeMode_ == 1 ? 1 : 0;
     const int firstStage = minimumStageForRoute(routeMode_, trialExtraUnlocked_);
     const int lastStage = std::max(firstStage, maxUnlockedStageByRoute_[static_cast<std::size_t>(routeIndex)]);
+    const double stageFrameScale = frame_ < 30
+        ? std::sin(static_cast<double>(frame_) * static_cast<double>(kPi) / 60.0)
+        : 1.0;
+    const double mapMenuScale = delayedStageElementScale(
+        frame_, notes::stage_select_evidence::kMapMenuEntryFrame);
+    const double stageFrame2Scale = delayedStageElementScale(
+        frame_, notes::stage_select_evidence::kStageFrame2EntryFrame);
     for (int stage = firstStage; stage <= lastStage; ++stage) {
         const auto node = stageNode(stage);
-        const float x = 640.0f + node.x - stageCameraX_;
-        const float y = 320.0f + node.y - stageCameraY_;
-        if (x < -700.0f || x > 1980.0f || y < -800.0f || y > 1520.0f) {
+        const float x = static_cast<float>(notes::stage_select_evidence::kMapFocusOffset.x) +
+                        node.x - stageCameraX_;
+        const float stagger = 5.0f * std::sin(
+            static_cast<float>(frame_ - stage * 40) * kPi / 90.0f);
+        const float y = static_cast<float>(notes::stage_select_evidence::kMapFocusOffset.y) +
+                        node.y - stageCameraY_ + stagger;
+        if (x < static_cast<float>(notes::stage_select_evidence::kVisibleLeft) ||
+            x > static_cast<float>(notes::stage_select_evidence::kVisibleRight)) {
             continue;
         }
 
-        const bool selected = stage == selectedStage_;
-        drawFrameScaledAlpha(resources, "GFX_system_StageFrame", 0, x, y, 1.0, 0x80);
-        drawFrameScaledAlpha(resources, "GFX_system_StageFrame", 1, x, y, 1.0, selected ? 0xff : 0x80);
-        drawFrameScaledAlpha(resources, "GFX_system_StageFrame2", stageFrame2ForStage(stage),
-                             x, y - 50.0f, 1.0, selected ? 0xff : 0x80);
+        drawFrameTinted(resources, "GFX_system_StageFrame", 0, x, y,
+                        stageFrameScale, 0.0, {128, 128, 128}, 0xff);
+        drawFrameTinted(resources, "GFX_system_StageFrame", 1, x, y,
+                        stageFrameScale, 0.0, stageTint(stage),
+                        notes::stage_select_evidence::kStageTintAlpha);
         drawFrameScaledAlpha(resources, "GFX_system_MapMenu", mapMenuFrameForStage(stage),
-                             x, y - 240.0f, 1.0, selected ? 0xff : 0x80);
+                             x, y + static_cast<float>(notes::stage_select_evidence::kMapMenuYOffset),
+                             mapMenuScale, 0xff);
+        drawFrameScaledAlpha(resources, "GFX_system_StageFrame2", stageFrame2ForStage(stage),
+                             x, y + static_cast<float>(notes::stage_select_evidence::kStageFrame2YOffset),
+                             stageFrame2Scale, 0xff);
     }
 
     const int maxUnlocked = maxDifficultyForStage(maxUnlockedDifficultyByStage_, selectedStage_);
-    if (stageOverlayState_ >= 1) {
-        const bool locked = selectedDifficulty_ > maxUnlocked;
-        const double difficultyBump = 1.0 + static_cast<double>(std::abs(selectionDirtyTimer_)) * 0.012;
-        drawFrameScaledAlpha(resources, "GFX_system_MapMenu2", notes::difficulty_overlay_evidence::kMapMenu2BaseFrame,
-                             static_cast<float>(notes::difficulty_overlay_evidence::kBaseMapMenu2.x),
-                             static_cast<float>(notes::difficulty_overlay_evidence::kBaseMapMenu2.y), 1.0, 255);
-        drawFrameScaledAlpha(resources, "GFX_system_MapMenu2",
-                             notes::difficulty_overlay_evidence::kMapMenu2DifficultyBaseFrame + selectedDifficulty_,
-                             static_cast<float>(notes::difficulty_overlay_evidence::kDifficultyMapMenu2.x),
-                             static_cast<float>(notes::difficulty_overlay_evidence::kDifficultyMapMenu2.y),
-                             difficultyBump, locked ? 0x80 : 0xff);
-        if (locked) {
-            const int handle = resources.graphFrameById("GFX_system_MapMenu2", notes::difficulty_overlay_evidence::kMapMenu2LockedFrame);
-            if (handle != -1) {
-                DrawRotaGraphF(static_cast<float>(notes::difficulty_overlay_evidence::kDifficultyMapMenu2.x),
-                               static_cast<float>(notes::difficulty_overlay_evidence::kDifficultyMapMenu2.y),
-                               difficultyBump, 0.0, handle, TRUE);
-            }
-        }
-        if (!locked) {
-            drawFrameScaledAlpha(resources, "GFX_system_DifficultyTips", selectedDifficulty_,
-                                 static_cast<float>(notes::difficulty_overlay_evidence::kDifficultyTips.x),
-                                 static_cast<float>(notes::difficulty_overlay_evidence::kDifficultyTips.y), 1.0, 255);
-        }
+    const bool specialStage = routeMode_ == 1 && selectedStage_ == 10;
+    const bool locked = !specialStage && selectedDifficulty_ > maxUnlocked;
+    const double difficultyPulse = fourFramePulse(stageDifficultyAnimationTimer_, 0.4);
+    const double difficultyScale = 1.0 + difficultyPulse;
+    const float arrowWave = 3.0f * std::sin(static_cast<float>(frame_) * kPi / 30.0f);
+
+    drawFrameScaledAlpha(resources, "GFX_system_MapMenu2",
+                         notes::difficulty_overlay_evidence::kMapMenu2BaseFrame,
+                         static_cast<float>(notes::difficulty_overlay_evidence::kBaseMapMenu2.x),
+                         static_cast<float>(notes::difficulty_overlay_evidence::kBaseMapMenu2.y),
+                         1.0, 0xff);
+    drawFrameScaledAlpha(resources, "GFX_system_MapMenu2",
+                         specialStage
+                             ? notes::difficulty_overlay_evidence::kMapMenu2SpecialDifficultyFrame
+                             : notes::difficulty_overlay_evidence::kMapMenu2DifficultyBaseFrame + selectedDifficulty_,
+                         static_cast<float>(notes::difficulty_overlay_evidence::kDifficultyMapMenu2.x),
+                         static_cast<float>(notes::difficulty_overlay_evidence::kDifficultyMapMenu2.y),
+                         difficultyScale, locked ? 0x80 : 0xff);
+    if (locked) {
+        drawFrameTinted(resources, "GFX_system_MapMenu2",
+                        notes::difficulty_overlay_evidence::kMapMenu2LockedFrame,
+                        static_cast<float>(notes::difficulty_overlay_evidence::kDifficultyMapMenu2.x),
+                        static_cast<float>(notes::difficulty_overlay_evidence::kDifficultyMapMenu2.y),
+                        difficultyScale,
+                        fixedAngleRadians(notes::difficulty_overlay_evidence::kLockedFixedAngle),
+                        {}, 0xff);
+    }
+    if (stageOverlayState_ == 1 && !locked) {
+        const float tipsY = static_cast<float>(notes::difficulty_overlay_evidence::kDifficultyTips.y) +
+            3.0f * std::sin(static_cast<float>(frame_) * kPi / 90.0f);
+        drawFrameScaledAlpha(resources, "GFX_system_DifficultyTips",
+                             specialStage
+                                 ? notes::difficulty_overlay_evidence::kSpecialDifficultyTipsFrame
+                                 : selectedDifficulty_,
+                             static_cast<float>(notes::difficulty_overlay_evidence::kDifficultyTips.x),
+                             tipsY, 1.0, 0xff);
+    }
+
+    if (counterUnlocked_) {
         drawFrameScaledAlpha(resources, "GFX_system_MapMenu2", notes::difficulty_overlay_evidence::kMapMenu2CounterFrame,
                              static_cast<float>(notes::difficulty_overlay_evidence::kCounterMapMenu2.x),
                              static_cast<float>(notes::difficulty_overlay_evidence::kCounterMapMenu2.y),
                              1.0, counterMode_ ? 0xff : 0x80);
-        const int arrow = resources.graphFrameById("GFX_effect_Effect_s", notes::difficulty_overlay_evidence::kArrowEffectFrame);
-        if (arrow != -1) {
-            const double angle = counterMode_ ? kPi * 0.5 : kPi * 1.5;
-            DrawRotaGraphF(static_cast<float>(notes::difficulty_overlay_evidence::kCounterArrow.x),
-                           static_cast<float>(notes::difficulty_overlay_evidence::kCounterArrow.y),
-                           0.58, angle, arrow, TRUE);
-            if (selectedDifficulty_ < notes::difficulty_overlay_evidence::kDifficultyCount - 1) {
-                DrawRotaGraphF(760.0f, static_cast<float>(notes::difficulty_overlay_evidence::kDifficultyMapMenu2.y),
-                               0.50, 0.0, arrow, TRUE);
+    }
+
+    const int arrow = resources.graphFrameById(
+        "GFX_effect_Effect_s", notes::difficulty_overlay_evidence::kArrowEffectFrame);
+    if (arrow != -1) {
+        if (stageOverlayState_ == 0) {
+            if (selectedStage_ < lastStage) {
+                DrawRotaGraphF(static_cast<float>(notes::stage_select_evidence::kRightArrow.x) + arrowWave,
+                               static_cast<float>(notes::stage_select_evidence::kRightArrow.y),
+                               1.0, 0.0, arrow, TRUE);
             }
-            if (selectedDifficulty_ > 0) {
-                DrawRotaGraphF(520.0f, static_cast<float>(notes::difficulty_overlay_evidence::kDifficultyMapMenu2.y),
-                               0.50, kPi, arrow, TRUE);
+            if (selectedStage_ > firstStage) {
+                DrawRotaGraphF(static_cast<float>(notes::stage_select_evidence::kLeftArrow.x) - arrowWave,
+                               static_cast<float>(notes::stage_select_evidence::kLeftArrow.y),
+                               1.0,
+                               fixedAngleRadians(notes::difficulty_overlay_evidence::kLeftFixedAngle),
+                               arrow, TRUE);
+            }
+        }
+        else if (stageOverlayState_ == 1) {
+            if (!specialStage && selectedDifficulty_ < notes::difficulty_overlay_evidence::kDifficultyCount - 1) {
+                const double scale = notes::difficulty_overlay_evidence::kDifficultyArrowScale +
+                    (stageDifficultyAnimationTimer_ > 0 ? difficultyPulse : 0.0);
+                DrawRotaGraphF(static_cast<float>(notes::difficulty_overlay_evidence::kRightDifficultyArrow.x) - arrowWave,
+                               static_cast<float>(notes::difficulty_overlay_evidence::kRightDifficultyArrow.y),
+                               scale, 0.0, arrow, TRUE);
+            }
+            if (!specialStage && selectedDifficulty_ > 0) {
+                const double scale = notes::difficulty_overlay_evidence::kDifficultyArrowScale +
+                    (stageDifficultyAnimationTimer_ < 0 ? difficultyPulse : 0.0);
+                DrawRotaGraphF(static_cast<float>(notes::difficulty_overlay_evidence::kLeftDifficultyArrow.x) + arrowWave,
+                               static_cast<float>(notes::difficulty_overlay_evidence::kLeftDifficultyArrow.y),
+                               scale,
+                               fixedAngleRadians(notes::difficulty_overlay_evidence::kLeftFixedAngle),
+                               arrow, TRUE);
+            }
+            if (counterUnlocked_) {
+                double counterScaleOffset = 0.0;
+                if (!counterMode_ && stageDifficultyAnimationTimer_ > 0) {
+                    counterScaleOffset = fourFramePulse(stageCounterAnimationTimer_, 0.25);
+                }
+                else if (counterMode_ && stageDifficultyAnimationTimer_ < 0) {
+                    counterScaleOffset = -fourFramePulse(stageCounterAnimationTimer_, 0.25);
+                }
+                const int fixedAngle = counterMode_
+                    ? notes::difficulty_overlay_evidence::kCounterOnFixedAngle
+                    : notes::difficulty_overlay_evidence::kCounterOffFixedAngle;
+                const float counterY = static_cast<float>(notes::difficulty_overlay_evidence::kCounterArrow.y) +
+                    (counterMode_ ? -arrowWave : arrowWave);
+                DrawRotaGraphF(static_cast<float>(notes::difficulty_overlay_evidence::kCounterArrow.x),
+                               counterY,
+                               notes::difficulty_overlay_evidence::kCounterArrowScale +
+                                   counterScaleOffset,
+                               fixedAngleRadians(fixedAngle),
+                               arrow, TRUE);
             }
         }
     }
@@ -2453,6 +2950,140 @@ void FrontendRuntime::drawReplayStageSelect(const ResourceManager& resources) co
     }
 }
 
+void FrontendRuntime::drawResultSubmit(const ResourceManager& resources) const {
+    drawPathFrameScaledAlpha(resources, kStageClearPath, 0,
+                             640.0f, 360.0f, 1.0, 255);
+    const char* menuPath = localizedPath(kPauseMenuPaths, language_);
+    drawPathFrameScaledAlpha(resources, menuPath, 25,
+                             640.0f, 345.0f, 1.0, 255);
+    for (int row = 0; row < 2; ++row) {
+        const int brightness = row == cursor_ ? 255 : 128;
+        const float y = row == 0 ? 520.0f : 600.0f;
+        drawPathFrameBrightness(resources, menuPath, 23 + row,
+                                640.0f, y, brightness);
+        if (row == cursor_ && transitionTimer_ != 0 &&
+            wrapIndex(std::abs(transitionTimer_), 4) < 2) {
+            drawPathFrameScaledAlpha(resources, menuPath, 23 + row,
+                                     640.0f, y, 1.0, 128);
+        }
+    }
+}
+
+void FrontendRuntime::drawResultSummary(const ResourceManager& resources) const {
+    const int backgroundAlpha = frame_ < 0x3c
+        ? std::clamp(static_cast<int>(
+            std::sin(static_cast<double>(frame_) * static_cast<double>(kPi) / 120.0) * 255.0),
+            0, 255)
+        : 255;
+    drawPathFrameScaledAlpha(resources, kStageClearPath, 0,
+                             640.0f, 360.0f, 1.0, backgroundAlpha);
+
+    if (frame_ >= 0x8c) {
+        const float progress =
+            std::clamp(static_cast<float>(frame_ - 0x8c) / 60.0f, 0.0f, 1.0f);
+        const float y = 1080.0f -
+            std::sin(progress * kPi * 0.5f) * 720.0f;
+        drawPathFrameScaledAlpha(resources, kStageClearPath, 2,
+                                 640.0f, y, 1.0, 255);
+    }
+
+    if (frame_ < 0xaa) {
+        return;
+    }
+    const float progress =
+        std::clamp(static_cast<float>(frame_ - 0xaa) / 60.0f, 0.0f, 1.0f);
+    const float panelY = 1080.0f -
+        std::sin(progress * kPi * 0.5f) * 720.0f;
+    const int routeFrame = routeMode_ == 0
+        ? 1
+        : (selectedStage_ == 10 ? 3 : 2);
+    drawPathFrameScaledAlpha(resources, kResultMenuPath, routeFrame,
+                             190.0f, panelY, 1.0, 255);
+    drawPathFrameScaledAlpha(resources, kResultMenuPath,
+                             4 + std::clamp(selectedDifficulty_, 0, 4),
+                             430.0f, panelY, 1.0, 255);
+    if (counterMode_ != 0) {
+        drawPathFrameScaledAlpha(resources, kResultMenuPath, 11,
+                                 680.0f, panelY, 1.0, 255);
+    }
+
+    drawPathFrameScaledAlpha(resources, kResultMenuPath, 0,
+                             190.0f, panelY + 100.0f, 1.0, 255);
+    long long visibleScore = resultScore_;
+    if (frame_ < 0x140) {
+        visibleScore =
+            static_cast<long long>(frame_ - 0xaa) * (resultScore_ / 0x96);
+    }
+    drawLargeNumber(resources, visibleScore, 930.0f, panelY + 100.0f, 255);
+
+    if (frame_ > 0x167 && transitionTimer_ == 0) {
+        const int alpha = 0xc0 + static_cast<int>(
+            std::sin(static_cast<float>(frame_) * kPi / 30.0f) * 0x3f);
+        drawPathFrameScaledAlpha(resources, kResultMenuPath, 13,
+                                 640.0f, 650.0f, 1.0,
+                                 std::clamp(alpha, 0x80, 0xff));
+    }
+}
+
+void FrontendRuntime::drawTrialContinue(const ResourceManager& resources) const {
+    drawPathFrameScaledAlpha(resources, kStageClearPath, 0,
+                             640.0f, 360.0f, 1.0, 255);
+    drawPathFrameScaledAlpha(resources, kResultMenuPath, 1,
+                             360.0f, 140.0f, 1.0, 255);
+    drawLargeNumber(resources, resultNextStage_, 550.0f, 140.0f, 255);
+
+    const int stageFrame = stageFrame2ForStage(resultNextStage_);
+    if (stageFrame >= 0) {
+        const int brightness = resultPhase_ == 0 ? 255 : 192;
+        const int handle = resources.graphFrameById("GFX_system_StageFrame2", stageFrame);
+        if (handle != -1) {
+            SetDrawBright(brightness, brightness, brightness);
+            DrawRotaGraphF(640.0f, 360.0f, 1.0, 0.0, handle, TRUE);
+            SetDrawBright(255, 255, 255);
+        }
+    }
+
+    if (resultPhase_ == 0 && transitionTimer_ == 0 &&
+        resultPhaseTransitionTimer_ == 0) {
+        const auto range = trialNextStageRange(selectedStage_);
+        const int arrow = resources.graphFrameById("GFX_effect_Effect_s", 1);
+        const float wave =
+            std::sin(static_cast<float>(frame_) * kPi / 30.0f) * 4.0f;
+        if (arrow != -1 && resultNextStage_ > range[0]) {
+            DrawRotaGraphF(390.0f + wave, 360.0f, 0.6, kPi, arrow, TRUE);
+        }
+        if (arrow != -1 && resultNextStage_ < range[1]) {
+            DrawRotaGraphF(890.0f - wave, 360.0f, 0.6, 0.0, arrow, TRUE);
+        }
+    }
+    drawPathFrameScaledAlpha(resources, kResultMenuPath, 13,
+                             640.0f, 650.0f, 1.0,
+                             resultPhase_ == 0 ? 255 : 160);
+}
+
+void FrontendRuntime::drawReplayPrompt(const ResourceManager& resources) const {
+    drawPathFrameScaledAlpha(resources, kStageClearPath, 0,
+                             640.0f, 360.0f, 1.0, 255);
+    const char* menuPath = localizedPath(kPauseMenuPaths, language_);
+    drawPathFrameScaledAlpha(resources, menuPath, 7,
+                             640.0f, 345.0f, 1.0, 255);
+    for (int row = 0; row < 2; ++row) {
+        const int brightness = row == cursor_ ? 255 : 128;
+        const float y = row == 0 ? 520.0f : 600.0f;
+        drawPathFrameBrightness(resources, menuPath, 8 + row,
+                                640.0f, y, brightness);
+        if (row == cursor_ && transitionTimer_ != 0 &&
+            wrapIndex(std::abs(transitionTimer_), 4) < 2) {
+            drawPathFrameScaledAlpha(resources, menuPath, 8 + row,
+                                     640.0f, y, 1.0, 128);
+        }
+    }
+}
+
+void FrontendRuntime::drawReplaySave(const ResourceManager& resources) const {
+    drawReplayList(resources);
+}
+
 void FrontendRuntime::drawRanking(const ResourceManager& resources) const {
     drawFrontendBackdrop(resources, 11, language_);
     constexpr std::array<int, 5> categoryFrames{{2, 14, 16, 18, 9}};
@@ -2750,6 +3381,22 @@ void FrontendRuntime::ensureRankingGraphs(ResourceManager& resources) const {
     }
 }
 
+void FrontendRuntime::ensureResultGraphs(ResourceManager& resources) const {
+    if (resources.graphFrame(kResultMenuPath, 0) == -1) {
+        resources.loadDivGraph(kResultMenuPath, 0x14, 1, 0x14, 0xf0, 0x3c);
+    }
+    if (resources.graphFrame(kStageClearPath, 0) == -1) {
+        resources.loadDivGraph(kStageClearPath, 5, 5, 1, 0x500, 0x2d0);
+    }
+    if (resources.graphFrame(kNumLargePath, 0) == -1) {
+        resources.loadDivGraph(kNumLargePath, 0x0e, 0x0e, 1, 0x30, 0x48);
+    }
+    const char* pauseMenuPath = localizedPath(kPauseMenuPaths, language_);
+    if (resources.graphFrame(pauseMenuPath, 0) == -1) {
+        resources.loadDivGraph(pauseMenuPath, 0x1e, 1, 0x1e, 0x1e0, 0x50);
+    }
+}
+
 void FrontendRuntime::scanReplaySlots(const ResourceManager& resources) {
     replaySlots_.fill(ReplaySlot{});
     for (int index = 0; index < kReplaySlotCount; ++index) {
@@ -3038,6 +3685,26 @@ void FrontendRuntime::stopTitleBgm(ResourceManager& resources) {
         StopSoundMem(handle);
     }
     titleBgmStarted_ = false;
+}
+
+void FrontendRuntime::startResultBgm(ResourceManager& resources) {
+    if (resultBgmStarted_) {
+        return;
+    }
+    const int handle = resources.soundHandleById("BGM_bgm_StageClear");
+    if (handle != -1) {
+        ChangeVolumeSoundMem(bgmVolume_ * 0x19, handle);
+        PlaySoundMem(handle, DX_PLAYTYPE_BACK, TRUE);
+        resultBgmStarted_ = true;
+    }
+}
+
+void FrontendRuntime::stopResultBgm(ResourceManager& resources) {
+    const int handle = resources.soundHandleById("BGM_bgm_StageClear");
+    if (handle != -1) {
+        StopSoundMem(handle);
+    }
+    resultBgmStarted_ = false;
 }
 
 void FrontendRuntime::beginConfirmTransition(MainState target) {

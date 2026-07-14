@@ -26,12 +26,14 @@ Evidence: `reverse/ghidra-or-ida/exports/renamed-decompiled/1400ced90_load_prima
 | `0x0f` | `FUN_140080170` | `Enemy_m` frames `22..25` | `DAT_140e44b28..DAT_140e44b34` in `140080170_FUN_140080170.c:416-430` |
 | `0x10` | `FUN_140080fb0` | `Enemy_m` frames `26..31` | `DAT_140e44b38..DAT_140e44b4c` in `140080fb0_FUN_140080fb0.c:443-468` |
 | `0x11` | `FUN_140082090` | `Enemy_m` frames `32..33` | `DAT_140e44b50`, `DAT_140e44b54` in `140082090_FUN_140082090.c:318-431` |
-| `0x138` | `FUN_140004660` | `Boss.png` scaffold frame `0` | Spawned by Stage 1 handoff; full boss helper not ported. |
+| `0x138` | `FUN_140004660` | `Enemy_l[0]`; `Boss[0..9]` | Exact seven-state frame table, scale, and animation timing are ported; see `stage01-boss138-exact-notes.md`. |
 
 Runtime status:
 
-- `stage_runtime.cpp` now loads `Boss.png` and uses `enemyVisualFrameForSpawnType()` / `enemyUsesMediumFrame()` for Stage 1 frame selection.
-- `0x09`, `0x11`, and `0x138` are recognized by Stage 1-specific routing instead of generic fallback.
+- `stage_runtime.cpp` loads `Boss.png`; the dedicated `drawStage01BossExact()`
+  path selects `Enemy_l[0]` or `Boss[0..9]` from the recovered state/timer table.
+- `0x138` and its `0x12..0x17` children use dedicated update, projectile,
+  death, timer, and draw routes instead of generic fallback.
 
 ## Decoded Stage 1 projectile/scalar constants
 
@@ -58,7 +60,9 @@ These values were recovered from `LikeDreamer.exe` `.rdata` and are used by Stag
 
 Runtime status:
 
-- `stage_runtime.cpp` now has `stage01SpeedConstantValue()` and maps Stage 1 projectile speed tables through decoded `DAT_14053a*` values for key helpers (`0x0a..0x0d`, marker, and long setpieces) instead of the older purely invented low-speed fallbacks.
+- `stage_runtime.cpp` maps the decoded `DAT_14053a*` speed tables for shared
+  types `0x0a..0x0f`, marker helpers, and the remaining long setpieces instead
+  of the older invented low-speed fallbacks.
 - Some movement/effect scale constants outside this monotonic ladder remain unresolved.
 
 ## Stage 1 marker child/satellite mapping
@@ -70,8 +74,11 @@ Runtime status:
 
 Runtime status:
 
-- `spawnStage01MarkerSatellite()` and `updateStage01MarkerSatellite()` now scaffold this route as Stage 1 type `0x09`.
-- The previously added `0x11` marker children remain as an explicit approximation for visible anchor/projectile behavior; exact original marker child counts/route branches remain deferred.
+- `spawnStage01MarkerSatellite()` and `updateStage01MarkerSatellite()` implement
+  the parent-linked type-`0x09` route globally.
+- The temporary type-`0x11` marker children were removed. Type `0x06` creates
+  `effectiveHelpLevel()` satellites in routes 0 and 1, type `0x07` only in
+  route 0, and type `0x08` creates none, matching `FUN_140082d90`.
 
 ## Stage 1 boss handoff
 
@@ -86,13 +93,14 @@ Evidence: `reverse/ghidra-or-ida/exports/per-stage-gameplay-renamed/neighborhood
 
 Runtime status:
 
-- `stage_runtime.cpp` now uses `stage01EndFrame_ = 5700` and scaffolds end visual/cleanup flags plus boss handoff spawn `0x138` at frame `5760`.
-- `0x138` is treated as a boss scaffold and uses `Boss.png`; full `FUN_140004660` boss behavior remains deferred.
+- `stage_runtime.cpp` uses `stage01EndFrame_ = 5700` and creates the exact boss
+  constructor at frame `5760`.
+- `0x138` owns the recovered seven states, three live HP phases, phase-break
+  preamble, root/child projectiles, multipart child contract, exact root draw,
+  and timer-480 clear latch.
 
 ## Deferred original systems
 
 - Exact `FUN_1400c8410` `0x48` overlay-node lifecycle and draw ordering.
 - Exact `0x60` effect-node dispatcher for type `0x16` / type `0x17` visuals.
-- Full `FUN_140004660` boss pattern port for entity `0x138`.
-- Exact marker child/satellite counts for every route/difficulty combination.
 - Exact named semantics of reward stock/life/guard HUD values.

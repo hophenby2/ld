@@ -26,8 +26,6 @@ constexpr int kFeverActiveFrames = 600;
 constexpr int kSpecialTokenCap = 9;
 constexpr std::array<int, 5> kOriginalStockThresholds{{56000, 70000, 70000, 70000, 70000}};
 constexpr int kGrazeMargin = 24;
-constexpr float kRewardBurstSpeed = 2.4f;
-constexpr float kRewardBurstSpread = 0.42f;
 constexpr std::array<double, 5> kProjectileId1Acceleration{{0.06, 0.07, 0.08, 0.10, 0.10}};
 constexpr std::array<double, 5> kProjectileRetargetAcceleration{{0.13, 0.15, 0.175, 0.20, 0.20}};
 constexpr std::array<double, 5> kProjectileId13Acceleration{{0.15, 0.17, 0.18, 0.20, 0.20}};
@@ -294,12 +292,20 @@ bool stageUsesMediumFrame(int spawnType) {
            (spawnType >= 0x1b && spawnType <= 0x20) ||
            spawnType == 0x26 || spawnType == 0x27 || spawnType == 0x28 ||
            spawnType == 0x29 || spawnType == 0x2a || spawnType == 0x2d || spawnType == 0x2f ||
-           spawnType == 0x138 || spawnType == 0x13a ||
+           (spawnType >= 0x138 && spawnType <= 0x13b) ||
            (spawnType >= 0x38 && spawnType <= 0x3f);
 }
 
 bool isStage03FocusedType(int spawnType) {
     return spawnType >= 0x25 && spawnType <= 0x2f;
+}
+
+bool isStage03BossChildType(int spawnType) {
+    return spawnType >= 0x30 && spawnType <= 0x34;
+}
+
+bool isStage03BossNodeType(int spawnType) {
+    return spawnType == 0x13a || isStage03BossChildType(spawnType);
 }
 
 bool isStage04FocusedType(int spawnType) {
@@ -459,6 +465,15 @@ double scriptRandomHundredth(std::uint32_t seed, double minimum, double maximum)
 
 int stageRandCoord(int frame, int modulus, int base) {
     return static_cast<int>(stageScriptRandFromFrame(frame) % static_cast<std::uint32_t>(modulus)) + base;
+}
+
+int stageRandomIntInclusive(std::uint32_t seed, int minimum, int maximum) {
+    if (minimum == maximum) {
+        return minimum;
+    }
+    return minimum + static_cast<int>(
+                         stageScriptRandFromFrame(static_cast<int>(seed)) %
+                         static_cast<std::uint32_t>(maximum - minimum + 1));
 }
 
 std::uint16_t scriptRandomAngle(std::uint32_t seed) {
@@ -832,6 +847,94 @@ int controlDeviceForPadType(int padType) {
     return 0;
 }
 
+bool defersEnemyDeathEffects(int spawnType) {
+    return spawnType == 0x10 || spawnType == 0x1f || spawnType == 0x20 || spawnType == 0x2b ||
+           spawnType == 0x2e || spawnType == 0x30 || spawnType == 0x3f;
+}
+
+int immediateEnemyDeathEffectMode(int spawnType) {
+    switch (spawnType) {
+    case 0x06:
+    case 0x07:
+    case 0x08:
+    case 0x0e:
+    case 0x0f:
+    case 0x11:
+    case 0x15:
+    case 0x16:
+    case 0x17:
+    case 0x1b:
+    case 0x1c:
+    case 0x21:
+    case 0x22:
+    case 0x23:
+    case 0x24:
+    case 0x26:
+    case 0x27:
+    case 0x29:
+    case 0x2d:
+    case 0x38:
+    case 0x39:
+    case 0x3a:
+    case 0x3d:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+int enemyDeathFeedbackStrength(int spawnType, int radius) {
+    switch (spawnType) {
+    case 0x06:
+    case 0x07:
+    case 0x08: return 12;
+    case 0x0a: return 5;
+    case 0x0b:
+    case 0x0c:
+    case 0x0d: return 3;
+    case 0x0e:
+    case 0x0f: return 8;
+    case 0x10: return 30;
+    case 0x11: return 10;
+    case 0x15:
+    case 0x16:
+    case 0x17: return 8;
+    case 0x19:
+    case 0x1a: return 3;
+    case 0x1b:
+    case 0x1c: return 8;
+    case 0x1d:
+    case 0x1e: return 5;
+    case 0x1f: return 12;
+    case 0x20: return 30;
+    case 0x21: return 9;
+    case 0x25: return 4;
+    case 0x26:
+    case 0x27:
+    case 0x28:
+    case 0x29: return 8;
+    case 0x2b: return 16;
+    case 0x2c: return 5;
+    case 0x2d: return 10;
+    case 0x2e: return 30;
+    case 0x30: return 8;
+    case 0x32:
+    case 0x33: return 1;
+    case 0x34: return 5;
+    case 0x35: return 2;
+    case 0x36:
+    case 0x37: return 3;
+    case 0x38: return 8;
+    case 0x39:
+    case 0x3a: return 10;
+    case 0x3b:
+    case 0x3c: return 1;
+    case 0x3d: return 8;
+    case 0x3f: return 30;
+    default: return std::max(1, radius / 10);
+    }
+}
+
 } // namespace
 
 const StageRuntime::StageSpawnEvent* StageRuntime::eventsForStage(int stage, std::size_t& count) {
@@ -861,6 +964,10 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
     enemyGaugeFrames_ = resources.loadDivGraph("media\\stage\\EnemyGauge1.png", 3, 1, 3, 0xf6, 0x10);
     enemyGaugeFillHandle_ = resources.loadGraph("media\\stage\\EnemyGauge2.png");
     bossFrames_ = resources.loadDivGraph("media\\stage\\Boss.png", 0xa0, 10, 0x10, 200, 200);
+    bossGaugeFrames_ = resources.loadDivGraph("media\\stage\\BossGauge.png", 10, 1, 10, 500, 30);
+    bossNameFrames_ = resources.loadDivGraph("media\\stage\\BossName.png", 0x16, 1, 0x16, 400, 30);
+    textBoxFrames_ = resources.loadDivGraph("media\\system\\TextBox.png", 2, 1, 2, 600, 100);
+    textIconFrames_ = resources.loadDivGraph("media\\system\\TextIcon.png", 0x14, 10, 2, 80, 80);
     bulletFrames_ = resources.loadDivGraph("media\\stage\\Bullet.png", 0x28, 10, 4, 0x3c, 0x3c);
     stageBack1Frames_ = resources.loadDivGraph("media\\stage\\StageBack1.png", 10, 10, 1, 0x2d0, 0xa00);
     stageBack1bFrames_ = resources.loadDivGraph("media\\stage\\StageBack1b.png", 10, 10, 1, 0x2d0, 0xa00);
@@ -899,6 +1006,9 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
     item3SoundHandle_ = resources.loadSound("media\\se\\Item3.wav", 3);
     extendSoundHandle_ = resources.loadSound("media\\se\\Extend.wav", 3);
     blast1SoundHandle_ = resources.loadSound("media\\se\\Blast1.wav", 3);
+    enemyDown1SoundHandle_ = resources.soundHandleById("SE_se_EnemyDown1");
+    enemyDown2SoundHandle_ = resources.soundHandleById("SE_se_EnemyDown2");
+    enemyDown3SoundHandle_ = resources.soundHandleById("SE_se_EnemyDown3");
 
     config_ = config;
     selectedStage_ = (config.stage >= 1 && config.stage <= 4) ? config.stage : 1;
@@ -987,6 +1097,28 @@ void StageRuntime::reset() {
     stage01ClearStarted_ = false;
     stage01ClearTransition_ = false;
     stage01ClearComplete_ = false;
+    stage02BossPhaseMode_ = 0;
+    stage02BossMaxHp_ = 100000;
+    stage02BossCountdown_ = 0;
+    stage02BossCountdownDraw_ = 0;
+    stage02BossBreaksRemaining_ = 4;
+    stage02BossPhaseIndex_ = 0;
+    stage02BossTargetX_ = 360.0f;
+    stage02BossTargetY_ = 180.0f;
+    stage02ClearStarted_ = false;
+    stage02ClearTransition_ = false;
+    stage02ClearComplete_ = false;
+    stage03BossPhaseMode_ = 0;
+    stage03BossMaxHp_ = 100000;
+    stage03BossCountdown_ = 0;
+    stage03BossCountdownDraw_ = 0;
+    stage03BossBreaksRemaining_ = 4;
+    stage03BossPhaseIndex_ = 0;
+    stage03BossTargetX_ = 360.0f;
+    stage03BossTargetY_ = 200.0f;
+    stage03ClearStarted_ = false;
+    stage03ClearTransition_ = false;
+    stage03ClearComplete_ = false;
     inputActions_.fill(false);
     paused_ = false;
     pauseInputHeld_ = false;
@@ -1019,7 +1151,7 @@ void StageRuntime::update() {
         reset();
         return;
     }
-    if (stage01ClearComplete_) {
+    if (stageComplete()) {
         return;
     }
 
@@ -1067,12 +1199,17 @@ void StageRuntime::draw() const {
     drawStageEffects(true);
     drawRewardItems();
     drawPlayer();
+    drawStage02BossHud();
+    drawStage03BossHud();
     drawOverlay();
 }
 
 int StageRuntime::enemiesAlive() const {
     return static_cast<int>(std::count_if(enemies_.begin(), enemies_.end(),
-                                         [](const StageEnemy& enemy) { return enemy.active; }));
+                                         [](const StageEnemy& enemy) {
+                                             return enemy.active && enemy.spawnType != 0x137 &&
+                                                    enemy.spawnType != 0x153;
+                                         }));
 }
 
 int StageRuntime::enemyProjectilesAlive() const {
@@ -1438,6 +1575,13 @@ void StageRuntime::spawnStage02OriginalSchedule() {
     if (f == 0x238c) {
         spawn(0x08, 5000, 0x1cc, 0, "S02 original line 476: ending marker");
     }
+
+    // UNK_140538ad8[2] is 9700. The original creates the Stage 2 root boss
+    // exactly 60 frames after the stage-length handoff.
+    if (f == 9700 + 0x3c) {
+        spawn(0x139, 100000, 360, 180,
+              "S02 boss handoff: endFrame + 0x3c entity 0x139");
+    }
 }
 
 void StageRuntime::spawnStage03OriginalSchedule() {
@@ -1736,6 +1880,13 @@ void StageRuntime::spawnStage04OriginalSchedule() {
     spawnEvery(0x2a94, 0x5a, 8, 0x35, 200, 0x2e4, 0x78, "S04 original row 594: 0x35 ending right");
     spawnEvery(0x2aee, 0x5a, 8, 0x35, 200, -20, 0x96, "S04 original row 604: 0x35 ending left");
     if (f == 0x2b5c) spawn(8, 5000, 0x104, 0, "S04 original row 609: ending marker");
+
+    // UNK_140538ad8[4] is 11700. FUN_14011cdd0 hands the cleared stage to
+    // root boss 0x13b at endFrame + 0x3c.
+    if (f == 11700 + 0x3c) {
+        spawn(0x13b, 100000, 360, 120,
+              "S04 boss handoff: endFrame + 0x3c entity 0x13b");
+    }
 }
 
 void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
@@ -1750,7 +1901,8 @@ void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
     enemy.sourceY = event.y;
     enemy.sourceNote = event.sourceNote;
     const bool commonMarkerFamily = event.spawnType >= 0x06 && event.spawnType <= 0x09;
-    if (commonMarkerFamily || (selectedStage_ == 1 && isStage01ObservedType(event.spawnType))) {
+    const bool sharedEarlyEnemy = event.spawnType >= 0x0a && event.spawnType <= 0x0d;
+    if (commonMarkerFamily || sharedEarlyEnemy || isStage01ObservedType(event.spawnType)) {
         enemy.updateCase = stage01UpdateCaseForSpawnType(event.spawnType);
         enemy.sourceDispatchKind = stage01DispatchKindForSpawnType(event.spawnType);
         enemy.sourceDispatchField = stage01DispatchFieldForSpawnType(event.spawnType);
@@ -1801,33 +1953,114 @@ void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
         enemy.targetable = false;
         break;
     case 0x0b:
-        enemy.hp = 8;
-        enemy.radius = 24;
+        // stage_spawn_dispatch_candidate case 5 preserves the scheduled
+        // position/HP and constructs the shared FUN_14007d4e0 enemy.
+        enemy.updateCase = 0x05;
+        enemy.sourceDispatchKind = 5;
+        enemy.sourceDispatchField = 30;
+        enemy.rewardWeight = 5;
+        enemy.radius = 30;
         enemy.visualFrame = 4;
-        enemy.speed = 1.7f;
+        enemy.sourceAngle16 = 0x4000;
+        enemy.secondaryAngle16 = 0x4000;
+        enemy.targetAngle16 = 0x4000;
+        enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
+        enemy.sourceSpeed = 1.0;
+        enemy.speed = 1.0f;
+        enemy.vx = 0.0f;
+        enemy.vy = 0.0f;
+        enemy.activationDelay = 0;
+        enemy.targetable = false;
         break;
     case 0x0c:
+        // stage_spawn_dispatch_candidate case 6 ignores the scheduled y and
+        // constructs the shared FUN_14007dfb0 enemy at y=-20.
+        enemy.updateCase = 0x06;
+        enemy.sourceDispatchKind = 7;
+        enemy.sourceDispatchField = 30;
+        enemy.rewardWeight = 7;
+        enemy.y = -20.0f;
+        enemy.originY = enemy.y;
+        enemy.sourceY = -20;
+        enemy.radius = 30;
+        enemy.visualFrame = 6;
+        enemy.sourceAngle16 = 0x4000;
+        enemy.secondaryAngle16 = 0x4000;
+        enemy.targetAngle16 = 0x4000;
+        enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
+        enemy.sourceSpeed = 1.0;
+        enemy.speed = 1.0f;
+        enemy.vx = 0.0f;
+        enemy.vy = 0.0f;
+        enemy.activationDelay = 0;
+        enemy.targetable = false;
+        break;
     case 0x0d:
-        enemy.hp = 10;
-        enemy.radius = 24;
-        enemy.visualFrame = event.spawnType == 0x0c ? 6 : 9;
-        enemy.speed = 1.45f;
+        // stage_spawn_dispatch_candidate case 5 also constructs the shared
+        // FUN_14007ea30 enemy; only its update case/body frame differ from 0x0b.
+        enemy.updateCase = 0x07;
+        enemy.sourceDispatchKind = 5;
+        enemy.sourceDispatchField = 30;
+        enemy.rewardWeight = 5;
+        enemy.radius = 30;
+        enemy.visualFrame = 9;
+        enemy.sourceAngle16 = 0x4000;
+        enemy.secondaryAngle16 = 0x4000;
+        enemy.targetAngle16 = 0x4000;
+        enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
+        enemy.sourceSpeed = 1.0;
+        enemy.speed = 1.0f;
+        enemy.vx = 0.0f;
+        enemy.vy = 0.0f;
+        enemy.activationDelay = 0;
+        enemy.targetable = false;
         break;
     case 0x0e:
-        enemy.hp = 36;
-        enemy.radius = 48;
+        // stage_spawn_dispatch_candidate case 7 ignores the schedule y and
+        // constructs FUN_14007f2c0 at y=-100 with kind 24 and radius 80.
+        enemy.updateCase = 0x08;
+        enemy.sourceDispatchKind = 24;
+        enemy.sourceDispatchField = 80;
+        enemy.rewardWeight = 24;
+        enemy.y = -100.0f;
+        enemy.originY = enemy.y;
+        enemy.sourceY = -100;
+        enemy.radius = 80;
         enemy.visualFrame = 16;
-        enemy.vy = 0.25f;
+        enemy.sourceAngle16 = 0x4000;
+        enemy.secondaryAngle16 = 0x4000;
+        enemy.targetAngle16 = 0x4000;
+        enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
+        enemy.sourceSpeed = 1.0;
+        enemy.speed = 1.0f;
+        enemy.vx = 0.0f;
+        enemy.vy = 0.0f;
+        enemy.activationDelay = 0;
+        enemy.targetable = false;
         break;
     case 0x0f:
-        enemy.hp = 36;
-        enemy.radius = 48;
+        // stage_spawn_dispatch_candidate case 8 keeps scheduled x/y/HP and
+        // constructs FUN_140080170 with kind 30 and radius 90.
+        enemy.updateCase = 0x09;
+        enemy.sourceDispatchKind = 30;
+        enemy.sourceDispatchField = 90;
+        enemy.rewardWeight = 30;
+        enemy.radius = 90;
         enemy.visualFrame = 22;
-        enemy.vy = 0.25f;
+        enemy.sourceAngle16 = 0x4000;
+        enemy.secondaryAngle16 = 0x4000;
+        enemy.targetAngle16 = 0x4000;
+        enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
+        enemy.sourceSpeed = 1.0;
+        enemy.speed = 1.0f;
+        enemy.vx = 0.0f;
+        enemy.vy = 0.0f;
+        enemy.activationDelay = 0;
+        enemy.targetable = false;
         break;
     case 0x10:
         enemy.hp = 36;
-        enemy.radius = 48;
+        enemy.radius = 150;
         enemy.visualFrame = 26;
         enemy.vy = 0.25f;
         break;
@@ -1862,6 +2095,41 @@ void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
         stage01ClearStarted_ = false;
         stage01ClearTransition_ = false;
         stage01ClearComplete_ = false;
+        break;
+    case 0x139:
+        // FUN_140119640 -> FUN_140078a00: kind 0, position (360,180),
+        // angle 0, speed 0.3, radius 180, initially untargetable.
+        enemy.hp = config_.difficulty == 0 ? 80000 : 100000;
+        enemy.maxHp = enemy.hp;
+        enemy.drawHp = enemy.hp;
+        enemy.updateCase = 0xa0;
+        enemy.sourceDispatchKind = 0;
+        enemy.sourceDispatchField = 180;
+        enemy.radius = 180;
+        enemy.visualFrame = 0;
+        enemy.sourceAngle16 = 0;
+        enemy.secondaryAngle16 = 0;
+        enemy.targetAngle16 = 0;
+        enemy.angle = 0.0f;
+        enemy.sourceSpeed = 0.3;
+        enemy.speed = 0.3f;
+        enemy.vx = 0.0f;
+        enemy.vy = 0.0f;
+        enemy.activationDelay = 0;
+        enemy.rewardWeight = 0;
+        enemy.targetable = false;
+        stage02BossPhaseMode_ = 0;
+        stage02BossMaxHp_ = enemy.hp;
+        stage02BossCountdown_ = 0;
+        stage02BossCountdownDraw_ = 0;
+        stage02BossBreaksRemaining_ = 4;
+        stage02BossPhaseIndex_ = 0;
+        stage02BossTargetX_ = 360.0f;
+        stage02BossTargetY_ = 180.0f;
+        stage02GateFlag_ = true;
+        stage02ClearStarted_ = false;
+        stage02ClearTransition_ = false;
+        stage02ClearComplete_ = false;
         break;
     case 0x19:
     case 0x1a:
@@ -2167,19 +2435,64 @@ void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
         enemy.targetable = false;
         break;
     case 0x13a:
-        // Stage 3 hands this node to the separate boss helper FUN_14000ed10.
-        // Keep the exact constructor surface without routing it through the
-        // generic small-enemy movement or projectile fallback.
+        // FUN_14011b3d0 -> FUN_140078a00: kind 0, position (360,200),
+        // angle 0, speed 0.5, radius 150, initially untargetable.
         enemy.updateCase = 0xa1;
         enemy.sourceDispatchKind = 0;
         enemy.sourceDispatchField = 150;
         enemy.radius = 150;
         enemy.visualFrame = 0;
         enemy.sourceAngle16 = 0;
+        enemy.secondaryAngle16 = 0;
+        enemy.targetAngle16 = 0;
+        enemy.angle = 0.0f;
         enemy.sourceSpeed = 0.5;
+        enemy.speed = 0.5f;
+        enemy.vx = 0.0f;
+        enemy.vy = 0.0f;
         enemy.activationDelay = 0;
-        enemy.rewardWeight = 120;
+        enemy.rewardWeight = 0;
         enemy.targetable = false;
+        stage03BossPhaseMode_ = 0;
+        stage03BossMaxHp_ = 100000;
+        stage03BossCountdown_ = 0;
+        stage03BossCountdownDraw_ = 0;
+        stage03BossBreaksRemaining_ = 4;
+        stage03BossPhaseIndex_ = 0;
+        stage03BossTargetX_ = 360.0f;
+        stage03BossTargetY_ = 200.0f;
+        stage03GateFlag_ = true;
+        stage03ClearStarted_ = false;
+        stage03ClearTransition_ = false;
+        stage03ClearComplete_ = false;
+        break;
+    case 0x13b:
+        // FUN_14011cdd0 -> FUN_140078a00: kind 0, position (360,120),
+        // angle 0, speed 0.3, radius 200, initially untargetable.
+        enemy.updateCase = 0xa2;
+        enemy.sourceDispatchKind = 0;
+        enemy.sourceDispatchField = 200;
+        enemy.radius = 200;
+        enemy.visualFrame = 0;
+        enemy.sourceAngle16 = 0;
+        enemy.secondaryAngle16 = 0;
+        enemy.targetAngle16 = 0;
+        enemy.angle = 0.0f;
+        enemy.sourceSpeed = 0.3;
+        enemy.speed = 0.3f;
+        enemy.vx = 0.0f;
+        enemy.vy = 0.0f;
+        enemy.activationDelay = 0;
+        enemy.rewardWeight = 0;
+        enemy.targetable = false;
+        stage01BossPhaseMode_ = 0;
+        stage01BossMaxHp_ = 100000;
+        stage01BossCountdown_ = 0;
+        stage01BossBreaksRemaining_ = 4;
+        stage01BossPhaseIndex_ = 0;
+        stage01ClearStarted_ = false;
+        stage01ClearTransition_ = false;
+        stage01ClearComplete_ = false;
         break;
     default:
         enemy.hp = 12;
@@ -2311,6 +2624,60 @@ void StageRuntime::spawnStage02Type21Child(const StageEnemy& parent, int childIn
     pendingEnemies_.push_back(child);
 }
 
+bool StageRuntime::spawnStage02BossChild(StageEnemy& parent, int spawnType, int childIndex,
+                                         float offsetOrRadiusX, float offsetY,
+                                         std::uint16_t orbitAngle, const char* note) {
+    if ((spawnType < 0x22 || spawnType > 0x24) ||
+        enemies_.size() + pendingEnemies_.size() >= kStageEntityCap) {
+        return false;
+    }
+
+    StageEnemy child;
+    child.entityId = nextEntityId_++;
+    child.spawnType = spawnType;
+    child.updateCase = spawnType;
+    child.sourceHitPoints = 99999999;
+    child.sourceDispatchKind = 10;
+    child.sourceDispatchField = 50;
+    child.sourceNote = note;
+    child.parentEntityId = parent.entityId;
+    child.parentSpawnType = 0x139;
+    child.childIndex = childIndex;
+    child.sourceAngle16 = orbitAngle;
+    child.secondaryAngle16 = orbitAngle;
+    child.targetAngle16 = orbitAngle;
+    child.angle = fixedAngleToRadians(orbitAngle);
+    child.speed = spawnType == 0x22 ? 1.0f : 0.0f;
+    child.sourceSpeed = child.speed;
+    child.hp = 99999999;
+    child.maxHp = child.hp;
+    child.drawHp = child.hp;
+    child.radius = 50;
+    child.activationDelay = 0;
+    child.rewardWeight = 0;
+    child.targetable = false;
+
+    if (spawnType == 0x22) {
+        child.originX = offsetOrRadiusX;
+        child.originY = offsetY;
+        child.x = parent.x + offsetOrRadiusX;
+        child.y = parent.y + offsetY;
+        child.visualFrame = 39 + childIndex % 4;
+    }
+    else {
+        child.originX = offsetOrRadiusX;
+        child.originY = 0.0f;
+        const double orbitRadians = fixedAngleToRadiansDouble(orbitAngle);
+        child.x = parent.x + static_cast<float>(std::cos(orbitRadians) * offsetOrRadiusX);
+        child.y = parent.y + static_cast<float>(std::sin(orbitRadians) * offsetOrRadiusX);
+        child.visualFrame = 23;
+    }
+
+    pendingEnemies_.push_back(child);
+    ++parent.liveChildCount;
+    return true;
+}
+
 void StageRuntime::spawnStage01MarkerSatellite(StageEnemy& parent, int childIndex, float offsetX, float offsetY, int hitPoints, const char* note) {
     StageEnemy satellite;
     satellite.entityId = nextEntityId_++;
@@ -2413,6 +2780,91 @@ void StageRuntime::spawnStage03Type2FChild(const StageEnemy& parent) {
     child.rewardWeight = 1;
     child.targetable = false;
     pendingEnemies_.push_back(child);
+}
+
+bool StageRuntime::spawnStage03BossChild(StageEnemy& parent, int spawnType,
+                                         int childIndex, float offsetOrTargetX,
+                                         float offsetOrTargetY, int hitPoints,
+                                         int kind, double speed, int radius,
+                                         std::uint16_t angle16, const char* note) {
+    if (!isStage03BossChildType(spawnType) ||
+        enemies_.size() + pendingEnemies_.size() >= kStageEntityCap) {
+        return false;
+    }
+
+    StageEnemy child;
+    child.entityId = nextEntityId_++;
+    child.spawnType = spawnType;
+    child.sourceHitPoints = hitPoints;
+    child.sourceX = static_cast<int>(std::lround(offsetOrTargetX));
+    child.sourceY = static_cast<int>(std::lround(offsetOrTargetY));
+    child.sourceNote = note;
+    child.parentEntityId = parent.entityId;
+    child.parentSpawnType = 0x13a;
+    child.childIndex = childIndex;
+    child.x = parent.x;
+    child.y = parent.y;
+    child.originX = offsetOrTargetX;
+    child.originY = offsetOrTargetY;
+    child.markerDrawX = offsetOrTargetX;
+    child.markerDrawY = offsetOrTargetY;
+    child.sourceAngle16 = angle16;
+    child.secondaryAngle16 = angle16;
+    child.targetAngle16 = angle16;
+    child.angle = fixedAngleToRadians(angle16);
+    child.sourceSpeed = speed;
+    child.speed = static_cast<float>(speed);
+    child.sourceDispatchKind = kind;
+    child.sourceDispatchField = radius;
+    child.rewardWeight = kind;
+    child.radius = radius;
+    child.activationDelay = 0;
+    child.targetable = false;
+    child.updateCase = spawnType == 0x30 ? 0x23
+                         : (spawnType == 0x31 ? 0x24
+                            : (spawnType <= 0x33 ? 0x25 : 0x26));
+    const double hpScale = config_.difficulty == 0 ? 0.8 : 1.0;
+    child.hp = std::max(1, static_cast<int>(static_cast<double>(hitPoints) * hpScale));
+    child.maxHp = child.hp;
+    child.drawHp = child.hp;
+    pendingEnemies_.push_back(child);
+    return true;
+}
+
+void StageRuntime::spawnStage03DeathNode(const StageEnemy& enemy, int hitPoints,
+                                         int ownerEntityId) {
+    (void)enemy;
+    if (enemies_.size() + pendingEnemies_.size() >= kStageEntityCap) {
+        return;
+    }
+
+    StageEnemy node;
+    node.entityId = nextEntityId_++;
+    node.spawnType = 0x153;
+    node.sourceHitPoints = hitPoints;
+    node.sourceX = -100;
+    node.sourceY = -100;
+    node.sourceNote = "S03 child death delayed-damage node 0x153";
+    node.updateCase = 0xb5;
+    node.sourceDispatchKind = 1;
+    node.sourceDispatchField = 10;
+    node.parentEntityId = ownerEntityId;
+    node.parentSpawnType = 0x13a;
+    node.x = -100.0f;
+    node.y = -100.0f;
+    node.originX = -100.0f;
+    node.originY = -100.0f;
+    node.sourceAngle16 = 0x4000;
+    node.sourceSpeed = 1.0;
+    node.speed = 1.0f;
+    node.hp = std::max(1, hitPoints);
+    node.maxHp = node.hp;
+    node.drawHp = node.hp;
+    node.radius = 10;
+    node.activationDelay = 0;
+    node.rewardWeight = 1;
+    node.targetable = false;
+    pendingEnemies_.push_back(node);
 }
 
 void StageRuntime::spawnStage04CarrierChild(const StageEnemy& parent, int spawnType) {
@@ -2806,45 +3258,72 @@ void StageRuntime::updateEnemies() {
         const bool commonMarkerRoot = enemy.spawnType >= 0x06 && enemy.spawnType <= 0x08;
         const bool commonMarkerSatellite = enemy.spawnType == 0x09;
         const bool sharedType0A = enemy.spawnType == 0x0a;
-        const bool stage03Exact = selectedStage_ == 3 && isStage03FocusedType(enemy.spawnType);
-        const bool stage03BossScaffold = selectedStage_ == 3 && enemy.spawnType == 0x13a;
+        const bool sharedType0B = enemy.spawnType == 0x0b;
+        const bool sharedType0C = enemy.spawnType == 0x0c;
+        const bool sharedType0D = enemy.spawnType == 0x0d;
+        const bool sharedType0E = enemy.spawnType == 0x0e;
+        const bool sharedType0F = enemy.spawnType == 0x0f;
+        const bool stage01Type10 = enemy.spawnType == 0x10;
+        const bool stage03Exact = isStage03FocusedType(enemy.spawnType);
+        const bool stage03BossRoot = enemy.spawnType == 0x13a;
+        const bool stage03BossChild = isStage03BossChildType(enemy.spawnType) &&
+                                      enemy.parentSpawnType == 0x13a;
+        const bool stage03BossNode = stage03BossRoot || stage03BossChild;
+        const bool stage03DeathNode = enemy.spawnType == 0x153 &&
+                                      enemy.parentSpawnType == 0x13a;
+        const bool unportedBossScaffold = enemy.spawnType == 0x13b;
         const bool carrierFamily = isStage04CarrierFamily(enemy.spawnType);
         const bool stage04SimpleExact = enemy.spawnType == 0x35 || enemy.spawnType == 0x36 || enemy.spawnType == 0x37;
         const bool stage04Type38 = enemy.spawnType == 0x38;
         const bool stage04Type3DFamily = enemy.spawnType == 0x3d || enemy.spawnType == 0x3e;
         const bool stage04Type3F = enemy.spawnType == 0x3f;
-        const bool stage02Type19 = selectedStage_ == 2 && enemy.spawnType == 0x19;
-        const bool stage02Type1A = selectedStage_ == 2 && enemy.spawnType == 0x1a;
-        const bool stage02Type1B = selectedStage_ == 2 && enemy.spawnType == 0x1b;
-        const bool stage02Type1C = selectedStage_ == 2 && enemy.spawnType == 0x1c;
-        const bool stage02Type1DOr1E = selectedStage_ == 2 &&
-                                       (enemy.spawnType == 0x1d || enemy.spawnType == 0x1e);
-        const bool stage02Type1F = selectedStage_ == 2 && enemy.spawnType == 0x1f;
-        const bool stage02Type20 = selectedStage_ == 2 && enemy.spawnType == 0x20;
-        const bool stage02Type21 = selectedStage_ == 2 && enemy.spawnType == 0x21 &&
+        const bool stage02Type19 = enemy.spawnType == 0x19;
+        const bool stage02Type1A = enemy.spawnType == 0x1a;
+        const bool stage02Type1B = enemy.spawnType == 0x1b;
+        const bool stage02Type1C = enemy.spawnType == 0x1c;
+        const bool stage02Type1DOr1E = enemy.spawnType == 0x1d || enemy.spawnType == 0x1e;
+        const bool stage02Type1F = enemy.spawnType == 0x1f;
+        const bool stage02Type20 = enemy.spawnType == 0x20;
+        const bool stage02Type21 = enemy.spawnType == 0x21 &&
                                    enemy.parentSpawnType == 0x20;
         const bool stage02Exact = stage02Type19 || stage02Type1A || stage02Type1B ||
                                   stage02Type1C || stage02Type1DOr1E || stage02Type1F ||
                                   stage02Type20 || stage02Type21;
-        const bool stage01BossRoot = selectedStage_ == 1 && enemy.spawnType == 0x138;
-        const bool stage01BossChild = selectedStage_ == 1 && isStage01BossChildType(enemy.spawnType);
+        const bool stage01BossRoot = enemy.spawnType == 0x138;
+        const bool stage01BossChild = isStage01BossChildType(enemy.spawnType);
         const bool stage01BossNode = stage01BossRoot || stage01BossChild;
+        const bool stage02BossRoot = enemy.spawnType == 0x139;
+        const bool stage02BossChild = enemy.spawnType >= 0x22 && enemy.spawnType <= 0x24 &&
+                                      enemy.parentSpawnType == 0x139;
+        const bool stage02BossNode = stage02BossRoot || stage02BossChild;
+        const bool postDeathCounter = enemy.spawnType == 0x137;
         // Entity helpers own the +0x1c < 1 death branch. Collision only writes
         // HP; cleanup/rewards happen when the helper runs on the next frame.
-        if (enemy.hp < 1 && !sharedType0A && !stage01BossNode && !stage03Exact && !stage03BossScaffold &&
+        if (enemy.hp < 1 && !sharedType0A && !sharedType0B && !sharedType0C &&
+            !sharedType0D && !sharedType0E && !sharedType0F &&
+            !stage01Type10 && !stage01BossNode && !stage02BossNode && !postDeathCounter &&
+            !stage03Exact && !stage03BossNode && !stage03DeathNode && !unportedBossScaffold &&
             !stage02Exact &&
             !carrierFamily && !stage04SimpleExact && !stage04Type38 &&
             !stage04Type3DFamily && !stage04Type3F) {
-            const int stage01Window = selectedStage_ == 1
-                                          ? stage01DeathRewardWindow(enemy.spawnType)
-                                          : 0;
+            const int stage01Window = stage01DeathRewardWindow(enemy.spawnType);
             if (stage01Window > 0) {
                 spawnEnemyDeathRewardBurst(enemy, stage01Window);
             }
             else if (enemy.spawnType != 0x09) {
                 spawnEnemyDeathRewardBurst(enemy);
             }
+            if (enemy.spawnType == 0x11) {
+                const StageEnemy* parent = findEnemyById(enemy.parentEntityId);
+                if (parent == nullptr || parent->spawnType != enemy.parentSpawnType ||
+                    parent->hp < 1) {
+                    // FUN_140082090 evaluates its independent owner-HP tail even
+                    // after the child's own death branch has already fired.
+                    spawnEnemyDeathEffects(enemy, 1);
+                }
+            }
             enemy.active = false;
+            appendPending();
             continue;
         }
         ++enemy.age;
@@ -2862,6 +3341,21 @@ void StageRuntime::updateEnemies() {
         }
         else if (sharedType0A) {
             updateStage01Type0A(enemy, activeAge);
+        }
+        else if (sharedType0B) {
+            updateStage01Type0B(enemy, activeAge);
+        }
+        else if (sharedType0C) {
+            updateStage01Type0C(enemy, activeAge);
+        }
+        else if (sharedType0D) {
+            updateStage01Type0D(enemy, activeAge);
+        }
+        else if (sharedType0E) {
+            updateStage01Type0E(enemy);
+        }
+        else if (sharedType0F) {
+            updateStage01Type0F(enemy);
         }
         else if (stage02Type19) {
             updateStage02Type19(enemy);
@@ -2887,14 +3381,32 @@ void StageRuntime::updateEnemies() {
         else if (stage02Type21) {
             updateStage02Type21(enemy);
         }
+        else if (stage02BossRoot) {
+            updateStage02Boss(enemy);
+        }
+        else if (stage02BossChild) {
+            updateStage02BossChild(enemy);
+        }
+        else if (postDeathCounter) {
+            updatePostDeathCounterEntity(enemy);
+        }
         else if (stage03Exact) {
             updateStage03Enemy(enemy);
         }
-        else if (stage03BossScaffold) {
+        else if (stage03BossRoot) {
+            updateStage03Boss(enemy);
+        }
+        else if (stage03BossChild) {
+            updateStage03BossChild(enemy);
+        }
+        else if (stage03DeathNode) {
+            updateStage03DeathNode(enemy);
+        }
+        else if (unportedBossScaffold) {
             enemy.vx = 0.0f;
             enemy.vy = 0.0f;
         }
-        else if (selectedStage_ == 1 && isStage01ObservedType(enemy.spawnType)) {
+        else if (isStage01ObservedType(enemy.spawnType)) {
             updateStage01Enemy(enemy, activeAge);
         }
         else if (isStage04FocusedType(enemy.spawnType)) {
@@ -2907,23 +3419,33 @@ void StageRuntime::updateEnemies() {
         const bool stage04PreMovementFire = stage04SimpleExact;
         const bool stage04OwnsHelperTimer = stage04PreMovementFire || stage04Type38 || carrierFamily ||
                                             stage04Type3DFamily || stage04Type3F;
-        const bool ownsHelperTimer = stage01BossNode || stage02Exact ||
-                                     stage03Exact || stage04OwnsHelperTimer;
+        const bool ownsHelperTimer = sharedType0B || sharedType0C || sharedType0D ||
+                                     sharedType0E || sharedType0F ||
+                                     stage01Type10 || stage01BossNode || stage02BossNode ||
+                                     postDeathCounter || stage02Exact ||
+                                     stage03Exact || stage03BossNode || stage03DeathNode ||
+                                     unportedBossScaffold ||
+                                     stage04OwnsHelperTimer;
         if (stage04PreMovementFire) {
             // These helpers emit from the pre-movement point.
             emitStage04Projectiles(enemy, enemy.helperTimer);
         }
 
-        if (!stage01BossNode && !stage02Exact) {
+        if (!stage01BossNode && !stage02BossNode && !stage03BossNode &&
+            !stage03DeathNode && !postDeathCounter && !stage02Exact) {
             enemy.x += enemy.vx;
             enemy.y += enemy.vy;
         }
 
-        if (stage02Exact) {
+        if (postDeathCounter) {
+            // FUN_14007c1a0 owns this invisible helper's lifetime and emissions.
+        }
+        else if (stage02Exact) {
             // Stage 2 exact helpers emit before the central dispatcher advances
             // their helper timers; no generic fallback belongs to these nodes.
         }
-        else if (stage03Exact || stage03BossScaffold) {
+        else if (stage03Exact || stage03BossNode || stage03DeathNode ||
+                 unportedBossScaffold) {
             // Stage 3 exact helpers emit internally from the original
             // pre/post-movement source coordinates. The boss scaffold is kept
             // out of the generic emitter until FUN_14000ed10 is represented.
@@ -2931,6 +3453,10 @@ void StageRuntime::updateEnemies() {
         else if (stage01BossNode) {
             // FUN_140004660 and FUN_140007fc0 emit internally and own their
             // direct position updates.
+        }
+        else if (stage02BossNode) {
+            // FUN_140009480/FUN_14000d480/FUN_14000e3b0 own movement and
+            // projectile emission inside their helper calls.
         }
         else if (commonMarkerRoot) {
             emitStage01Projectiles(enemy, activeAge);
@@ -2942,7 +3468,10 @@ void StageRuntime::updateEnemies() {
         else if (sharedType0A) {
             emitStage01Projectiles(enemy, activeAge);
         }
-        else if (selectedStage_ == 1 && isStage01ObservedType(enemy.spawnType)) {
+        else if (sharedType0B || sharedType0C || sharedType0D || sharedType0F) {
+            emitStage01Projectiles(enemy, enemy.helperTimer);
+        }
+        else if (isStage01ObservedType(enemy.spawnType)) {
             emitStage01Projectiles(enemy, activeAge);
         }
         else if (isStage04FocusedType(enemy.spawnType) && !stage04PreMovementFire) {
@@ -2963,6 +3492,49 @@ void StageRuntime::updateEnemies() {
             if (enemy.x < horizontalOrigin - 64.0f ||
                 enemy.x > horizontalOrigin + 664.0f ||
                 enemy.y < -64.0f || enemy.y > 784.0f) {
+                enemy.active = false;
+            }
+        }
+        if (sharedType0B || sharedType0C || sharedType0D) {
+            // FUN_14007d4e0/FUN_14007dfb0/FUN_14007ea30 queue their movement,
+            // shots, body, and gauge before the shared death/bounds tail.
+            if (enemy.hp < 1) {
+                const int rewardWindow = sharedType0B ? 300 : (sharedType0C ? 0x168 : 0x1e0);
+                spawnEnemyDeathRewardBurst(enemy, rewardWindow);
+                enemy.active = false;
+            }
+            const float horizontalOrigin = projectileHorizontalOrigin(player_.x);
+            if (enemy.x < horizontalOrigin - 180.0f ||
+                enemy.x > horizontalOrigin + 780.0f ||
+                enemy.y < -180.0f || enemy.y > 900.0f) {
+                enemy.active = false;
+            }
+        }
+        if (sharedType0E) {
+            // FUN_14007f2c0 queues movement, bullets, multipart body, and gauge
+            // before its death/bounds tail.
+            if (enemy.hp < 1) {
+                spawnEnemyDeathRewardBurst(enemy, 500);
+                enemy.active = false;
+            }
+            const float horizontalOrigin = projectileHorizontalOrigin(player_.x);
+            if (enemy.x < horizontalOrigin - 128.0f ||
+                enemy.x > horizontalOrigin + 728.0f ||
+                enemy.y < -128.0f || enemy.y > 848.0f) {
+                enemy.active = false;
+            }
+        }
+        if (sharedType0F) {
+            // FUN_140080170 has the same queue-before-terminal-tail ordering,
+            // but uses the larger kind-30 lifetime rectangle.
+            if (enemy.hp < 1) {
+                spawnEnemyDeathRewardBurst(enemy, 500);
+                enemy.active = false;
+            }
+            const float horizontalOrigin = projectileHorizontalOrigin(player_.x);
+            if (enemy.x < horizontalOrigin - 360.0f ||
+                enemy.x > horizontalOrigin + 960.0f ||
+                enemy.y < -360.0f || enemy.y > 1080.0f) {
                 enemy.active = false;
             }
         }
@@ -3007,7 +3579,7 @@ void StageRuntime::updateEnemies() {
             }
         }
         if (ownsHelperTimer) {
-            if (!stage01BossNode) {
+            if (!stage01BossNode && !stage02BossNode) {
                 enemy.drawHelperState = enemy.helperState;
                 enemy.drawHelperTimer = enemy.helperTimer;
             }
@@ -3617,6 +4189,7 @@ void StageRuntime::updateStage02Type1F(StageEnemy& enemy) {
     if (enemy.helperState == 2 && enemy.helperTimer <= 60) {
         spawnStage02DeathExplosionChain(enemy);
         if (enemy.helperTimer == 60) {
+            spawnEnemyDeathEffects(enemy, 2);
             const int handle = effectMediumFrames_.size() > 18 ? effectMediumFrames_[18] : -1;
             const auto seed = static_cast<std::uint32_t>(enemy.entityId) +
                               static_cast<std::uint32_t>(frame_);
@@ -3627,7 +4200,7 @@ void StageRuntime::updateStage02Type1F(StageEnemy& enemy) {
             enemy.active = false;
         }
     }
-    if (enemy.y >= 820.0f) {
+    if (enemy.helperState != 2 && enemy.y >= 820.0f) {
         enemy.active = false;
     }
 }
@@ -3638,7 +4211,7 @@ void StageRuntime::updateStage02Type20(StageEnemy& enemy) {
     enemy.y += 1.0f;
 
     if (enemy.helperState == 0) {
-        if (enemy.helperTimer == 0 && selectedStage_ == 2) {
+        if (enemy.helperTimer == 0) {
             constexpr std::array<float, 5> kChildX{{420.0f, 235.0f, 570.0f, 125.0f, 620.0f}};
             constexpr std::array<float, 5> kChildYOffset{{320.0f, 260.0f, 210.0f, 120.0f, 60.0f}};
             for (std::size_t i = 0; i < kChildX.size(); ++i) {
@@ -3691,6 +4264,7 @@ void StageRuntime::updateStage02Type20(StageEnemy& enemy) {
     if (enemy.helperState == 2 && enemy.helperTimer <= 0x3c) {
         spawnStage02DeathExplosionChain(enemy);
         if (enemy.helperTimer == 0x3c) {
+            spawnEnemyDeathEffects(enemy, 2);
             const int handle = effectLargeFrames_.size() > 12 ? effectLargeFrames_[12] : -1;
             const auto seed = static_cast<std::uint32_t>(enemy.entityId) +
                               static_cast<std::uint32_t>(frame_);
@@ -3702,7 +4276,7 @@ void StageRuntime::updateStage02Type20(StageEnemy& enemy) {
             stage02GateFlag_ = false;
         }
     }
-    if (enemy.y >= 1080.0f) {
+    if (enemy.helperState != 2 && enemy.y >= 1080.0f) {
         enemy.active = false;
     }
 }
@@ -3772,6 +4346,9 @@ void StageRuntime::updateStage02Type21(StageEnemy& enemy) {
         }
         enemy.active = false;
     }
+    if (parentHp < 1) {
+        spawnEnemyDeathEffects(enemy, 1);
+    }
     if (parentHp < 1 || !parentActive) {
         enemy.active = false;
     }
@@ -3794,7 +4371,12 @@ void StageRuntime::spawnStage02DeathExplosionChain(const StageEnemy& enemy) {
         const int burstHandle = effectMediumFrames_.size() > 5
                                     ? effectMediumFrames_[5]
                                     : -1;
-        spawnStageEffect(stage02GateFlag_ ? 0x2b : 0x2a,
+        const bool deathChainGate = selectedStage_ == 1
+                                        ? stage01GateFlag_
+                                        : (selectedStage_ == 2
+                                               ? stage02GateFlag_
+                                               : (selectedStage_ == 3 && stage03GateFlag_));
+        spawnStageEffect(deathChainGate ? 0x2b : 0x2a,
                          burstHandle, 200, 0x3e, x, y, burstAngle,
                          1.0, burstScale, burstScale, 0x18,
                          0xff, 0xff, 0xff, 0xff);
@@ -3820,7 +4402,8 @@ void StageRuntime::spawnStageEffect(int type, int graphHandle, int graphExtent, 
                                     float x, float y, std::uint16_t angle16,
                                     double scale0, double scaleX, double scaleY,
                                     int lifetime, int colorR, int colorG, int colorB, int alpha) {
-    if (graphHandle == -1 || stageEffects_.size() >= kStageEffectCap) {
+    const bool graphlessFamily = type == 0x1a || type == 0x1d;
+    if ((!graphlessFamily && graphHandle == -1) || stageEffects_.size() >= kStageEffectCap) {
         return;
     }
 
@@ -3856,6 +4439,41 @@ void StageRuntime::updateStageEffects() {
 
         const int age = effect.age;
         switch (effect.type) {
+        case 0x0c: {
+            const int lifetime = std::max(1, effect.lifetime);
+            const double drawScale =
+                std::sin(static_cast<double>(age) * kPi /
+                         (2.0 * static_cast<double>(lifetime))) *
+                effect.scaleX;
+            int drawAlpha = effect.alpha;
+            if (effect.lifetime - 8 <= age) {
+                drawAlpha -= static_cast<int>(
+                    static_cast<double>((age - effect.lifetime) + 8) *
+                    static_cast<double>(effect.alpha) * 0.125);
+            }
+            const double radians = fixedAngleToRadiansDouble(effect.angle16);
+            effect.x += static_cast<float>(std::cos(radians) * effect.scale0);
+            effect.y += static_cast<float>(std::sin(radians) * effect.scale0);
+            effect.drawX = effect.x;
+            effect.drawY = effect.y;
+            effect.drawAngle16 = effect.angle16;
+            effect.drawScaleX = drawScale;
+            effect.drawScaleY = drawScale;
+            effect.drawAlpha = drawAlpha;
+            effect.drawQueuedThisFrame = true;
+            if (age == effect.lifetime) {
+                effect.active = false;
+            }
+            break;
+        }
+        case 0x1a:
+        case 0x1d:
+            // These nodes drive graph families that are not represented by the
+            // compact renderer. Preserve their exact allocation and lifetime.
+            if (age == effect.lifetime) {
+                effect.active = false;
+            }
+            break;
         case 0x2a:
         case 0x2b: {
             double drawScaleX = effect.scaleX;
@@ -3954,6 +4572,23 @@ void StageRuntime::updateStageEffects() {
                 effect.active = false;
             }
             break;
+        case 0x38: {
+            const int lifetime = std::max(1, effect.lifetime);
+            const double fade = std::clamp(
+                1.0 - static_cast<double>(age) / static_cast<double>(lifetime),
+                0.0, 1.0);
+            effect.drawX = effect.x;
+            effect.drawY = effect.y;
+            effect.drawAngle16 = effect.angle16;
+            effect.drawScaleX = effect.scaleX;
+            effect.drawScaleY = effect.scaleY;
+            effect.drawAlpha = static_cast<int>(static_cast<double>(effect.alpha) * fade);
+            effect.drawQueuedThisFrame = true;
+            if (age >= lifetime) {
+                effect.active = false;
+            }
+            break;
+        }
         default:
             effect.active = false;
             break;
@@ -4319,11 +4954,13 @@ void StageRuntime::updateStage03Satellite(StageEnemy& enemy) {
         enemy.y += (targetY - enemy.y) * 0.125f;
     }
     enemy.drawBodyThisFrame = true;
-    if (!parentActive) {
+    if (parent->hp < 1) {
+        spawnEnemyDeathEffects(enemy, 0);
         enemy.active = false;
         return;
     }
-    if (parent->hp < 1) {
+    if (!parentActive) {
+        enemy.active = false;
         return;
     }
 
@@ -4452,12 +5089,14 @@ void StageRuntime::updateStage03Type2B(StageEnemy& enemy) {
     else if (enemy.helperState == 2) {
         enemy.y += static_cast<float>(enemy.helperTimer) * 0.1f;
         if (enemy.helperTimer == 60) {
+            spawnEnemyDeathEffects(enemy, 2);
             enemy.active = false;
         }
     }
 
-    if (enemy.x < horizontalOrigin - 200.0f || enemy.x > horizontalOrigin + 800.0f ||
-        enemy.y < -200.0f || enemy.y > 920.0f) {
+    if (enemy.helperState != 2 &&
+        (enemy.x < horizontalOrigin - 200.0f || enemy.x > horizontalOrigin + 800.0f ||
+         enemy.y < -200.0f || enemy.y > 920.0f)) {
         enemy.active = false;
     }
 }
@@ -4690,6 +5329,7 @@ void StageRuntime::updateStage03Type2E(StageEnemy& enemy) {
     else if (enemy.helperState == 2) {
         enemy.y += static_cast<float>(enemy.helperTimer) * 0.1f;
         if (enemy.helperTimer == 60) {
+            spawnEnemyDeathEffects(enemy, 2);
             enemy.active = false;
             stage03GateFlag_ = false;
         }
@@ -4789,6 +5429,863 @@ void StageRuntime::updateStage03Type2F(StageEnemy& enemy) {
     }
 }
 
+void StageRuntime::updateStage03Boss(StageEnemy& enemy) {
+    enemy.vx = 0.0f;
+    enemy.vy = 0.0f;
+    enemy.drawBodyThisFrame = true;
+
+    // FUN_14000ed10 computes steering before replacing the shared random
+    // destination.
+    const auto steeringTarget = radiansToFixedAngleTrunc(std::atan2(
+        static_cast<double>(stage03BossTargetY_ - enemy.y),
+        static_cast<double>(stage03BossTargetX_ - enemy.x)));
+
+    // The live-bar break runs before the switch. Its new transition state is
+    // consequently executed in this same helper call at timer zero.
+    if (stage03BossPhaseMode_ == 1 &&
+        (enemy.hp < 1 || stage03BossCountdown_ < 1)) {
+        spawnPostDeathCounterEntity(enemy, 140.0);
+        spawnPlayerSideObject(0x18, enemy.x, enemy.y, 0.0, 0, 0, 0.0f);
+        enemy.targetable = false;
+        enemy.helperTimer = 0;
+        enemy.liveChildCount = 0;
+        switch (stage03BossBreaksRemaining_) {
+        case 4:
+            enemy.helperState = 2;
+            enemy.radius = 200;
+            stage03BossPhaseMode_ = 2;
+            break;
+        case 3:
+            enemy.helperState = 4;
+            enemy.radius = 200;
+            stage03BossPhaseMode_ = 2;
+            break;
+        case 2:
+            enemy.helperState = 6;
+            stage03BossPhaseMode_ = 2;
+            break;
+        case 1:
+            enemy.helperState = 8;
+            stage03BossPhaseMode_ = -1;
+            break;
+        default:
+            break;
+        }
+        stage03BossBreaksRemaining_ = std::max(0, stage03BossBreaksRemaining_ - 1);
+    }
+
+    // The common 50-frame refresh follows the phase-break preamble. State 3
+    // then performs a second 25-frame refresh with y=120..220. On a state-3
+    // break frame the second refresh must not run for the old state.
+    if (frame_ % 50 == 0) {
+        stage03BossTargetX_ = static_cast<float>(stageRandCoord(frame_, 301, 210));
+        stage03BossTargetY_ = static_cast<float>(
+            stageRandCoord(frame_ + (selectedStage_ - 1) * 0x14d, 101, 150));
+    }
+    if (enemy.helperState == 3 && frame_ % 25 == 0) {
+        stage03BossTargetX_ = static_cast<float>(stageRandCoord(frame_, 301, 210));
+        stage03BossTargetY_ = static_cast<float>(
+            stageRandCoord(frame_ + (selectedStage_ - 1) * 0x14d, 101, 120));
+    }
+
+    const auto steerTowardStageTarget = [&enemy, steeringTarget](int turnStep) {
+        enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16,
+                                              steeringTarget, turnStep);
+        enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
+        enemy.x += std::cos(enemy.angle) * static_cast<float>(enemy.sourceSpeed);
+        enemy.y += std::sin(enemy.angle) * static_cast<float>(enemy.sourceSpeed);
+    };
+    const auto openPhase = [this, &enemy](int state, int hitPoints,
+                                          int radius, int phaseIndex) {
+        enemy.helperState = state;
+        enemy.helperTimer = 0;
+        enemy.hp = hitPoints;
+        enemy.maxHp = hitPoints;
+        enemy.drawHp = hitPoints;
+        enemy.radius = radius;
+        enemy.targetable = true;
+        enemy.targetableTimer = 0;
+        stage03BossMaxHp_ = hitPoints;
+        stage03BossCountdown_ = 1800;
+        stage03BossPhaseIndex_ = phaseIndex;
+        stage03BossPhaseMode_ = 1;
+    };
+
+    const int timer = enemy.helperTimer;
+    switch (enemy.helperState) {
+    case 0:
+        if (timer == 0) {
+            spawnStage03BossChild(enemy, 0x30, 0, 150.0f, 120.0f,
+                                  10000, 48, 1.0, 50, 0x4000,
+                                  "S03 FUN_14000ed10 lower arm right");
+            spawnStage03BossChild(enemy, 0x30, 1, -150.0f, 120.0f,
+                                  10000, 48, 1.0, 50, 0x4000,
+                                  "S03 FUN_14000ed10 lower arm left");
+            spawnStage03BossChild(enemy, 0x31, 0, 100.0f, -100.0f,
+                                  99999999, 0, 1.0, 50, 0x4000,
+                                  "S03 FUN_14000ed10 upper satellite right");
+            spawnStage03BossChild(enemy, 0x31, 1, -100.0f, -100.0f,
+                                  99999999, 0, 1.0, 50, 0x4000,
+                                  "S03 FUN_14000ed10 upper satellite left");
+            enemy.liveChildCount = 4;
+        }
+        enemy.x = 360.0f;
+        if (timer < 60) {
+            enemy.y = -200.0f + static_cast<float>(static_cast<int>(
+                std::sin(static_cast<double>(timer) * kPi / 120.0) * 600.0));
+        }
+        else if (timer == 60) {
+            enemy.y = 400.0f;
+        }
+        else if (timer < 180) {
+            enemy.y = 200.0f + static_cast<float>(static_cast<int>(
+                std::sin(static_cast<double>(timer + 60) * kPi / 240.0) * 200.0));
+        }
+        else if (timer == 180) {
+            enemy.y = 200.0f;
+            openPhase(1, 70000, 150, 0);
+        }
+        break;
+    case 1:
+        steerTowardStageTarget(0x200);
+        emitStage03BossProjectiles(enemy);
+        break;
+    case 2:
+        if (timer < 90) {
+            enemy.y += static_cast<float>(timer) * 0.04f;
+            spawnStage02DeathExplosionChain(enemy);
+        }
+        if (timer == 90) {
+            enemy.sourceSpeed = 3.0;
+            enemy.speed = 3.0f;
+        }
+        if (timer >= 90) {
+            steerTowardStageTarget(0x309);
+        }
+        if (timer == 200) {
+            openPhase(3, 66000, 150, 1);
+        }
+        break;
+    case 3:
+        steerTowardStageTarget(0x309);
+        emitStage03BossProjectiles(enemy);
+        break;
+    case 4:
+        if (timer < 120) {
+            enemy.y += static_cast<float>(timer) * 0.02f;
+            spawnStage02DeathExplosionChain(enemy);
+        }
+        if (timer == 120) {
+            enemy.sourceSpeed = 0.5;
+            enemy.speed = 0.5f;
+        }
+        if (timer >= 130) {
+            steerTowardStageTarget(0x200);
+        }
+        if (timer == 380) {
+            openPhase(5, 40000, 80, 2);
+        }
+        break;
+    case 5:
+        steerTowardStageTarget(0x200);
+        emitStage03BossProjectiles(enemy);
+        break;
+    case 6:
+        if (timer < 90) {
+            spawnStage02DeathExplosionChain(enemy);
+        }
+        enemy.y += 0.1f;
+        if (timer == 180) {
+            openPhase(7, 50000, 80, 3);
+        }
+        break;
+    case 7:
+        steerTowardStageTarget(0x200);
+        if (timer == 10) {
+            static constexpr std::array<float, 4> kOffsetX{{250.0f, -250.0f,
+                                                            120.0f, -120.0f}};
+            static constexpr std::array<float, 4> kOffsetY{{-20.0f, -20.0f,
+                                                            -70.0f, -70.0f}};
+            for (int i = 0; i < 4; ++i) {
+                spawnStage03BossChild(
+                    enemy, 0x34, i, kOffsetX[static_cast<std::size_t>(i)],
+                    kOffsetY[static_cast<std::size_t>(i)], 9000, 24, 1.0, 50,
+                    0x4000, "S03 FUN_14000ed10 final satellite 0x34");
+            }
+            enemy.liveChildCount = 4;
+        }
+        if (timer > 99 && enemy.liveChildCount == 0) {
+            enemy.helperTimer = 0;
+        }
+        break;
+    case 8:
+        if (timer < 240) {
+            spawnStage02DeathExplosionChain(enemy);
+            enemy.y += 0.2f;
+        }
+        if (timer == 1) {
+            stage03ClearStarted_ = true;
+            player_.invulnerableFrames = std::max(player_.invulnerableFrames, 360);
+        }
+        if (timer == 240) {
+            spawnPlayerSideObject(0x18, enemy.x, enemy.y, 0.0, 0, 0, 0.0f);
+        }
+        if (timer == 420) {
+            stage03ClearTransition_ = true;
+        }
+        if (timer == 480) {
+            stage03GateFlag_ = false;
+            stage03ClearComplete_ = true;
+            enemy.active = false;
+        }
+        break;
+    default:
+        break;
+    }
+
+    enemy.drawHp = enemy.hp;
+    stage03BossCountdownDraw_ = stage03BossCountdown_;
+    if (stage03BossPhaseMode_ == 1) {
+        --stage03BossCountdown_;
+    }
+}
+
+void StageRuntime::emitStage03BossProjectiles(StageEnemy& enemy) {
+    const int difficulty = std::clamp(config_.difficulty, 0, 4);
+    const int timer = enemy.helperTimer;
+    const auto aimFrom = [this](float x, float y) {
+        return radiansToFixedAngleTrunc(std::atan2(
+            static_cast<double>(player_.y - y),
+            static_cast<double>(player_.x - x)));
+    };
+
+    if (enemy.helperState == 1) {
+        static constexpr std::array<int, 5> kBurstLength{{20, 36, 50, 60, 60}};
+        static constexpr std::array<int, 5> kAngleStep{{300, 400, 500, 500, 600}};
+        static constexpr std::array<double, 5> kBaseSpeed{{4.0, 6.0, 7.5, 8.0, 9.0}};
+        const int p = timer % 1000;
+        if (p < 80 || p > 399) {
+            return;
+        }
+        const int local = p - 80;
+        const int block = local / 80;
+        const int q = local % 80;
+        const float sourceY = enemy.y + 140.0f;
+        if (q == 0) {
+            enemy.secondaryAngle16 = aimFrom(enemy.x, sourceY);
+        }
+        if (q < kBurstLength[static_cast<std::size_t>(difficulty)] && q % 4 == 0) {
+            const int count = q / 4 + 1;
+            const int spread = (count - 1) *
+                               kAngleStep[static_cast<std::size_t>(difficulty)];
+            const double speed = kBaseSpeed[static_cast<std::size_t>(difficulty)] +
+                                 static_cast<double>(block) * 0.5;
+            spawnProjectileSpread(12, 0, enemy.x, sourceY,
+                                  enemy.secondaryAngle16, 10.0f, speed, 1,
+                                  count, spread, 0);
+        }
+        return;
+    }
+
+    if (enemy.helperState == 3) {
+        static constexpr std::array<int, 5> kCadence{{40, 36, 30, 20, 16}};
+        static constexpr std::array<int, 5> kFanCount{{5, 7, 9, 9, 9}};
+        static constexpr std::array<double, 5> kFanSpeed{{4.0, 5.5, 6.5, 6.0, 7.0}};
+        const int p = timer % 1200;
+        const int cadence = kCadence[static_cast<std::size_t>(difficulty)];
+        const float sourceY = enemy.y + 140.0f;
+        if (p >= 30 && p <= 279) {
+            const int local = p - 30;
+            if (local % (cadence * 3) == 0) {
+                enemy.secondaryAngle16 = aimFrom(enemy.x, sourceY);
+            }
+            if (local % cadence == 0) {
+                const int count = kFanCount[static_cast<std::size_t>(difficulty)];
+                const double speed = kFanSpeed[static_cast<std::size_t>(difficulty)];
+                if (difficulty > 0) {
+                    spawnProjectileSpread(1, 0, enemy.x, sourceY,
+                                          enemy.secondaryAngle16, 0.0f,
+                                          speed - 1.2, 1, count - 1, 24000, 0);
+                }
+                spawnProjectileSpread(5, 0, enemy.x, sourceY,
+                                      enemy.secondaryAngle16, 0.0f, speed, 1,
+                                      count, 24000, 0);
+            }
+        }
+
+        static constexpr std::array<int, 5> kWindowGap{{70, 50, 40, 40, 40}};
+        static constexpr std::array<int, 5> kWindowCount{{3, 5, 7, 7, 9}};
+        static constexpr std::array<double, 5> kWindowSlope{{0.10, 0.18, 0.20, 0.20, 0.24}};
+        int start = 320;
+        for (int window = 0; window < 8; ++window) {
+            const int length = 30 + window * 15;
+            if (p >= start && p < start + length) {
+                const int local = p - start;
+                if (local == 0) {
+                    enemy.targetAngle16 = aimFrom(enemy.x, sourceY);
+                }
+                if (local % 5 == 0) {
+                    const int count = kWindowCount[static_cast<std::size_t>(difficulty)];
+                    const double speed = 3.5 +
+                        static_cast<double>(local) *
+                            kWindowSlope[static_cast<std::size_t>(difficulty)];
+                    spawnProjectileSpread(3, 0, enemy.x, sourceY,
+                                          enemy.targetAngle16, 0.0f, speed, 1,
+                                          count, 27000, 0);
+                    if (difficulty >= 3) {
+                        spawnProjectileSpread(3, 0, enemy.x, sourceY,
+                                              enemy.targetAngle16, 0.0f,
+                                              speed + 1.5, 1, count, 27000, 0);
+                    }
+                    enemy.targetAngle16 = approachAngle16(
+                        enemy.targetAngle16, aimFrom(enemy.x, sourceY), 0x78);
+                }
+                break;
+            }
+            start += kWindowGap[static_cast<std::size_t>(difficulty)] +
+                     window * 15;
+        }
+        return;
+    }
+
+    if (enemy.helperState == 5 && timer >= 10) {
+        static constexpr std::array<int, 5> kPeriod{{150, 120, 100, 100, 100}};
+        static constexpr std::array<int, 5> kCadence{{10, 9, 8, 8, 8}};
+        const int period = kPeriod[static_cast<std::size_t>(difficulty)];
+        const int phase = (timer - 10) % (period * 2);
+        const int cadence = kCadence[static_cast<std::size_t>(difficulty)];
+        const auto cachedAim = aimFrom(enemy.x, -3200.0f);
+        if (phase >= 0 && phase < 60 && phase % cadence == 0) {
+            spawnStage03BossChild(enemy, 0x32, timer, static_cast<float>(phase * 12),
+                                  0.0f, 500, 4, 1.0, 30, cachedAim,
+                                  "S03 FUN_14000ed10 left-to-right sweep node");
+        }
+        if (phase >= period && phase < period + 60) {
+            const int local = phase - period;
+            if (local % cadence == 0) {
+                spawnStage03BossChild(enemy, 0x33, timer,
+                                      static_cast<float>(720 - local * 12), 0.0f,
+                                      500, 4, 1.5, 30, cachedAim,
+                                      "S03 FUN_14000ed10 right-to-left sweep node");
+            }
+        }
+    }
+}
+
+void StageRuntime::updateStage03BossChild(StageEnemy& enemy) {
+    enemy.vx = 0.0f;
+    enemy.vy = 0.0f;
+    enemy.drawBodyThisFrame = false;
+    enemy.drawMarkerThisFrame = false;
+
+    StageEnemy* parent = findEnemyById(enemy.parentEntityId);
+    if (parent == nullptr || parent->spawnType != 0x13a || !parent->active) {
+        enemy.active = false;
+        return;
+    }
+
+    switch (enemy.spawnType) {
+    case 0x30:
+        updateStage03Type30(enemy, *parent);
+        break;
+    case 0x31:
+        updateStage03Type31(enemy, *parent);
+        break;
+    case 0x32:
+    case 0x33:
+        updateStage03Type32Or33(enemy, *parent);
+        break;
+    case 0x34:
+        updateStage03Type34(enemy, *parent);
+        break;
+    default:
+        enemy.active = false;
+        break;
+    }
+}
+
+void StageRuntime::updateStage03Type30(StageEnemy& enemy, StageEnemy& parent) {
+    const float targetX = parent.x + enemy.originX;
+    const float targetY = parent.y + enemy.originY;
+    if (enemy.helperTimer == 0) {
+        enemy.x = targetX;
+        enemy.y = targetY;
+    }
+    else {
+        enemy.x += (targetX - enemy.x) / 5.0f;
+        enemy.y += (targetY - enemy.y) / 5.0f;
+    }
+    enemy.drawBodyThisFrame = true;
+    enemy.drawHp = enemy.hp;
+
+    if (enemy.helperState == 0 && parent.helperState == 1) {
+        enemy.helperState = 1;
+        enemy.helperTimer = 0;
+        enemy.targetable = true;
+        enemy.targetableTimer = 0;
+    }
+
+    if (enemy.helperState == 1) {
+        static constexpr std::array<int, 5> kCycle{{100, 60, 40, 36, 30}};
+        static constexpr std::array<int, 5> kCount{{1, 1, 1, 2, 2}};
+        static constexpr std::array<double, 5> kSpeed{{5.0, 6.0, 7.0, 8.0, 9.0}};
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        const int timer = enemy.helperTimer;
+        if (timer > 9) {
+            const int phase = (timer - 10) % kCycle[static_cast<std::size_t>(difficulty)];
+            if (phase < 20 && phase % 4 == 0) {
+                spawnProjectileSpread(
+                    3, 0, enemy.x, enemy.y + 65.0f, 0x4000, 0.0f,
+                    kSpeed[static_cast<std::size_t>(difficulty)], 1,
+                    kCount[static_cast<std::size_t>(difficulty)], 3000, 0);
+            }
+        }
+
+        if (enemy.hp < 1) {
+            spawnEnemyDeathRewardBurst(enemy, 1800);
+            spawnEnemyDeathEffects(enemy, 2);
+            spawnStage03DeathNode(enemy, enemy.maxHp, parent.entityId);
+            parent.liveChildCount = std::max(0, parent.liveChildCount - 1);
+            ++enemy.helperState;
+            enemy.targetable = false;
+        }
+        if (parent.helperState == 2) {
+            spawnEnemyDeathEffects(enemy, 2);
+            ++enemy.helperState;
+            enemy.targetable = false;
+        }
+    }
+
+    if (parent.helperState > 2 ||
+        (parent.helperState == 2 && parent.helperTimer == 130)) {
+        enemy.active = false;
+    }
+}
+
+void StageRuntime::updateStage03Type31(StageEnemy& enemy, StageEnemy& parent) {
+    const double oldHeading = fixedAngleToRadiansDouble(enemy.sourceAngle16);
+    const float projectileSourceX =
+        enemy.x + static_cast<float>(std::cos(oldHeading) * 70.0);
+    const float projectileSourceY =
+        enemy.y + static_cast<float>(std::sin(oldHeading) * 70.0);
+    const auto aimed = radiansToFixedAngleTrunc(std::atan2(
+        static_cast<double>(player_.y - enemy.y),
+        static_cast<double>(player_.x - enemy.x)));
+    enemy.x = parent.x + enemy.originX;
+    enemy.y = parent.y + enemy.originY;
+    enemy.drawBodyThisFrame = true;
+    enemy.targetable = false;
+
+    const auto turnStepFor = [](std::uint16_t current, std::uint16_t target) {
+        const int raw = (static_cast<int>(target) - static_cast<int>(current)) & 0xffff;
+        const int distance = std::min(raw, 0x10000 - raw);
+        return distance / 10 + 0x30;
+    };
+
+    if (enemy.helperState == 0 && parent.helperState == 1) {
+        enemy.helperState = 1;
+        enemy.helperTimer = 0;
+    }
+    else if (enemy.helperState == 0 && parent.helperState == 2) {
+        enemy.helperState = 2;
+        enemy.helperTimer = 0;
+    }
+
+    if (enemy.helperState == 1) {
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        const int local = enemy.helperTimer % 1000;
+
+        if (local < 400) {
+            static constexpr std::array<int, 5> kCadence{{100, 50, 40, 40, 30}};
+            static constexpr std::array<int, 5> kCount{{1, 1, 1, 3, 3}};
+            static constexpr std::array<double, 5> kSpeed{{4.5, 5.5, 6.0, 6.5, 7.5}};
+            enemy.sourceAngle16 = approachAngle16(
+                enemy.sourceAngle16, aimed,
+                turnStepFor(enemy.sourceAngle16, aimed));
+            const int cadence = kCadence[static_cast<std::size_t>(difficulty)];
+            if (local >= 30 && (local - 30) % cadence == 0) {
+                const int count = kCount[static_cast<std::size_t>(difficulty)];
+                const double speed = kSpeed[static_cast<std::size_t>(difficulty)];
+                spawnProjectileSpread(7, 0, projectileSourceX, projectileSourceY,
+                                      enemy.sourceAngle16, 10.0f, speed, 1,
+                                      count, 2400, 0);
+                spawnProjectileSpread(7, 0, projectileSourceX, projectileSourceY,
+                                      enemy.sourceAngle16, 10.0f, speed + 0.3, 1,
+                                      count, 2400, 0);
+            }
+        }
+        else if (local < 700) {
+            static constexpr std::array<int, 5> kDivisor{{4, 3, 2, 2, 2}};
+            static constexpr std::array<int, 5> kCount{{1, 2, 3, 3, 4}};
+            static constexpr std::array<int, 5> kRotation{{700, 750, 800, 800, 800}};
+            static constexpr std::array<double, 5> kSpeed{{2.0, 3.0, 4.0, 3.0, 3.5}};
+            if (local <= 430) {
+                const auto sideTarget = static_cast<std::uint16_t>(
+                    enemy.originX <= 0.0f ? 0x6000 : 0xe000);
+                enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16,
+                                                      sideTarget, 0x44c);
+            }
+            else if (local < 570) {
+                enemy.sourceAngle16 = normalizeAngle16(
+                    static_cast<int>(enemy.sourceAngle16) +
+                    kRotation[static_cast<std::size_t>(difficulty)]);
+            }
+            else {
+                enemy.sourceAngle16 = normalizeAngle16(
+                    static_cast<int>(enemy.sourceAngle16) -
+                    kRotation[static_cast<std::size_t>(difficulty)]);
+            }
+            if (local >= 430 &&
+                (local - 430) % kDivisor[static_cast<std::size_t>(difficulty)] == 0) {
+                const int count = kCount[static_cast<std::size_t>(difficulty)];
+                const double speed = kSpeed[static_cast<std::size_t>(difficulty)];
+                const int spread = (count - 1) * 8888;
+                spawnProjectileSpread(13, 1, projectileSourceX, projectileSourceY,
+                                      enemy.sourceAngle16, 10.0f, speed, 1,
+                                      count, spread, 0);
+                if (difficulty >= 3) {
+                    spawnProjectileSpread(13, 1, projectileSourceX, projectileSourceY,
+                                          enemy.sourceAngle16, 10.0f,
+                                          speed + 1.5, 1, count, spread, 0);
+                }
+            }
+        }
+        else {
+            static constexpr std::array<int, 5> kCadence{{80, 45, 40, 40, 40}};
+            static constexpr std::array<int, 5> kCount{{3, 5, 7, 7, 9}};
+            static constexpr std::array<int, 5> kGrowth{{4, 6, 8, 8, 1}};
+            static constexpr std::array<double, 5> kSpeed{{4.0, 6.0, 7.0, 7.0, 8.0}};
+            if (local <= 730) {
+                enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16,
+                                                      aimed, 0x44c);
+            }
+            const int sequence = local - 730;
+            if (sequence >= 0) {
+                const int cadence = kCadence[static_cast<std::size_t>(difficulty)];
+                const int block = sequence / cadence;
+                const int phase = sequence % cadence;
+                int delta = 30 + block * kGrowth[static_cast<std::size_t>(difficulty)];
+                if (sequence < 270 && phase == 0) {
+                    enemy.targetAngle16 = aimed;
+                }
+                if (sequence < 270 && phase < 40 && phase % 4 == 0) {
+                    const int count = kCount[static_cast<std::size_t>(difficulty)];
+                    const double speed = kSpeed[static_cast<std::size_t>(difficulty)] +
+                                         static_cast<double>(block) * 0.5 +
+                                         static_cast<double>(phase) * 0.1;
+                    spawnProjectileSpread(6, 0, projectileSourceX, projectileSourceY,
+                                          enemy.targetAngle16, 10.0f, speed, 1,
+                                          count, 22000, 0);
+                    if (difficulty >= 3) {
+                        spawnProjectileSpread(6, 0, projectileSourceX, projectileSourceY,
+                                              enemy.targetAngle16, 10.0f,
+                                              speed + 1.6, 1, count, 22000, 0);
+                    }
+                }
+                if (sequence % (cadence * 2) >= cadence) {
+                    delta = -delta;
+                }
+                enemy.targetAngle16 = normalizeAngle16(
+                    static_cast<int>(enemy.targetAngle16) + delta);
+            }
+        }
+
+        if (parent.helperState == 2) {
+            enemy.helperState = 2;
+            enemy.helperTimer = 0;
+        }
+    }
+
+    if (enemy.helperState == 2 && parent.helperState == 3) {
+        enemy.helperState = 3;
+        enemy.helperTimer = 0;
+    }
+
+    if (enemy.helperState == 3) {
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        static constexpr std::array<int, 5> kInterval{{140, 100, 90, 90, 70}};
+        static constexpr std::array<int, 5> kCount{{3, 5, 7, 7, 7}};
+        static constexpr std::array<double, 5> kSpeed{{7.7, 8.5, 9.0, 9.0, 9.0}};
+        const int p = enemy.helperTimer % 1200;
+        const int interval = kInterval[static_cast<std::size_t>(difficulty)];
+        const int start = enemy.originX >= 0.0f ? 690 : 690 + interval;
+        if (p >= start && p < 1120 && (p - start) % (interval * 2) == 0) {
+            const int visual = enemy.originX >= 0.0f ? 3 : 2;
+            const int behavior = enemy.originX >= 0.0f ? 26 : 27;
+            spawnProjectileSpread(visual, behavior,
+                                  projectileSourceX, projectileSourceY,
+                                  aimed, 10.0f,
+                                  kSpeed[static_cast<std::size_t>(difficulty)], 1,
+                                  kCount[static_cast<std::size_t>(difficulty)],
+                                  20000, 0);
+        }
+        enemy.sourceAngle16 = approachAngle16(
+            enemy.sourceAngle16, aimed,
+            turnStepFor(enemy.sourceAngle16, aimed));
+        if (parent.hp < 1 || stage03BossCountdown_ < 1) {
+            spawnEnemyDeathEffects(enemy, 1);
+            enemy.active = false;
+        }
+    }
+    if (parent.helperState > 4) {
+        enemy.active = false;
+    }
+}
+
+void StageRuntime::updateStage03Type32Or33(StageEnemy& enemy,
+                                           StageEnemy& parent) {
+    const int timer = enemy.helperTimer;
+    enemy.drawBodyThisFrame = true;
+    if (enemy.helperState == 0) {
+        if (timer == 0) {
+            enemy.markerDrawX = parent.x;
+            enemy.markerDrawY = parent.y;
+        }
+        const double entry = std::sin(static_cast<double>(timer) * kPi / 80.0);
+        enemy.x = enemy.markerDrawX +
+                  static_cast<float>(entry *
+                      static_cast<double>(enemy.originX - enemy.markerDrawX));
+        enemy.y = enemy.markerDrawY +
+                  static_cast<float>(entry *
+                      static_cast<double>(enemy.originY - enemy.markerDrawY));
+        if ((timer & 1) == 0) {
+            const int trail = enemySmallFrames_.size() > 29 ? enemySmallFrames_[29] : -1;
+            const double scale = std::max(0.0, entry);
+            spawnStageEffect(0x38, trail, 100, 0x22, enemy.x, enemy.y, 0,
+                             0.0, scale, scale, 24,
+                             0xff, 0xff, 0xff, 0x60);
+        }
+        if (timer == 40) {
+            enemy.markerDrawX = enemy.originX;
+            enemy.markerDrawY = enemy.originY;
+            enemy.helperState = 1;
+            enemy.helperTimer = 0;
+            enemy.targetable = true;
+            enemy.targetableTimer = 0;
+        }
+    }
+
+    if (enemy.helperState == 1) {
+        const float projectileSourceX = enemy.x;
+        const float projectileSourceY = enemy.y;
+        const double radians = fixedAngleToRadiansDouble(enemy.sourceAngle16);
+        enemy.markerDrawX += static_cast<float>(std::cos(radians) * enemy.sourceSpeed);
+        enemy.markerDrawY += static_cast<float>(std::sin(radians) * enemy.sourceSpeed);
+        enemy.sourceSpeed += 0.04;
+        const float wobble = static_cast<float>(
+            std::sin(static_cast<double>(enemy.helperTimer) * kPi / 75.0) * 30.0);
+        enemy.x = enemy.markerDrawX + (enemy.spawnType == 0x32 ? wobble : -wobble);
+        enemy.y = enemy.markerDrawY;
+
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        static constexpr std::array<int, 5> kCycle{{80, 60, 50, 50, 50}};
+        static constexpr std::array<int, 5> kBurst{{24, 32, 36, 36, 40}};
+        static constexpr std::array<double, 5> kSpeed{{5.5, 6.5, 7.0, 6.0, 7.5}};
+        if (parent.helperTimer >= 60) {
+            const int phase = (parent.helperTimer - 60) %
+                              kCycle[static_cast<std::size_t>(difficulty)];
+            if (phase == 0) {
+                enemy.targetAngle16 = radiansToFixedAngleTrunc(std::atan2(
+                    static_cast<double>(player_.y - (-200.0f)),
+                    static_cast<double>(player_.x - parent.x)));
+            }
+            if (phase < kBurst[static_cast<std::size_t>(difficulty)] && phase % 4 == 0 &&
+                enemy.y < 700.0f &&
+                distanceSquared(enemy.x, enemy.y, player_.x, player_.y) > 30.0f * 30.0f) {
+                const double speed = kSpeed[static_cast<std::size_t>(difficulty)];
+                spawnProjectileNode(7, 0, projectileSourceX, projectileSourceY,
+                                    enemy.targetAngle16, 10.0f, speed, 1, 0);
+                spawnProjectileNode(7, 0, projectileSourceX, projectileSourceY,
+                                    normalizeAngle16(static_cast<int>(enemy.targetAngle16) + 0x8000),
+                                    10.0f, speed, 1, 0);
+                if (difficulty >= 3) {
+                    spawnProjectileNode(7, 0, projectileSourceX, projectileSourceY,
+                                        enemy.targetAngle16, 10.0f, speed + 2.0, 1, 0);
+                    spawnProjectileNode(7, 0, projectileSourceX, projectileSourceY,
+                                        normalizeAngle16(static_cast<int>(enemy.targetAngle16) + 0x8000),
+                                        10.0f, speed + 2.0, 1, 0);
+                }
+            }
+        }
+    }
+
+    enemy.secondaryAngle16 = normalizeAngle16(
+        static_cast<int>(enemy.secondaryAngle16) + 2000);
+    enemy.drawHp = enemy.hp;
+
+    if (enemy.hp < 1) {
+        static constexpr std::array<double, 5> kDeathSpeed{{5.0, 6.0, 6.5, 6.5, 7.5}};
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        if (enemy.y < 520.0f &&
+            distanceSquared(enemy.x, enemy.y, player_.x, player_.y) > 80.0f * 80.0f) {
+            const auto aimed = radiansToFixedAngleTrunc(std::atan2(
+                static_cast<double>(player_.y - enemy.y),
+                static_cast<double>(player_.x - enemy.x)));
+            spawnProjectileNode(2, 3, enemy.x, enemy.y, aimed, 0.0f,
+                                kDeathSpeed[static_cast<std::size_t>(difficulty)], 1, 0);
+            if (difficulty >= 3) {
+                spawnProjectileNode(2, 3, enemy.x, enemy.y, aimed, 0.0f,
+                                    difficulty == 3 ? 8.0 : 9.0, 1, 0);
+            }
+        }
+        spawnEnemyDeathRewardBurst(enemy, 500);
+        // DAT_140e44654 is the live screen-clear/invulnerability countdown.
+        // PlayerState's invulnerability timer is the closest represented gate.
+        if (player_.invulnerableFrames == 0) {
+            spawnStage03DeathNode(enemy, enemy.maxHp, parent.entityId);
+        }
+        enemy.active = false;
+    }
+    if (parent.hp < 1 || stage03BossCountdown_ < 1) {
+        spawnEnemyDeathEffects(enemy, 1);
+        enemy.active = false;
+    }
+}
+
+void StageRuntime::updateStage03Type34(StageEnemy& enemy, StageEnemy& parent) {
+    const int timer = enemy.helperTimer;
+    enemy.drawBodyThisFrame = true;
+    const float goalX = parent.x + enemy.markerDrawX;
+    const float goalY = parent.y + enemy.markerDrawY;
+    enemy.x += (goalX - enemy.x) / 10.0f;
+    enemy.y += (goalY - enemy.y) / 10.0f;
+    if (enemy.helperState == 0) {
+        if (timer == 0) {
+            enemy.x = parent.x;
+            enemy.y = parent.y;
+        }
+        const double entry = std::sin(static_cast<double>(timer) * kPi / 80.0);
+        enemy.markerDrawX = static_cast<float>(entry * enemy.originX);
+        enemy.markerDrawY = static_cast<float>(entry * enemy.originY);
+        if ((timer & 1) == 0) {
+            const int trail = enemySmallFrames_.size() > 29 ? enemySmallFrames_[29] : -1;
+            const double scale = std::max(0.0, entry);
+            spawnStageEffect(0x38, trail, 100, 0x22, enemy.x, enemy.y, 0,
+                             0.0, scale, scale, 24,
+                             0xff, 0xff, 0xff, 0x60);
+        }
+        if (timer == 40) {
+            enemy.helperState = 1;
+            enemy.helperTimer = 0;
+            enemy.targetable = true;
+            enemy.targetableTimer = 0;
+        }
+    }
+
+    if (enemy.helperState == 1) {
+        if (parent.helperTimer >= 80) {
+            const int difficulty = std::clamp(config_.difficulty, 0, 4);
+            const int p = (parent.helperTimer - 80) % 380;
+            const int index = enemy.childIndex & 3;
+            const float horizontalOrigin = projectileHorizontalOrigin(player_.x);
+            const bool insideFiringArea = enemy.x >= horizontalOrigin &&
+                                          enemy.x <= horizontalOrigin + 600.0f &&
+                                          enemy.y >= 0.0f && enemy.y <= 720.0f;
+            if (p <= 200) {
+                static constexpr std::array<int, 5> kBurstLength{{6, 9, 12, 12, 12}};
+                static constexpr std::array<int, 5> kRingCount{{15, 23, 27, 27, 25}};
+                static constexpr std::array<int, 5> kAngleStep{{50, 70, 80, 80, 120}};
+                static constexpr std::array<double, 5> kSpeed{{4.5, 6.4, 7.5, 8.0, 9.0}};
+                const int start = index * 50;
+                const int end = kBurstLength[static_cast<std::size_t>(difficulty)] +
+                                index * 56;
+                if (p == start) {
+                    enemy.targetAngle16 = radiansToFixedAngleTrunc(std::atan2(
+                        static_cast<double>(player_.y - enemy.y),
+                        static_cast<double>(player_.x - enemy.x)));
+                }
+                if (insideFiringArea && p < 200 && p >= start && p < end &&
+                    (p - start) % 3 == 0) {
+                    const int count = kRingCount[static_cast<std::size_t>(difficulty)];
+                    const double speed = kSpeed[static_cast<std::size_t>(difficulty)] +
+                                         static_cast<double>(index) * 0.6;
+                    spawnProjectileSpread(4, 0, enemy.x, enemy.y,
+                                          enemy.targetAngle16, 0.0f, speed, 1,
+                                          count, kFixedAngleFullCircle, 0);
+                    if (difficulty >= 3) {
+                        spawnProjectileSpread(4, 0, enemy.x, enemy.y,
+                                              enemy.targetAngle16, 0.0f,
+                                              speed + 1.2, 1, count,
+                                              kFixedAngleFullCircle, 0);
+                    }
+                }
+                const int direction = (index & 1) == 0 ? 1 : -1;
+                enemy.targetAngle16 = normalizeAngle16(
+                    static_cast<int>(enemy.targetAngle16) + direction *
+                        (kAngleStep[static_cast<std::size_t>(difficulty)] + index * 10));
+            }
+            if (p >= 200) {
+                static constexpr std::array<int, 5> kSpacing{{32, 18, 16, 16, 10}};
+                static constexpr std::array<int, 5> kCount{{23, 31, 35, 35, 35}};
+                static constexpr std::array<double, 5> kSpeed{{3.6, 5.0, 5.5, 5.5, 6.5}};
+                const int spacing = kSpacing[static_cast<std::size_t>(difficulty)];
+                const int start = 200 + index * spacing;
+                if (insideFiringArea && p >= start && p < 330 &&
+                    (p - start) % (spacing * 5) == 0) {
+                    const int count = kCount[static_cast<std::size_t>(difficulty)] + index * 2;
+                    const double speed = kSpeed[static_cast<std::size_t>(difficulty)] +
+                                         static_cast<double>(index) * 0.3;
+                    const auto randomAngle = scriptRandomAngle(static_cast<std::uint32_t>(p));
+                    spawnProjectileSpread(3, 0, enemy.x, enemy.y,
+                                          randomAngle, 0.0f, speed, 1,
+                                          count, kFixedAngleFullCircle, 0);
+                    if (difficulty >= 3) {
+                        std::uint32_t u = (((static_cast<std::uint32_t>(p) >> 30) ^
+                                            static_cast<std::uint32_t>(p)) *
+                                           0x6c078965u) + 1u;
+                        const std::uint32_t a = (((u >> 30) ^ u) * 0x6c078965u) + 2u;
+                        const std::uint32_t b = (((a >> 30) ^ a) * 0x6c078965u) + 3u;
+                        const std::uint32_t c = (((b >> 30) ^ b) * 0x6c078965u) + 4u;
+                        const std::uint32_t mixed1 = (u << 11) ^ u;
+                        const std::uint32_t mixed2 = (mixed1 << 11) ^ mixed1;
+                        const std::uint32_t result =
+                            (((c >> 11) ^ mixed2) >> 8) ^ mixed2 ^ c;
+                        const auto secondAngle = static_cast<std::uint16_t>(
+                            result - result / 0x10001u);
+                        spawnProjectileSpread(3, 0, enemy.x, enemy.y,
+                                              secondAngle, 0.0f, speed + 1.0, 1,
+                                              count, kFixedAngleFullCircle, 0);
+                    }
+                }
+            }
+        }
+    }
+
+    enemy.secondaryAngle16 = normalizeAngle16(
+        static_cast<int>(enemy.secondaryAngle16) + 2000);
+    enemy.drawHp = enemy.hp;
+    if (enemy.hp < 1) {
+        spawnEnemyDeathRewardBurst(enemy, 1800);
+        spawnStage03DeathNode(enemy, std::max(1, enemy.maxHp / 2), parent.entityId);
+        parent.liveChildCount = std::max(0, parent.liveChildCount - 1);
+        enemy.active = false;
+    }
+    if (parent.hp < 1 || stage03BossCountdown_ < 1) {
+        spawnEnemyDeathEffects(enemy, 1);
+        enemy.active = false;
+    }
+}
+
+void StageRuntime::updateStage03DeathNode(StageEnemy& enemy) {
+    enemy.vx = 0.0f;
+    enemy.vy = 0.0f;
+    enemy.drawBodyThisFrame = false;
+    enemy.drawMarkerThisFrame = false;
+    StageEnemy* owner = findEnemyById(enemy.parentEntityId);
+    if (owner == nullptr || owner->spawnType != 0x13a || !owner->active) {
+        enemy.active = false;
+        return;
+    }
+    const int chunk = std::max(1, enemy.maxHp / 30);
+    const int damage = std::min(enemy.hp, chunk);
+    enemy.hp -= damage;
+    owner->hp -= damage;
+    enemy.drawHp = enemy.hp;
+    if (enemy.hp < 1) {
+        enemy.active = false;
+    }
+}
+
 void StageRuntime::updateStage01Enemy(StageEnemy& enemy, int activeAge) {
     // Stage 01 type routing is evidence-backed by stage-spawn-used-update-map.md:
     // 0x0a->FUN_14007c9c0, 0x0b->FUN_14007d4e0, 0x0c->FUN_14007dfb0,
@@ -4809,6 +6306,8 @@ void StageRuntime::updateStage01Enemy(StageEnemy& enemy, int activeAge) {
         updateStage01Type0D(enemy, activeAge);
         break;
     case 0x0e:
+        updateStage01Type0E(enemy);
+        break;
     case 0x0f:
     case 0x10:
         updateStage01Setpiece(enemy, activeAge);
@@ -4918,106 +6417,327 @@ void StageRuntime::updateStage01Type0A(StageEnemy& enemy, int activeAge) {
 }
 
 void StageRuntime::updateStage01Type0B(StageEnemy& enemy, int activeAge) {
-    // Evidence: FUN_14007d4e0 @ 0x14007d4e0. State 0 draws the entry effect
-    // for 0x14 frames, then state 1 tracks for 200 frames with 0x80-angle
-    // steps, exits toward 0xc000 with 0x200 steps, and accelerates by 1/60.
-    updateStage01SmallChaser(enemy, activeAge, 0x14, 200, 0x80, 0x200, 1.0, 1.0);
+    (void)activeAge;
+    enemy.drawBodyThisFrame = false;
+    enemy.drawMarkerThisFrame = false;
+    enemy.vx = 0.0f;
+    enemy.vy = 0.0f;
+
+    // FUN_14007d4e0 computes this aim before its state-0 clamp and reuses it
+    // for steering on the transition frame.
+    const auto preMoveAim = radiansToFixedAngleTrunc(std::atan2(
+        static_cast<double>(player_.y - enemy.y),
+        static_cast<double>(player_.x - enemy.x)));
+
+    if (enemy.helperState == 0) {
+        const float horizontalOrigin = projectileHorizontalOrigin(player_.x);
+        enemy.drawMarkerThisFrame = true;
+        enemy.markerDrawTimer = enemy.helperTimer;
+        enemy.markerDrawX = clampFloat(enemy.x, horizontalOrigin - 20.0f,
+                                      horizontalOrigin + 620.0f);
+        enemy.markerDrawY = clampFloat(enemy.y, -20.0f, 740.0f);
+        if (enemy.helperTimer != 20) {
+            return;
+        }
+
+        enemy.sourceSpeed = scriptRandomHundredth(
+            static_cast<std::uint32_t>(frame_), 7.0, 9.0);
+        if (enemy.x <= 0.0f) {
+            enemy.sourceAngle16 = 0;
+        }
+        if (enemy.x >= 720.0f) {
+            enemy.sourceAngle16 = 0x8000;
+        }
+        enemy.x = enemy.markerDrawX;
+        enemy.y = enemy.markerDrawY;
+        enemy.helperState = 1;
+        enemy.helperTimer = 0;
+        enemy.targetable = true;
+    }
+
+    if (enemy.helperState != 1) {
+        return;
+    }
+
+    const int timer = enemy.helperTimer;
+    if (timer < 200) {
+        if (timer >= 0 && enemy.sourceSpeed > 1.0) {
+            enemy.sourceSpeed -= 0.1;
+        }
+        enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, preMoveAim, 0x80);
+    }
+    else {
+        enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, 0xc000, 0x200);
+        enemy.sourceSpeed += 0.1;
+    }
+
+    // The helper retains these pre-movement values for its projectile source.
+    enemy.originX = enemy.x;
+    enemy.originY = enemy.y;
+    const double motionAngle = fixedAngleToRadiansDouble(enemy.sourceAngle16);
+    enemy.angle = static_cast<float>(motionAngle);
+    enemy.speed = static_cast<float>(enemy.sourceSpeed);
+    enemy.vx = static_cast<float>(std::cos(motionAngle) * enemy.sourceSpeed);
+    enemy.vy = static_cast<float>(std::sin(motionAngle) * enemy.sourceSpeed);
+    enemy.drawBodyThisFrame = true;
+    enemy.drawHp = enemy.hp;
 }
 
 void StageRuntime::updateStage01Type0C(StageEnemy& enemy, int activeAge) {
-    // Evidence: FUN_14007dfb0 @ 0x14007dfb0. The structure matches 0x0b,
-    // but uses a 0x100 exit turn step and a randomized decoded initial speed
-    // range; runtime keeps the lower confirmed bound as the playable baseline.
-    updateStage01SmallChaser(enemy, activeAge, 0x14, 200, 0x80, 0x100, stage01SpeedConstantValue(0x0b0), 1.0);
+    (void)activeAge;
+    enemy.drawBodyThisFrame = false;
+    enemy.drawMarkerThisFrame = false;
+    enemy.vx = 0.0f;
+    enemy.vy = 0.0f;
+
+    const auto preMoveAim = radiansToFixedAngleTrunc(std::atan2(
+        static_cast<double>(player_.y - enemy.y),
+        static_cast<double>(player_.x - enemy.x)));
+
+    if (enemy.helperState == 0) {
+        const float horizontalOrigin = projectileHorizontalOrigin(player_.x);
+        enemy.drawMarkerThisFrame = true;
+        enemy.markerDrawTimer = enemy.helperTimer;
+        enemy.markerDrawX = clampFloat(enemy.x, horizontalOrigin - 20.0f,
+                                      horizontalOrigin + 620.0f);
+        enemy.markerDrawY = clampFloat(enemy.y, -20.0f, 740.0f);
+        if (enemy.helperTimer != 20) {
+            return;
+        }
+
+        enemy.sourceSpeed = scriptRandomHundredth(
+            static_cast<std::uint32_t>(frame_), 5.0, 7.0);
+        if (enemy.x <= 0.0f) {
+            enemy.sourceAngle16 = 0;
+        }
+        if (enemy.x >= 720.0f) {
+            enemy.sourceAngle16 = 0x8000;
+        }
+        enemy.x = enemy.markerDrawX;
+        enemy.y = enemy.markerDrawY;
+        enemy.helperState = 1;
+        enemy.helperTimer = 0;
+        enemy.targetable = true;
+    }
+
+    if (enemy.helperState != 1) {
+        return;
+    }
+
+    const int timer = enemy.helperTimer;
+    if (timer < 200) {
+        if (timer >= 0 && enemy.sourceSpeed > 1.0) {
+            enemy.sourceSpeed -= 0.1;
+        }
+        enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, preMoveAim, 0x80);
+    }
+    else {
+        enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, 0xc000, 0x100);
+        enemy.sourceSpeed += 0.1;
+    }
+
+    const double motionAngle = fixedAngleToRadiansDouble(enemy.sourceAngle16);
+    enemy.angle = static_cast<float>(motionAngle);
+    enemy.speed = static_cast<float>(enemy.sourceSpeed);
+    enemy.vx = static_cast<float>(std::cos(motionAngle) * enemy.sourceSpeed);
+    enemy.vy = static_cast<float>(std::sin(motionAngle) * enemy.sourceSpeed);
+    enemy.drawBodyThisFrame = true;
+    enemy.drawHp = enemy.hp;
 }
 
 void StageRuntime::updateStage01Type0D(StageEnemy& enemy, int activeAge) {
-    // Evidence: FUN_14007ea30 @ 0x14007ea30. This helper is not the shared
-    // chaser: after the 0x14-frame entry effect it moves with a side-selected
-    // fixed angle (0xf2fb from left, 0x8d05 from right) and speed 3.0/4.0.
+    (void)activeAge;
+    constexpr double kOriginalPi = 3.14159265358979;
+
+    // FUN_14007ea30 caches +0x40 on entry. The transition frame therefore
+    // moves with the newly selected angle but still chooses its muzzle/body
+    // side from the old 0x4000 constructor angle.
+    enemy.secondaryAngle16 = enemy.sourceAngle16;
+    enemy.drawBodyThisFrame = false;
+    enemy.drawMarkerThisFrame = false;
+    enemy.vx = 0.0f;
+    enemy.vy = 0.0f;
+
     if (enemy.helperState == 0) {
-        const float t = clampFloat(static_cast<float>(activeAge) / 20.0f, 0.0f, 1.0f);
-        enemy.x = enemy.originX;
-        enemy.y = enemy.originY - (1.0f - t) * 20.0f;
-        enemy.vx = 0.0f;
-        enemy.vy = 0.0f;
-        if (activeAge >= 0x14) {
-            enemy.helperState = 1;
-            enemy.age = 0;
-            enemy.sourceSpeed = selectedStage_ > 3 ? stage01SpeedConstantValue(0x070) : stage01SpeedConstantValue(0x018);
-            enemy.sourceAngle16 = enemy.sourceX <= 0.0f ? 0xf2fb : 0x8d05;
-            enemy.secondaryAngle16 = enemy.sourceAngle16;
-            enemy.originX = enemy.x;
-            enemy.originY = enemy.y;
+        const float horizontalOrigin = projectileHorizontalOrigin(player_.x);
+        enemy.drawMarkerThisFrame = true;
+        enemy.markerDrawTimer = enemy.helperTimer;
+        enemy.markerDrawX = clampFloat(enemy.x, horizontalOrigin - 20.0f,
+                                      horizontalOrigin + 620.0f);
+        enemy.markerDrawY = clampFloat(enemy.y, -20.0f, 740.0f);
+        if (enemy.helperTimer != 0x14) {
+            return;
         }
+
+        enemy.sourceSpeed = selectedStage_ >= 4 ? 4.0 : 3.0;
+        enemy.speed = static_cast<float>(enemy.sourceSpeed);
+        if (enemy.x <= 360.0f) {
+            enemy.sourceAngle16 = 0xf2fb;
+        }
+        if (enemy.x >= 720.0f) {
+            enemy.sourceAngle16 = 0x8d05;
+        }
+        enemy.helperState = 1;
+        enemy.helperTimer = 0;
+        enemy.targetable = true;
+    }
+
+    if (enemy.helperState != 1) {
         return;
     }
 
-    const int stateAge = enemy.age;
-    if (enemy.sourceSpeed <= 0.0) {
-        enemy.sourceSpeed = selectedStage_ > 3 ? stage01SpeedConstantValue(0x070) : stage01SpeedConstantValue(0x018);
-    }
-    const float bodyWave = std::sin(stateAge * 0.035f) * 5.5f;
-    const float verticalWave = std::sin(stateAge * 0.07f) * 1.2f;
-    enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
+    const int timer = enemy.helperTimer;
+    const int phase = timer % 33;
+    const double motionAngle = fixedAngleToRadiansDouble(enemy.sourceAngle16);
+    enemy.angle = static_cast<float>(motionAngle);
     enemy.speed = static_cast<float>(enemy.sourceSpeed);
-    enemy.vx = std::cos(enemy.angle) * enemy.speed;
-    enemy.vy = std::sin(enemy.angle) * enemy.speed + verticalWave;
-    enemy.x += bodyWave * 0.02f;
+    enemy.originX += static_cast<float>(std::cos(motionAngle) * enemy.sourceSpeed);
+    enemy.originY += static_cast<float>(std::sin(motionAngle) * enemy.sourceSpeed);
+    enemy.x = enemy.originX;
+    enemy.y = enemy.originY - static_cast<float>(
+                                  std::sin(static_cast<double>(phase) *
+                                           kOriginalPi / 33.0) *
+                                  10.0);
+    enemy.drawBodyThisFrame = true;
+    enemy.drawHp = enemy.hp;
 }
 
-void StageRuntime::updateStage01SmallChaser(StageEnemy& enemy, int activeAge, int enterFrames, int trackFrames, int turnStep, int exitTurnStep, double initialSpeed, double floorSpeed) {
-    // Shared structure for FUN_14007d4e0 (0x0b) and FUN_14007dfb0 (0x0c): a
-    // short state-0 entry display, then state-1 motion that turns toward the
-    // player for a fixed window and exits toward 0xc000 while accelerating.
-    // Exact original effect/list overlay allocation remains deferred.
+void StageRuntime::updateStage01Type0E(StageEnemy& enemy) {
+    enemy.drawBodyThisFrame = false;
+    enemy.drawMarkerThisFrame = false;
+    enemy.vx = 0.0f;
+    enemy.vy = 0.0f;
+
+    const auto entryAim = radiansToFixedAngleTrunc(std::atan2(
+        static_cast<double>(player_.y - enemy.y),
+        static_cast<double>(player_.x - enemy.x)));
+
     if (enemy.helperState == 0) {
-        const float t = clampFloat(static_cast<float>(activeAge) / static_cast<float>(std::max(1, enterFrames)), 0.0f, 1.0f);
-        enemy.x = enemy.originX;
-        enemy.y = enemy.originY - (1.0f - t) * 20.0f;
-        enemy.vx = 0.0f;
-        enemy.vy = 0.0f;
-        if (activeAge >= enterFrames) {
-            enemy.helperState = 1;
-            enemy.age = 0;
-            enemy.sourceSpeed = initialSpeed;
-            if (enemy.sourceX <= 0) {
-                enemy.sourceAngle16 = 0x0000;
-            }
-            else if (enemy.sourceX >= 0x2e4) {
-                enemy.sourceAngle16 = 0x8000;
-            }
-            else {
-                enemy.sourceAngle16 = radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y));
-            }
-            enemy.secondaryAngle16 = enemy.sourceAngle16;
+        const float horizontalOrigin = projectileHorizontalOrigin(player_.x);
+        enemy.drawMarkerThisFrame = true;
+        enemy.markerDrawTimer = enemy.helperTimer;
+        enemy.markerDrawX = clampFloat(enemy.x, horizontalOrigin - 50.0f,
+                                      horizontalOrigin + 650.0f);
+        enemy.markerDrawY = clampFloat(enemy.y, -50.0f, 770.0f);
+        if (enemy.helperTimer != 0x14) {
+            return;
         }
+
+        enemy.helperState = 1;
+        enemy.helperTimer = 0;
+        enemy.sourceSpeed = 7.0;
+        enemy.speed = 7.0f;
+        enemy.targetable = true;
+    }
+
+    if (enemy.helperState != 1) {
         return;
     }
 
-    const int stateAge = enemy.age;
-    if (enemy.sourceSpeed <= 0.0) {
-        enemy.sourceSpeed = initialSpeed;
+    const int timer = enemy.helperTimer;
+    if (timer <= 0x78 && enemy.sourceSpeed > 1.2) {
+        enemy.sourceSpeed -= 0.1;
     }
-    const std::uint16_t target = stateAge < trackFrames ? radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y)) : 0xc000;
-    enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, target, stateAge < trackFrames ? turnStep : exitTurnStep);
-    if (stateAge < trackFrames) {
-        enemy.sourceSpeed = std::max(floorSpeed, enemy.sourceSpeed - 1.0 / 60.0);
+    enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, entryAim, 0x80);
+    if (timer >= 300) {
+        enemy.sourceSpeed -= 0.1;
     }
-    else {
-        enemy.sourceSpeed += 1.0 / 60.0;
-    }
-    enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
+
+    const double motionAngle = fixedAngleToRadiansDouble(enemy.sourceAngle16);
+    enemy.angle = static_cast<float>(motionAngle);
     enemy.speed = static_cast<float>(enemy.sourceSpeed);
-    enemy.vx = std::cos(enemy.angle) * enemy.speed;
-    enemy.vy = std::sin(enemy.angle) * enemy.speed;
+    enemy.vx = static_cast<float>(std::cos(motionAngle) * enemy.sourceSpeed);
+    enemy.vy = static_cast<float>(std::sin(motionAngle) * enemy.sourceSpeed);
+    enemy.drawBodyThisFrame = true;
+    enemy.drawHp = enemy.hp;
+}
+
+void StageRuntime::updateStage01Type0F(StageEnemy& enemy) {
+    enemy.drawBodyThisFrame = false;
+    enemy.drawMarkerThisFrame = false;
+    enemy.vx = 0.0f;
+    enemy.vy = 0.0f;
+
+    // FUN_140080170 captures this aim before its entry transition and before
+    // active movement, then uses the same value for the capped turn.
+    const auto entryAim = radiansToFixedAngleTrunc(std::atan2(
+        static_cast<double>(player_.y - enemy.y),
+        static_cast<double>(player_.x - enemy.x)));
+
+    if (enemy.helperState == 0) {
+        const float horizontalOrigin = projectileHorizontalOrigin(player_.x);
+        enemy.drawMarkerThisFrame = true;
+        enemy.markerDrawTimer = enemy.helperTimer;
+        enemy.markerDrawX = clampFloat(enemy.x, horizontalOrigin - 50.0f,
+                                      horizontalOrigin + 650.0f);
+        enemy.markerDrawY = clampFloat(enemy.y, -50.0f, 770.0f);
+        if (enemy.helperTimer != 0x14) {
+            return;
+        }
+
+        enemy.helperState = 1;
+        enemy.helperTimer = 0;
+        enemy.sourceSpeed = 9.0;
+        enemy.speed = 9.0f;
+        if (enemy.x <= 360.0f) {
+            enemy.sourceAngle16 = 0;
+        }
+        if (enemy.x >= 720.0f) {
+            enemy.sourceAngle16 = 0x8000;
+        }
+        enemy.targetable = true;
+    }
+
+    if (enemy.helperState != 1) {
+        return;
+    }
+
+    const int timer = enemy.helperTimer;
+    if (timer <= 0x78 && enemy.sourceSpeed > 1.0) {
+        enemy.sourceSpeed -= 0.1;
+    }
+    enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, entryAim, 0x80);
+    if (timer >= 300) {
+        enemy.sourceSpeed -= 0.1;
+    }
+
+    const double motionAngle = fixedAngleToRadiansDouble(enemy.sourceAngle16);
+    enemy.angle = static_cast<float>(motionAngle);
+    enemy.speed = static_cast<float>(enemy.sourceSpeed);
+    enemy.vx = static_cast<float>(std::cos(motionAngle) * enemy.sourceSpeed);
+    enemy.vy = static_cast<float>(std::sin(motionAngle) * enemy.sourceSpeed);
+    enemy.drawBodyThisFrame = true;
+    enemy.drawHp = enemy.hp;
 }
 
 void StageRuntime::updateStage01Setpiece(StageEnemy& enemy, int activeAge) {
-    // FUN_14007f2c0/140080170/140080fb0 are long-lived Stage 1 sources. They
-    // enter after 0x14 frames and then run mostly as scripted pattern anchors.
-    // This preserves their state timing and broad motion role; exact effect
-    // overlays remain deferred.
+    // Remaining broad FUN_140080fb0 controller path. Types 0x0e and 0x0f use
+    // their dedicated exact helpers before this dispatcher is reached.
+    if (enemy.spawnType == 0x10 && enemy.hp < 1 && enemy.helperState < 2) {
+        spawnEnemyDeathRewardBurst(enemy, 0x708);
+        spawnPlayerSideObject(0x18, enemy.x, enemy.y, 0.0, 0, 0, 0.0f);
+        enemy.helperState = 2;
+        enemy.helperTimer = 0;
+        enemy.targetable = false;
+    }
+    if (enemy.spawnType == 0x10 && enemy.helperState == 2) {
+        const int timer = enemy.helperTimer;
+        enemy.vx = 0.0f;
+        enemy.vy = 0.0f;
+        enemy.speed = 0.0f;
+        enemy.drawBodyThisFrame = true;
+        enemy.drawHp = enemy.hp;
+        if (timer <= 60) {
+            spawnStage02DeathExplosionChain(enemy);
+        }
+        enemy.y += static_cast<float>(timer) * 0.1f;
+        if (timer == 60) {
+            spawnEnemyDeathEffects(enemy, 2);
+            enemy.active = false;
+            stage01GateFlag_ = false;
+        }
+        return;
+    }
     if (enemy.helperState == 0) {
         const float t = clampFloat(static_cast<float>(activeAge) / 20.0f, 0.0f, 1.0f);
         enemy.y = enemy.originY - (1.0f - t) * 50.0f;
@@ -5026,10 +6746,9 @@ void StageRuntime::updateStage01Setpiece(StageEnemy& enemy, int activeAge) {
         if (activeAge >= 0x14) {
             enemy.helperState = 1;
             enemy.age = 0;
+            enemy.helperTimer = 0;
             enemy.sourceAngle16 = radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y));
-            if (enemy.spawnType == 0x0e) enemy.sourceSpeed = 7.0;
-            else if (enemy.spawnType == 0x0f) enemy.sourceSpeed = 9.0;
-            else enemy.sourceSpeed = 0.7;
+            enemy.sourceSpeed = 0.7;
         }
         return;
     }
@@ -5060,13 +6779,12 @@ void StageRuntime::updateStage01Setpiece(StageEnemy& enemy, int activeAge) {
         return;
     }
 
-    const int trackFrames = enemy.spawnType == 0x0e ? 300 : 300;
     enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y)), 0x80);
-    if (stateAge > trackFrames) {
+    if (stateAge > 300) {
         enemy.sourceSpeed = std::max(1.2, enemy.sourceSpeed - 1.0 / 60.0);
     }
     enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
-    const float wobble = std::sin((stateAge + enemy.spawnType * 23) * 0.025f) * (enemy.spawnType == 0x0e ? 0.6f : 0.9f);
+    const float wobble = std::sin((stateAge + enemy.spawnType * 23) * 0.025f) * 0.9f;
     enemy.vx = std::cos(enemy.angle) * static_cast<float>(enemy.sourceSpeed) * 0.15f + wobble;
     enemy.vy = std::sin(enemy.angle) * static_cast<float>(enemy.sourceSpeed) * 0.12f;
 }
@@ -5135,14 +6853,18 @@ void StageRuntime::updateStage01Child(StageEnemy& enemy, int activeAge) {
     // following parent-relative offsets, then switches to an aimed state that
     // emits visual selectors 7 and 9 with their original movement IDs. Parent-id lookup is represented by the
     // captured parent entity id; if the parent is gone, the child expires.
-    StageEnemy* parent = nullptr;
-    for (auto& candidate : enemies_) {
-        if (candidate.entityId == enemy.parentEntityId && candidate.active && candidate.spawnType == enemy.parentSpawnType) {
-            parent = &candidate;
-            break;
-        }
+    StageEnemy* parent = findEnemyById(enemy.parentEntityId);
+    if (parent == nullptr || parent->spawnType != enemy.parentSpawnType) {
+        spawnEnemyDeathEffects(enemy, 1);
+        enemy.active = false;
+        return;
     }
-    if (parent == nullptr) {
+    if (parent->hp < 1) {
+        spawnEnemyDeathEffects(enemy, 1);
+        enemy.active = false;
+        return;
+    }
+    if (!parent->active) {
         enemy.active = false;
         return;
     }
@@ -5190,6 +6912,7 @@ void StageRuntime::updateStage01Boss(StageEnemy& enemy) {
     }
 
     if (stage01BossPhaseMode_ == 1 && (enemy.hp < 1 || stage01BossCountdown_ < 1)) {
+        spawnPostDeathCounterEntity(enemy, 140.0);
         spawnPlayerSideObject(0x18, enemy.x, enemy.y, 0.0, 0, 0, 0.0f);
         enemy.targetable = false;
         enemy.helperTimer = 0;
@@ -5572,15 +7295,20 @@ void StageRuntime::updateStage01BossChild(StageEnemy& enemy) {
         emitStage01BossChildProjectiles(enemy, *parent);
     }
 
-    if (enemy.hp < 1) {
+    const bool ownDeath = enemy.hp < 1;
+    if (ownDeath) {
         spawnEnemyDeathRewardBurst(enemy, 1000);
         if (parent != nullptr) {
             parent->liveChildCount = std::max(0, parent->liveChildCount - 1);
         }
         enemy.active = false;
-        return;
     }
-    if (parent == nullptr || !parent->active || parent->hp < 1 ||
+    const bool ownerDeathVisual = parent == nullptr || parent->hp < 1 ||
+                                  stage01BossCountdown_ < 1;
+    if (ownerDeathVisual) {
+        spawnEnemyDeathEffects(enemy, 1);
+    }
+    if (ownDeath || parent == nullptr || !parent->active || parent->hp < 1 ||
         stage01BossCountdown_ < 1 || stage01BossPhaseMode_ != 1 ||
         (parent->helperState != 3 && parent->helperState != 5)) {
         enemy.active = false;
@@ -5688,6 +7416,655 @@ void StageRuntime::emitStage01BossChildProjectiles(StageEnemy& enemy, const Stag
     }
 }
 
+void StageRuntime::updateStage02Boss(StageEnemy& enemy) {
+    enemy.vx = 0.0f;
+    enemy.vy = 0.0f;
+    enemy.drawHp = enemy.hp;
+
+    // FUN_140009480 computes the steering angle before refreshing the global
+    // target, so every 50-frame refresh intentionally has a one-frame delay.
+    const auto steeringTarget = radiansToFixedAngleTrunc(std::atan2(
+        static_cast<double>(stage02BossTargetY_ - enemy.y),
+        static_cast<double>(stage02BossTargetX_ - enemy.x)));
+    if (frame_ % 50 == 0) {
+        stage02BossTargetX_ = static_cast<float>(stageRandCoord(frame_, 301, 210));
+        const int targetBaseY = enemy.helperState == 3 ? 220 : 150;
+        stage02BossTargetY_ = static_cast<float>(
+            stageRandCoord(frame_ + (selectedStage_ - 1) * 0xde,
+                           101, targetBaseY));
+    }
+
+    if (stage02BossPhaseMode_ == 1 &&
+        (enemy.hp < 1 || stage02BossCountdown_ < 1)) {
+        spawnPostDeathCounterEntity(enemy, 140.0);
+        spawnPlayerSideObject(0x18, enemy.x, enemy.y, 0.0, 0, 0, 0.0f);
+        enemy.targetable = false;
+        enemy.helperTimer = 0;
+        enemy.liveChildCount = 0;
+        switch (stage02BossBreaksRemaining_) {
+        case 4:
+            enemy.helperState = 2;
+            enemy.radius = 240;
+            stage02BossPhaseMode_ = 2;
+            break;
+        case 3:
+            enemy.helperState = 4;
+            enemy.radius = 300;
+            stage02BossPhaseMode_ = 2;
+            break;
+        case 2:
+            enemy.helperState = 6;
+            stage02BossPhaseMode_ = 2;
+            break;
+        case 1:
+            enemy.helperState = 8;
+            stage02BossPhaseMode_ = -1;
+            break;
+        default:
+            break;
+        }
+        stage02BossBreaksRemaining_ = std::max(0, stage02BossBreaksRemaining_ - 1);
+    }
+
+    enemy.drawHelperState = enemy.helperState;
+    enemy.drawHelperTimer = enemy.helperTimer;
+    enemy.drawBodyThisFrame = true;
+    const int timer = enemy.helperTimer;
+
+    const auto steerTowardStageTarget = [&enemy, steeringTarget]() {
+        enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, steeringTarget, 0x200);
+        enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
+        enemy.x += std::cos(enemy.angle) * static_cast<float>(enemy.sourceSpeed);
+        enemy.y += std::sin(enemy.angle) * static_cast<float>(enemy.sourceSpeed);
+    };
+    const auto openPhase = [this, &enemy](int state, int hitPoints, int radius, int phaseIndex) {
+        enemy.helperState = state;
+        enemy.helperTimer = 0;
+        enemy.hp = hitPoints;
+        enemy.maxHp = hitPoints;
+        enemy.drawHp = hitPoints;
+        enemy.radius = radius;
+        enemy.targetable = true;
+        enemy.targetableTimer = 0;
+        stage02BossMaxHp_ = hitPoints;
+        stage02BossCountdown_ = 1800;
+        stage02BossPhaseIndex_ = phaseIndex;
+        stage02BossPhaseMode_ = 1;
+    };
+
+    switch (enemy.helperState) {
+    case 0:
+        if (timer < 180) {
+            enemy.y = 900.0f + static_cast<float>(static_cast<int>(
+                std::sin(static_cast<double>(timer) * kTau / 720.0) *
+                static_cast<double>(enemy.originY - 900.0f)));
+        }
+        else if (timer < 191) {
+            enemy.y = enemy.originY;
+        }
+        else {
+            enemy.y += 0.1f;
+        }
+        if (timer == 210) {
+            openPhase(1, 60000, 180, 0);
+        }
+        break;
+    case 1:
+        steerTowardStageTarget();
+        emitStage02BossProjectiles(enemy);
+        break;
+    case 2:
+        if (timer < 90) {
+            enemy.y += static_cast<float>(timer) * 0.01f;
+            spawnStage02DeathExplosionChain(enemy);
+        }
+        else if (timer >= 100) {
+            if (timer == 100) {
+                enemy.y += 160.0f;
+            }
+            steerTowardStageTarget();
+            if (timer < 240) {
+                enemy.y -= static_cast<float>(
+                    1.0 - std::sin(static_cast<double>(timer - 100) * kTau / 560.0));
+            }
+        }
+        if (timer == 180) {
+            spawnStage02BossChild(enemy, 0x22, 0, 70.0f, -50.0f, 0x4000,
+                                  "S02 FUN_140009480 state 2 type 0x22 child 0");
+            spawnStage02BossChild(enemy, 0x22, 1, -70.0f, -50.0f, 0x4000,
+                                  "S02 FUN_140009480 state 2 type 0x22 child 1");
+            spawnStage02BossChild(enemy, 0x22, 2, 140.0f, -110.0f, 0x4000,
+                                  "S02 FUN_140009480 state 2 type 0x22 child 2");
+            spawnStage02BossChild(enemy, 0x22, 3, -140.0f, -110.0f, 0x4000,
+                                  "S02 FUN_140009480 state 2 type 0x22 child 3");
+        }
+        if (timer == 240) {
+            openPhase(3, 75000, 220, 1);
+        }
+        break;
+    case 3:
+        steerTowardStageTarget();
+        break;
+    case 4:
+        if (timer < 120) {
+            spawnStage02DeathExplosionChain(enemy);
+            enemy.y += static_cast<float>(timer) * 0.02f;
+        }
+        else if (timer >= 130) {
+            if (timer == 130) {
+                enemy.y -= 160.0f;
+            }
+            steerTowardStageTarget();
+        }
+        if (timer == 380) {
+            openPhase(5, 40000, 80, 2);
+        }
+        break;
+    case 5:
+        steerTowardStageTarget();
+        if (timer == 10) {
+            static constexpr std::array<int, 5> kChildCount{{3, 5, 7, 7, 9}};
+            const int count = kChildCount[static_cast<std::size_t>(std::clamp(config_.difficulty, 0, 4))];
+            for (int i = 0; i < count; ++i) {
+                const auto orbitAngle = normalizeAngle16(
+                    (kFixedAngleFullCircle / count) * i - 0x4000);
+                spawnStage02BossChild(enemy, 0x23, i, 140.0f, 0.0f, orbitAngle,
+                                      "S02 FUN_140009480 state 5 type 0x23 orbit child");
+            }
+        }
+        emitStage02BossProjectiles(enemy);
+        break;
+    case 6:
+        if (timer < 90) {
+            spawnStage02DeathExplosionChain(enemy);
+        }
+        enemy.y += 0.1f;
+        if (timer == 180) {
+            openPhase(7, 50000, 80, 3);
+        }
+        break;
+    case 7:
+        steerTowardStageTarget();
+        emitStage02BossProjectiles(enemy);
+        if (timer == 210) {
+            for (int i = 0; i < 9; ++i) {
+                const auto orbitAngle = normalizeAngle16(i * 0x1c71 - 0x4000);
+                spawnStage02BossChild(enemy, 0x24, i, 120.0f, 0.0f, orbitAngle,
+                                      "S02 FUN_140009480 state 7 type 0x24 orbit child");
+            }
+        }
+        break;
+    case 8:
+        if (timer < 240) {
+            spawnStage02DeathExplosionChain(enemy);
+        }
+        if (timer == 1) {
+            stage02ClearStarted_ = true;
+            player_.invulnerableFrames = std::max(player_.invulnerableFrames, 360);
+        }
+        if (timer == 240) {
+            spawnPlayerSideObject(0x18, enemy.x, enemy.y, 0.0, 0, 0, 0.0f);
+        }
+        if (timer == 420) {
+            stage02ClearTransition_ = true;
+        }
+        if (timer == 480) {
+            stage02GateFlag_ = false;
+            stage02ClearComplete_ = true;
+            enemy.active = false;
+        }
+        if (timer < 240) {
+            enemy.y += 0.2f;
+        }
+        break;
+    default:
+        break;
+    }
+
+    // FUN_140002260 submits the four countdown digits before decrementing the
+    // shared counter. Preserve that visible value across the later draw pass.
+    stage02BossCountdownDraw_ = stage02BossCountdown_;
+    if (stage02BossPhaseMode_ == 1) {
+        --stage02BossCountdown_;
+    }
+}
+
+void StageRuntime::emitStage02BossProjectiles(StageEnemy& enemy) {
+    const int difficulty = std::clamp(config_.difficulty, 0, 4);
+    const int timer = enemy.helperTimer;
+    const auto aimFrom = [this](float x, float y) {
+        return radiansToFixedAngleTrunc(std::atan2(
+            static_cast<double>(player_.y - y), static_cast<double>(player_.x - x)));
+    };
+
+    if (enemy.helperState == 1 && timer >= 30) {
+        const int q = (timer - 30) % 960;
+        static constexpr std::array<float, 4> kSourceX{{70.0f, -70.0f, 140.0f, -140.0f}};
+        static constexpr std::array<float, 4> kSourceY{{0.0f, 0.0f, -80.0f, -80.0f}};
+
+        if (q < 300) {
+            static constexpr std::array<int, 5> kPrimaryPeriod{{120, 90, 80, 70, 60}};
+            static constexpr std::array<int, 5> kPrimaryBurst{{15, 24, 30, 30, 30}};
+            static constexpr std::array<double, 5> kPrimarySpeed{{5.5, 7.0, 8.0, 9.0, 11.0}};
+            static constexpr std::array<int, 5> kSideInterval{{18, 11, 9, 10, 9}};
+            static constexpr std::array<double, 5> kSideSpeed{{4.0, 4.5, 5.5, 6.0, 7.5}};
+            static constexpr std::array<int, 5> kSideCount{{3, 4, 5, 5, 6}};
+
+            for (int source = 0; source < 4; ++source) {
+                const float sourceX = enemy.x + kSourceX[static_cast<std::size_t>(source)];
+                const float sourceY = enemy.y + kSourceY[static_cast<std::size_t>(source)];
+                if (source < 2) {
+                    const int period = kPrimaryPeriod[static_cast<std::size_t>(difficulty)];
+                    const int start = period + 20;
+                    if (q < start) {
+                        continue;
+                    }
+                    const int phase = (q - start) % period;
+                    std::uint16_t& cachedAim = source == 0 ? enemy.secondaryAngle16
+                                                          : enemy.targetAngle16;
+                    if (phase == 0) {
+                        cachedAim = aimFrom(sourceX, sourceY);
+                    }
+                    if (phase < kPrimaryBurst[static_cast<std::size_t>(difficulty)] &&
+                        phase % 3 == 0) {
+                        const double speed = kPrimarySpeed[static_cast<std::size_t>(difficulty)];
+                        spawnProjectileNode(3, 7, sourceX, sourceY, cachedAim,
+                                            10.0f, speed, 1, 0);
+                        if (difficulty >= 3) {
+                            spawnProjectileNode(3, 7, sourceX, sourceY,
+                                                normalizeAngle16(static_cast<int>(cachedAim) - 1400),
+                                                10.0f, speed - 1.5, 1, 0);
+                            spawnProjectileNode(3, 7, sourceX, sourceY,
+                                                normalizeAngle16(static_cast<int>(cachedAim) + 1400),
+                                                10.0f, speed - 1.5, 1, 0);
+                        }
+                    }
+                    cachedAim = approachAngle16(cachedAim,
+                                                aimFrom(sourceX, sourceY), 0x20);
+                    continue;
+                }
+
+                const int interval = kSideInterval[static_cast<std::size_t>(difficulty)];
+                const int stagger = source == 2 ? 0 : interval;
+                if (q < stagger || (q - stagger) % (interval * 2) != 0) {
+                    continue;
+                }
+                const int count = kSideCount[static_cast<std::size_t>(difficulty)];
+                const int randomOffset =
+                    static_cast<int>(stageScriptRandFromFrame(timer) % 14001u) - 7000;
+                const auto aimed = aimFrom(sourceX, sourceY);
+                const double speed = kSideSpeed[static_cast<std::size_t>(difficulty)];
+                spawnProjectileSpread(4, 0, sourceX, sourceY,
+                                      normalizeAngle16(static_cast<int>(aimed) + randomOffset),
+                                      0.0f, speed, 1, count, (count - 1) * 440, 0);
+                if (difficulty >= 3) {
+                    const int highCount = count - 2;
+                    const int highSpread = (highCount - 1) * 440;
+                    spawnProjectileSpread(4, 0, sourceX, sourceY,
+                                          normalizeAngle16(static_cast<int>(aimed) + randomOffset - 2000),
+                                          0.0f, speed, 1, highCount, highSpread, 0);
+                    spawnProjectileSpread(4, 0, sourceX, sourceY,
+                                          normalizeAngle16(static_cast<int>(aimed) + randomOffset - 12000),
+                                          0.0f, speed, 1, highCount, highSpread, 0);
+                }
+            }
+            return;
+        }
+
+        if (q >= 330 && q < 660) {
+            static constexpr std::array<int, 5> kPeriod{{18, 9, 6, 5, 4}};
+            static constexpr std::array<double, 5> kBaseSpeed{{2.5, 3.5, 4.0, 4.0, 5.5}};
+            static constexpr std::array<int, 5> kAngleStep{{160, 250, 300, 300, 440}};
+            static constexpr std::array<int, 4> kSourceOffset{{-3000, 3000, -9000, 9000}};
+            const int local = q - 330;
+            if (local % kPeriod[static_cast<std::size_t>(difficulty)] == 0) {
+                const double speed = kBaseSpeed[static_cast<std::size_t>(difficulty)] +
+                                     static_cast<double>(local) * 0.01;
+                for (int source = 0; source < 4; ++source) {
+                    const float sourceX = enemy.x + kSourceX[static_cast<std::size_t>(source)];
+                    const float sourceY = enemy.y + kSourceY[static_cast<std::size_t>(source)];
+                    const int rawAngle = local * kAngleStep[static_cast<std::size_t>(difficulty)] +
+                                         kSourceOffset[static_cast<std::size_t>(source)];
+                    spawnProjectileNode(9, 0, sourceX, sourceY, normalizeAngle16(rawAngle),
+                                        10.0f, speed, 1, 0);
+                    spawnProjectileNode(8, 0, sourceX, sourceY, normalizeAngle16(-rawAngle),
+                                        10.0f, speed, 1, 0);
+                    if (difficulty >= 3) {
+                        spawnProjectileNode(9, 0, sourceX, sourceY, normalizeAngle16(rawAngle),
+                                            10.0f, speed + 1.2, 1, 0);
+                        spawnProjectileNode(8, 0, sourceX, sourceY, normalizeAngle16(-rawAngle),
+                                            10.0f, speed + 1.2, 1, 0);
+                    }
+                }
+            }
+            return;
+        }
+
+        if (q >= 690 && q < 930) {
+            static constexpr std::array<int, 5> kPeriod{{90, 60, 50, 40, 40}};
+            static constexpr std::array<int, 5> kBurst{{20, 20, 30, 20, 30}};
+            static constexpr std::array<double, 5> kSpeed{{5.0, 6.0, 6.5, 7.0, 8.0}};
+            static constexpr std::array<int, 4> kSourceOffset{{-1000, 1000, -2000, 2000}};
+            const int local = q - 690;
+            const int period = kPeriod[static_cast<std::size_t>(difficulty)];
+            const int phase = local % period;
+            if (phase == 0) {
+                enemy.secondaryAngle16 = aimFrom(enemy.x, 0.0f);
+            }
+            if (phase < kBurst[static_cast<std::size_t>(difficulty)] && phase % 4 == 0) {
+                for (int source = difficulty == 0 ? 2 : 0; source < 4; ++source) {
+                    const float sourceX = enemy.x + kSourceX[static_cast<std::size_t>(source)];
+                    const float sourceY = enemy.y + kSourceY[static_cast<std::size_t>(source)];
+                    const int center = static_cast<int>(enemy.secondaryAngle16) +
+                                       kSourceOffset[static_cast<std::size_t>(source)];
+                    const double speed = kSpeed[static_cast<std::size_t>(difficulty)];
+                    for (int opposite = 0; opposite < 2; ++opposite) {
+                        const int angle = center - opposite * 0x8000;
+                        spawnProjectileNode(2, 0x17, sourceX, sourceY, normalizeAngle16(angle),
+                                            10.0f, speed, 1, 0);
+                        if (difficulty >= 3) {
+                            spawnProjectileNode(2, 0x17, sourceX, sourceY,
+                                                normalizeAngle16(angle + 2000),
+                                                10.0f, speed, 1, 0);
+                            spawnProjectileNode(2, 0x17, sourceX, sourceY,
+                                                normalizeAngle16(angle - 2000),
+                                                10.0f, speed, 1, 0);
+                        }
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    if (enemy.helperState == 5 && timer > 59) {
+        static constexpr std::array<int, 5> kPeriod{{120, 80, 70, 60, 60}};
+        static constexpr std::array<int, 5> kCount{{5, 7, 9, 7, 9}};
+        static constexpr std::array<double, 5> kBaseSpeed{{4.5, 5.5, 7.0, 8.0, 9.0}};
+        const int q = (timer - 60) % 480;
+        if (q > 89 && q < 450) {
+            const int period = kPeriod[static_cast<std::size_t>(difficulty)];
+            const int phase = (q - 90) % period;
+            if (phase == 0) {
+                enemy.secondaryAngle16 = aimFrom(enemy.x - 25.0f, enemy.y - 85.0f);
+            }
+            if (phase < 24 && phase % 3 == 0) {
+                const int count = kCount[static_cast<std::size_t>(difficulty)];
+                const double speed = kBaseSpeed[static_cast<std::size_t>(difficulty)] +
+                                     static_cast<double>((q - 60) % period) * 0.07;
+                spawnProjectileSpread(16, 0, enemy.x - 25.0f, enemy.y - 85.0f,
+                                      enemy.secondaryAngle16, 10.0f, speed, 1,
+                                      count, 0x8000, 0);
+                if (difficulty >= 3) {
+                    const int highCount = count - 1;
+                    spawnProjectileSpread(16, 0, enemy.x - 25.0f, enemy.y - 85.0f,
+                                          enemy.secondaryAngle16, 10.0f, speed - 1.4, 1,
+                                          highCount, (0x8000 / highCount) * (highCount - 1), 0);
+                }
+            }
+            enemy.secondaryAngle16 = approachAngle16(
+                enemy.secondaryAngle16,
+                aimFrom(enemy.x - 25.0f, enemy.y - 85.0f), 0x30);
+        }
+        return;
+    }
+
+    if (enemy.helperState == 7 && timer > 59) {
+        static constexpr std::array<int, 5> kPeriod{{12, 9, 9, 10, 10}};
+        static constexpr std::array<int, 5> kWidth{{4, 5, 5, 5, 6}};
+        static constexpr std::array<int, 5> kCount{{1, 1, 2, 3, 3}};
+        static constexpr std::array<double, 5> kSpeed{{3.0, 3.6, 4.0, 4.0, 5.0}};
+        const int local = timer - 60;
+        if (local % kPeriod[static_cast<std::size_t>(difficulty)] <
+            kWidth[static_cast<std::size_t>(difficulty)]) {
+            int angle = timer * 300 - 18000;
+            if (local % 600 > 299) {
+                angle = -0x4000 - angle;
+            }
+            const int count = kCount[static_cast<std::size_t>(difficulty)];
+            spawnProjectileSpread(16, 8, enemy.x - 25.0f, enemy.y - 85.0f,
+                                  normalizeAngle16(angle), 10.0f,
+                                  kSpeed[static_cast<std::size_t>(difficulty)], 1,
+                                  count, count * 9000, 0);
+        }
+    }
+}
+
+void StageRuntime::updateStage02BossChild(StageEnemy& enemy) {
+    enemy.vx = 0.0f;
+    enemy.vy = 0.0f;
+    enemy.targetable = false;
+    enemy.drawBodyThisFrame = true;
+    enemy.drawHelperState = enemy.helperState;
+    enemy.drawHelperTimer = enemy.helperTimer;
+
+    StageEnemy* parent = findEnemyById(enemy.parentEntityId);
+    if (parent == nullptr || parent->spawnType != 0x139) {
+        spawnEnemyDeathEffects(enemy, 1);
+        enemy.active = false;
+        return;
+    }
+    if (!parent->active) {
+        enemy.active = false;
+        return;
+    }
+
+    const int timer = enemy.helperTimer;
+    if (enemy.spawnType == 0x22) {
+        enemy.x = parent->x + enemy.originX;
+        enemy.y = parent->y + enemy.originY;
+        if (enemy.helperState == 0 && timer == 50) {
+            enemy.helperState = 1;
+            enemy.helperTimer = 0;
+        }
+        if (enemy.helperState == 1) {
+            emitStage02BossChildProjectiles(enemy, *parent);
+        }
+        const bool livePhaseEnded = parent->helperState == 3 &&
+                                    (parent->hp < 1 || stage02BossCountdown_ < 1 ||
+                                     stage02BossPhaseMode_ != 1);
+        if (livePhaseEnded) {
+            spawnEnemyDeathEffects(enemy, 1);
+            enemy.active = false;
+        }
+        return;
+    }
+
+    const float orbitRadius = enemy.originX;
+    if (enemy.helperState == 0) {
+        const double entry = std::sin(static_cast<double>(timer) * kPi / 100.0);
+        const int entryTurn = static_cast<int>(entry * 3000.0) - 3000;
+        enemy.secondaryAngle16 = normalizeAngle16(
+            static_cast<int>(enemy.secondaryAngle16) + entryTurn);
+        const double radians = fixedAngleToRadiansDouble(enemy.secondaryAngle16);
+        enemy.x = parent->x + static_cast<float>(std::cos(radians) * orbitRadius * entry);
+        enemy.y = parent->y + static_cast<float>(std::sin(radians) * orbitRadius * entry);
+        enemy.sourceAngle16 = normalizeAngle16(
+            static_cast<int>(enemy.secondaryAngle16) + parent->helperTimer * 333);
+        const int trailHandle = enemySmallFrames_.size() > 23 ? enemySmallFrames_[23] : -1;
+        const double trailScale = 1.0 + 0.1 * std::sin(
+            static_cast<double>(parent->helperTimer) * kTau / 44.0);
+        spawnStageEffect(0x38, trailHandle, 100, 0x1c, enemy.x, enemy.y,
+                         enemy.sourceAngle16, 0.0, trailScale, trailScale,
+                         16, 0xff, 0xff, 0xff, 0x60);
+        if (timer == 50) {
+            enemy.helperState = 1;
+            enemy.helperTimer = 0;
+        }
+    }
+    if (enemy.helperState == 1) {
+        const int orbitDelta = enemy.spawnType == 0x23
+                                   ? static_cast<int>(std::sin(static_cast<double>(enemy.helperTimer) *
+                                                               kTau / 480.0) * 777.0)
+                                   : static_cast<int>(std::sin(static_cast<double>(enemy.helperTimer) *
+                                                               kTau / 240.0) * 400.0);
+        enemy.secondaryAngle16 = normalizeAngle16(
+            static_cast<int>(enemy.secondaryAngle16) + orbitDelta);
+        const double radians = fixedAngleToRadiansDouble(enemy.secondaryAngle16);
+        enemy.x = parent->x + static_cast<float>(std::cos(radians) * orbitRadius);
+        enemy.y = parent->y + static_cast<float>(std::sin(radians) * orbitRadius);
+        enemy.sourceAngle16 = normalizeAngle16(
+            static_cast<int>(enemy.secondaryAngle16) + parent->helperTimer * 333);
+        emitStage02BossChildProjectiles(enemy, *parent);
+    }
+
+    const int expectedParentState = enemy.spawnType == 0x23 ? 5 : 7;
+    if (parent->helperState != expectedParentState || parent->hp < 1 ||
+        stage02BossCountdown_ < 1 || stage02BossPhaseMode_ != 1) {
+        if (parent->hp < 1 || stage02BossCountdown_ < 1) {
+            spawnEnemyDeathEffects(enemy, 1);
+        }
+        enemy.active = false;
+    }
+}
+
+void StageRuntime::emitStage02BossChildProjectiles(StageEnemy& enemy,
+                                                    const StageEnemy& parent) {
+    const int difficulty = std::clamp(config_.difficulty, 0, 4);
+    const int timer = enemy.helperTimer;
+    const auto aimFrom = [this](float x, float y) {
+        return radiansToFixedAngleTrunc(std::atan2(
+            static_cast<double>(player_.y - y), static_cast<double>(player_.x - x)));
+    };
+
+    if (enemy.spawnType == 0x22) {
+        if (timer < 20) {
+            return;
+        }
+        static constexpr std::array<int, 5> kSpinPeriod{{24, 20, 18, 20, 20}};
+        static constexpr std::array<int, 5> kSpinWidth{{6, 8, 10, 12, 12}};
+        static constexpr std::array<int, 5> kCount{{2, 4, 5, 6, 7}};
+        static constexpr std::array<double, 5> kSpinSpeed{{3.5, 4.5, 5.5, 6.0, 7.5}};
+        static constexpr std::array<int, 5> kAimCadence{{120, 80, 60, 48, 48}};
+        static constexpr std::array<double, 5> kAimSpeed{{5.0, 6.6, 8.0, 9.0, 11.0}};
+        static constexpr std::array<int, 5> kRingPeriod{{90, 60, 40, 40, 36}};
+        static constexpr std::array<int, 5> kRingCount{{15, 23, 27, 25, 27}};
+        static constexpr std::array<int, 5> kAngleStep{{150, 180, 200, 200, 200}};
+        const int q = (timer - 20) % 1200;
+        const int index = enemy.childIndex & 3;
+        if (q == 0) {
+            enemy.secondaryAngle16 = normalizeAngle16(
+                (kFixedAngleFullCircle /
+                 (kCount[static_cast<std::size_t>(difficulty)] * 4)) * index);
+        }
+        const int direction = (index == 0 || index == 3) ? 1 : -1;
+        enemy.secondaryAngle16 = normalizeAngle16(
+            static_cast<int>(enemy.secondaryAngle16) +
+            direction * kAngleStep[static_cast<std::size_t>(difficulty)]);
+        const float sourceY = enemy.y - 60.0f;
+
+        const auto emitAimedBurst = [&](int start) {
+            if (q < start || q >= start + 240) {
+                return;
+            }
+            const int phase = (q - start) % kAimCadence[static_cast<std::size_t>(difficulty)];
+            if (phase == 0) {
+                enemy.targetAngle16 = aimFrom(enemy.x, sourceY);
+            }
+            if (phase < 24 && phase % 3 == 0) {
+                const int visual = index < 2 ? 12 : 13;
+                const double speed = kAimSpeed[static_cast<std::size_t>(difficulty)];
+                spawnProjectileNode(visual, 0, enemy.x, sourceY, enemy.targetAngle16,
+                                    10.0f, speed, 1, 0);
+                if (difficulty >= 3) {
+                    spawnProjectileNode(visual, 0, enemy.x, sourceY,
+                                        normalizeAngle16(static_cast<int>(enemy.targetAngle16) - 800),
+                                        10.0f, speed, 1, 0);
+                    spawnProjectileNode(visual, 0, enemy.x, sourceY,
+                                        normalizeAngle16(static_cast<int>(enemy.targetAngle16) + 800),
+                                        10.0f, speed, 1, 0);
+                }
+            }
+        };
+        const auto emitSpin = [&](int visual, int phase, int period, int width) {
+            if (period <= 0 || width <= 0 || phase % period >= width ||
+                (phase % period) % 2 != 0) {
+                return;
+            }
+            const int count = kCount[static_cast<std::size_t>(difficulty)];
+            const double speed = kSpinSpeed[static_cast<std::size_t>(difficulty)];
+            spawnProjectileSpread(visual, 0, enemy.x, sourceY, enemy.secondaryAngle16,
+                                  0.0f, speed, 1, count, kFixedAngleFullCircle, 0);
+            if (difficulty == 4) {
+                spawnProjectileSpread(visual, 0, enemy.x, sourceY, enemy.secondaryAngle16,
+                                      0.0f, speed + 0.8, 1, count,
+                                      kFixedAngleFullCircle, 0);
+            }
+        };
+
+        if (index < 2) {
+            emitAimedBurst(60);
+            if (q >= 330 && q < 630) {
+                emitSpin(12, q - 330,
+                         kSpinPeriod[static_cast<std::size_t>(difficulty)] - 2,
+                         kSpinWidth[static_cast<std::size_t>(difficulty)] - 2);
+            }
+        }
+        else {
+            if (q < 300) {
+                emitSpin(13, q,
+                         kSpinPeriod[static_cast<std::size_t>(difficulty)],
+                         kSpinWidth[static_cast<std::size_t>(difficulty)]);
+            }
+            emitAimedBurst(390);
+        }
+
+        const int ringPeriod = kRingPeriod[static_cast<std::size_t>(difficulty)];
+        const int ringStart = 650 + ringPeriod * index;
+        if (q >= ringStart && q <= 1149 &&
+            (q - ringStart) % (ringPeriod * 4) == 0) {
+            const int count = kRingCount[static_cast<std::size_t>(difficulty)];
+            const auto aim = aimFrom(enemy.x, sourceY);
+            const int movement = (index & 1) == 0 ? 0x18 : 0x19;
+            spawnProjectileSpread(3, movement, enemy.x, sourceY, aim,
+                                  10.0f, 7.0, 1, count, kFixedAngleFullCircle, 0);
+            if (difficulty >= 3) {
+                spawnProjectileSpread(3, movement, enemy.x, sourceY, aim,
+                                      10.0f, 8.2, 1, count,
+                                      kFixedAngleFullCircle, 0);
+            }
+        }
+        return;
+    }
+
+    if (enemy.spawnType == 0x23) {
+        static constexpr std::array<int, 5> kPeriod{{9, 5, 5, 5, 4}};
+        static constexpr std::array<double, 5> kSpeed{{4.0, 5.0, 6.0, 6.5, 7.5}};
+        const int period = kPeriod[static_cast<std::size_t>(difficulty)];
+        if (timer % 480 < 420 && timer % period == 0 &&
+            distanceSquared(enemy.x, enemy.y, player_.x, player_.y) >= 80.0f * 80.0f) {
+            const auto angle = normalizeAngle16(
+                static_cast<int>(enemy.secondaryAngle16) - parent.helperTimer * 180);
+            const double speed = kSpeed[static_cast<std::size_t>(difficulty)];
+            spawnProjectileNode(1, 0, enemy.x, enemy.y, angle, 10.0f, speed, 1, 0);
+            if (difficulty >= 3) {
+                spawnProjectileNode(1, 0, enemy.x, enemy.y, angle,
+                                    10.0f, speed + 0.6, 1, 0);
+            }
+        }
+        return;
+    }
+
+    if (enemy.spawnType == 0x24 && timer >= 30) {
+        static constexpr std::array<int, 5> kPeriod{{240, 210, 180, 180, 160}};
+        static constexpr std::array<int, 5> kWidth{{16, 25, 32, 32, 32}};
+        static constexpr std::array<double, 5> kBaseSpeed{{4.0, 5.0, 6.0, 6.0, 7.7}};
+        const int local = (timer - 30) % kPeriod[static_cast<std::size_t>(difficulty)];
+        const auto liveAim = aimFrom(enemy.x, enemy.y);
+        if (local == 0) {
+            enemy.targetAngle16 = liveAim;
+        }
+        if (local < kWidth[static_cast<std::size_t>(difficulty)] && local % 3 == 0) {
+            spawnProjectileNode(11, 0, enemy.x, enemy.y, enemy.targetAngle16,
+                                10.0f,
+                                kBaseSpeed[static_cast<std::size_t>(difficulty)] +
+                                    static_cast<double>(local) * 0.2,
+                                1, 0);
+        }
+        enemy.targetAngle16 = approachAngle16(enemy.targetAngle16, liveAim, 0x30);
+    }
+}
+
 void StageRuntime::emitStage01Projectiles(StageEnemy& enemy, int activeAge) {
     if (enemy.spawnType == 0x0a) {
         // FUN_14007c9c0 fires visual selector 4 / movement id 0 from two side
@@ -5733,18 +8110,30 @@ void StageRuntime::emitStage01Projectiles(StageEnemy& enemy, int activeAge) {
     }
 
     if (enemy.spawnType == 0x0b) {
-        // FUN_14007d4e0: visual selector 0 and common movement id 0, active for state-age < 200, with a
-        // repeating burst window of interval*3 frames and shots every interval.
-        if (enemy.helperState != 1 || enemy.age >= 200) return;
+        // FUN_14007d4e0 emits from the pre-movement point after movement has
+        // been committed to the entity. Five intervals form a cycle and only
+        // the first three interval starts fire.
+        const int timer = enemy.helperTimer;
+        if (enemy.helperState != 1 || timer >= 200) return;
         const int difficulty = std::clamp(config_.difficulty, 0, 4);
         const int start = stage01Type0BShotStartFrame(difficulty);
         const int interval = stage01Type0BShotInterval(difficulty, selectedStage_);
-        if (enemy.age < start || interval <= 0) return;
-        const int local = (enemy.age - start) % (interval * 5);
+        if (timer < start || interval <= 0) return;
+        const int local = (timer - start) % (interval * 5);
         if (local >= interval * 3 || local % interval != 0) return;
-        const float shotX = enemy.x;
-        const float shotY = enemy.y + 18.0f;
-        const auto rawAim = radiansToFixedAngle(aimAtPlayer(shotX, shotY));
+
+        const float shotX = enemy.originX;
+        const float shotY = enemy.originY + 25.0f;
+        const float horizontalOrigin = projectileHorizontalOrigin(player_.x);
+        if (shotX < horizontalOrigin + 40.0f ||
+            shotX > horizontalOrigin + 560.0f ||
+            shotY < 40.0f || shotY > 680.0f) {
+            return;
+        }
+
+        const auto rawAim = radiansToFixedAngleTrunc(std::atan2(
+            static_cast<double>(player_.y - shotY),
+            static_cast<double>(player_.x - shotX)));
         const std::uint16_t angle = normalizeAngle16(((static_cast<int>(rawAim) + 0x400) >> 11) * 0x800);
         const float speed = stage01Type0BProjectileSpeed(difficulty, selectedStage_);
         spawnProjectileNode(0, 0, shotX, shotY, angle, 0.0f, speed, 1, 0);
@@ -5755,101 +8144,245 @@ void StageRuntime::emitStage01Projectiles(StageEnemy& enemy, int activeAge) {
     }
 
     if (enemy.spawnType == 0x0c) {
-        // FUN_14007dfb0: visual selector 7 with common movement id 0, state-age < 200, burst window of
-        // roughly 0x28 frames with shots every 5 frames. It emits symmetric
-        // left/right sources and adds extra angled variants on high difficulty.
-        if (enemy.helperState != 1 || enemy.age >= 200) return;
+        // FUN_14007dfb0 captures a separate post-movement aim for each mount
+        // at the interval boundary, then emits every five frames for 40 frames.
+        const int timer = enemy.helperTimer;
+        if (enemy.helperState != 1 || timer >= 200) return;
         const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        constexpr std::array<int, 5> kNormalStart{{30, 20, 12, 10, 10}};
+        constexpr std::array<int, 5> kNormalInterval{{140, 100, 80, 80, 60}};
+        const int normalStart = kNormalStart[static_cast<std::size_t>(difficulty)];
+        const int normalInterval = kNormalInterval[static_cast<std::size_t>(difficulty)];
+        const int speedPhase = (timer - normalStart) % normalInterval;
         const int start = stage01Type0CShotStartFrame(difficulty, selectedStage_);
         const int interval = stage01Type0CShotInterval(difficulty, selectedStage_);
-        if (enemy.age < start || interval <= 0) return;
-        const int local = (enemy.age - start) % interval;
-        if (local > 0x27 || local % 5 != 0) return;
-        const float speed = stage01Type0CProjectileSpeed(difficulty, selectedStage_) + static_cast<float>(local / 5) * 0.08f;
-        const float leftX = enemy.x - 24.0f;
-        const float rightX = enemy.x + 24.0f;
+        if (timer < start || interval <= 0) return;
+        const int local = (timer - start) % interval;
+        const float leftX = enemy.x - 25.0f;
+        const float rightX = enemy.x + 25.0f;
         const float y = enemy.y;
-        const float leftAngle = aimAtPlayer(leftX, y);
-        const float rightAngle = aimAtPlayer(rightX, y);
-        spawnProjectileNode(7, 0, rightX, y, radiansToFixedAngle(rightAngle), 10.0f, speed, 1, 0);
-        spawnProjectileNode(7, 0, leftX, y, radiansToFixedAngle(leftAngle), 10.0f, speed, 1, 0);
+        if (local == 0) {
+            enemy.secondaryAngle16 = radiansToFixedAngleTrunc(std::atan2(
+                static_cast<double>(player_.y - y),
+                static_cast<double>(player_.x - rightX)));
+            enemy.targetAngle16 = radiansToFixedAngleTrunc(std::atan2(
+                static_cast<double>(player_.y - y),
+                static_cast<double>(player_.x - leftX)));
+        }
+        if (local >= 40 || local % 5 != 0) return;
+
+        const double speed = stage01Type0CProjectileSpeed(difficulty, selectedStage_) +
+                             static_cast<double>(speedPhase) * 0.02;
+        spawnProjectileNode(7, 0, rightX, y, enemy.secondaryAngle16, 10.0f, speed, 1, 0);
+        spawnProjectileNode(7, 0, leftX, y, enemy.targetAngle16, 10.0f, speed, 1, 0);
         if (difficulty > 2) {
-            spawnProjectileNode(7, 0, rightX, y, radiansToFixedAngle(rightAngle - 700.0f * kTau / 65536.0f), 10.0f, speed - 0.8, 1, 0);
-            spawnProjectileNode(7, 0, leftX, y, radiansToFixedAngle(leftAngle + 700.0f * kTau / 65536.0f), 10.0f, speed - 0.8, 1, 0);
+            spawnProjectileNode(7, 0, rightX, y,
+                                normalizeAngle16(static_cast<int>(enemy.secondaryAngle16) - 700),
+                                10.0f, speed - 0.8, 1, 0);
+            spawnProjectileNode(7, 0, leftX, y,
+                                normalizeAngle16(static_cast<int>(enemy.targetAngle16) + 700),
+                                10.0f, speed - 0.8, 1, 0);
         }
         return;
     }
 
     if (enemy.spawnType == 0x0d) {
-        // FUN_14007ea30: side-entry source that fires visual selector 0 / movement id 0 from an
-        // offset side point whenever the global stage frame hits its difficulty
-        // interval. Original also emits a paired accelerated shot.
+        // FUN_14007ea30 fires after its anchor movement. The side decision uses
+        // the angle cached at helper entry, which differs from sourceAngle16 on
+        // the state-0 -> state-1 transition call.
         if (enemy.helperState != 1) return;
         const int difficulty = std::clamp(config_.difficulty, 0, 4);
         const int interval = stage01Type0DShotInterval(difficulty, selectedStage_);
-        if (interval <= 0 || frame_ % interval != 0) return;
-        const bool fromLeft = enemy.sourceX < 0x168;
-        const float shotX = enemy.x + (fromLeft ? -24.0f : 24.0f);
-        const float shotY = enemy.y - 20.0f;
-        const float angle = aimAtPlayer(shotX, shotY);
+        if (frame_ < 0 || interval <= 0 || frame_ % interval != 0) return;
+
+        const bool cachedAngleBelowC000 = enemy.secondaryAngle16 < 0xc000;
+        const float shotX = enemy.x + (cachedAngleBelowC000 ? -40.0f : 40.0f);
+        const float shotY = enemy.y - 12.0f;
+        const float horizontalOrigin = projectileHorizontalOrigin(player_.x);
+        if (shotX < horizontalOrigin + 40.0f ||
+            shotX > horizontalOrigin + 560.0f ||
+            shotY < 40.0f || shotY > 680.0f ||
+            distanceSquared(shotX, shotY, player_.x, player_.y) < 2500.0f) {
+            return;
+        }
+
+        const auto rawAim = radiansToFixedAngleTrunc(std::atan2(
+            static_cast<double>(player_.y - (enemy.y + 25.0f)),
+            static_cast<double>(player_.x - enemy.x)));
+        const auto angle16 = normalizeAngle16(
+            ((static_cast<int>(rawAim) + 0x400) >> 11) * 0x800);
         const float speed = stage01Type0DProjectileSpeed(difficulty, selectedStage_);
-        const auto angle16 = radiansToFixedAngle(angle);
         spawnProjectileNode(0, 0, shotX, shotY, angle16, 0.0f, speed, 1, 0);
         spawnProjectileNode(0, 0, shotX, shotY, angle16, 10.0f, speed, 1, 0);
         return;
     }
 
     if (enemy.spawnType == 0x0e) {
-        // FUN_14007f2c0: multipart source. It alternates visual selector 9 from
-        // left/right offsets and later emits selector 0 spreads. Exact sprite child
-        // overlays are deferred.
-        if (enemy.helperState != 1) return;
-        const int difficulty = std::clamp(config_.difficulty, 0, 4);
-        const int cycle = enemy.age % 0x96;
-        const int fanCount = difficulty == 0 ? 4 : difficulty == 1 ? 6 : difficulty == 2 ? 10 : difficulty == 3 ? 12 : 13;
-        const float speed = stage01DecodedSpeedForOffsets(difficulty, selectedStage_, {0x0f8, 0x158, 0x190, 0x1b8, 0x208}, {0x0f8, 0x158, 0x190, 0x1b8, 0x208});
-        if ((cycle < 0x1e && cycle % 5 == 0) || (cycle >= 0x28 && cycle < 0x46 && (cycle - 0x28) % 5 == 0)) {
-            const float side = cycle < 0x28 ? 42.0f : -42.0f;
-            const float x = enemy.x + side;
-            const float y = enemy.y + std::sin(enemy.age * 0.04f) * 18.0f;
-            spawnProjectileNode(9, 0, x, y, aimAtPlayer(x, y), speed, 7);
-            if (difficulty > 1) {
-                spawnProjectileSpread(9, 0, x, y, aimAtPlayer(x, y), speed - 0.35f, 7, 2, 0.22f + difficulty * 0.04f);
-            }
+        // FUN_14007f2c0 fires after movement from two side mounts, then from
+        // the center. The side aim is cached only at each window boundary.
+        if (enemy.helperState != 1) {
             return;
         }
-        if (cycle >= 0x50 && cycle < 0x78) {
-            const int interval = difficulty < 2 ? 0x28 : 0x1e;
-            if ((cycle - 0x50) % interval == 0) {
-                spawnProjectileSpread(0, cycle / std::max(1, interval), enemy.x, enemy.y + 24.0f, aimAtPlayer(enemy.x, enemy.y), speed - 0.55f, 5, fanCount, kPi * 0.85f);
+        const int timer = enemy.helperTimer;
+        if (timer < 0x18 || timer >= 0x12c) {
+            return;
+        }
+
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        constexpr std::array<double, 5> kSpeed{{6.0, 7.5, 8.5, 9.0, 11.0}};
+        constexpr std::array<int, 5> kSideSpread{{0, 0, 0x708, 0xce4, 0x9c4}};
+        constexpr std::array<int, 5> kCenterInterval{{0x28, 0x1e, 0x1e, 0x0f, 0x0f}};
+        constexpr std::array<int, 5> kCenterCount{{4, 6, 10, 12, 13}};
+        constexpr double kOriginalPi = 3.14159265358979;
+        constexpr double kBodyWave = 2.0 * kOriginalPi / 63.0;
+
+        const int cycle = (timer - 0x18) % 0x96;
+        const float middleYOffset = static_cast<float>(
+            2.0 * std::sin(static_cast<double>(timer - 23) * kBodyWave));
+        const float sideY = enemy.y + 15.0f + middleYOffset;
+        const double speed = kSpeed[static_cast<std::size_t>(difficulty)];
+
+        auto emitSideWindow = [&](float sourceX, std::uint16_t cachedAim) {
+            spawnProjectileNode(9, 0, sourceX, sideY, cachedAim,
+                                10.0f, speed, 1, 0);
+            if (difficulty > 1) {
+                spawnProjectileSpread(9, 0, sourceX, sideY, cachedAim,
+                                      10.0f, speed - 1.0, 1, 2,
+                                      kSideSpread[static_cast<std::size_t>(difficulty)], 0);
             }
+            if (difficulty > 3) {
+                spawnProjectileSpread(9, 0, sourceX, sideY, cachedAim,
+                                      10.0f, speed - 2.0, 1, 2,
+                                      kSideSpread[static_cast<std::size_t>(difficulty)] * 2, 0);
+            }
+        };
+
+        if (cycle == 0) {
+            enemy.secondaryAngle16 = radiansToFixedAngleTrunc(
+                std::atan2(static_cast<double>(player_.y - sideY),
+                           static_cast<double>(player_.x - (enemy.x + 55.0f))));
+        }
+        if (cycle < 0x1e && cycle % 5 == 0) {
+            emitSideWindow(enemy.x + 55.0f, enemy.secondaryAngle16);
+            return;
+        }
+        if (cycle == 0x28) {
+            enemy.secondaryAngle16 = radiansToFixedAngleTrunc(
+                std::atan2(static_cast<double>(player_.y - sideY),
+                           static_cast<double>(player_.x - (enemy.x - 55.0f))));
+        }
+        if (cycle >= 0x28 && cycle < 0x46 && (cycle - 0x28) % 5 == 0) {
+            emitSideWindow(enemy.x - 55.0f, enemy.secondaryAngle16);
+            return;
+        }
+        if (cycle >= 0x50 && cycle < 0x78 &&
+            (cycle - 0x50) % kCenterInterval[static_cast<std::size_t>(difficulty)] == 0) {
+            const float centerY = enemy.y + static_cast<float>(
+                2.0 * std::sin(static_cast<double>(timer) * kBodyWave) - 24.0);
+            const auto aim = radiansToFixedAngleTrunc(std::atan2(
+                static_cast<double>(player_.y - centerY),
+                static_cast<double>(player_.x - enemy.x)));
+            const int count = kCenterCount[static_cast<std::size_t>(difficulty)];
+            spawnProjectileSpread(0, 0, enemy.x, centerY,
+                                  normalizeAngle16(static_cast<int>(aim) + 200),
+                                  0.0f, speed - 2.5, 1, count, 28000, 0);
+            spawnProjectileSpread(0, 0, enemy.x, centerY,
+                                  normalizeAngle16(static_cast<int>(aim) - 200),
+                                  0.0f, speed - 2.5, 1, count, 28000, 0);
         }
         return;
     }
 
     if (enemy.spawnType == 0x0f) {
-        // FUN_140080170: side setpiece with paired visual selector 5/1 volleys and later
-        // denser spread phases. This keeps the confirmed paired-source shape.
-        if (enemy.helperState != 1) return;
+        // FUN_140080170 alternates visual selectors 5 and 1 from its two
+        // moving mounts, then emits a six-layer difficulty-scaled center fan.
+        if (enemy.helperState != 1) {
+            return;
+        }
+        const int timer = enemy.helperTimer;
+        if (timer < 0x28 || timer >= 300) {
+            return;
+        }
+
         const int difficulty = std::clamp(config_.difficulty, 0, 4);
-        const int cycle = (enemy.age - 0x28) % (difficulty == 0 ? 200 : difficulty == 1 ? 0x78 : difficulty == 2 ? 100 : 0x5a);
-        if (enemy.age < 0x28 || cycle < 0) return;
-        const int activeWindow = difficulty == 0 ? 0x1e : difficulty == 1 ? 0x28 : 0x32;
-        if (cycle >= activeWindow) return;
-        const float speed = stage01DecodedSpeedForOffsets(difficulty, selectedStage_, {0x070, 0x0d0, 0x0f8, 0x138, 0x190}, {0x070, 0x0d0, 0x0f8, 0x138, 0x190}) + cycle * 0.01f;
-        const float leftX = enemy.x - 34.0f;
-        const float rightX = enemy.x + 34.0f;
-        const float y = enemy.y - 28.0f;
-        if (cycle % 2 == 0) {
-            spawnProjectileNode(5, 0, rightX, y, aimAtPlayer(rightX, y) + std::sin(frame_ * 0.03f) * 0.08f, speed, 6);
-            spawnProjectileNode(5, 0, leftX, y, aimAtPlayer(leftX, y) - std::sin(frame_ * 0.03f) * 0.08f, speed, 6);
+        constexpr std::array<int, 5> kPeriod{{200, 120, 100, 90, 90}};
+        constexpr std::array<int, 5> kActiveWindow{{30, 40, 50, 50, 50}};
+        constexpr std::array<int, 5> kJitter{{800, 1200, 1800, 2400, 3000}};
+        constexpr std::array<double, 5> kEarlyStageSpeed{{4.0, 5.5, 6.0, 7.0, 8.5}};
+        constexpr std::array<double, 5> kLateStageSpeed{{5.5, 6.5, 7.0, 7.0, 8.5}};
+        constexpr std::array<double, 5> kEarlyStageFanSpeed{{3.5, 4.5, 5.5, 6.0, 7.5}};
+        constexpr std::array<double, 5> kLateStageFanSpeed{{4.5, 5.5, 6.0, 6.0, 7.5}};
+        constexpr std::array<int, 5> kFanCount{{5, 11, 15, 17, 19}};
+        constexpr double kOriginalPi = 3.14159265358979;
+
+        const auto tableIndex = static_cast<std::size_t>(difficulty);
+        const int cycle = (timer - 0x28) % kPeriod[tableIndex];
+        const double bodyWave = std::sin(static_cast<double>(timer) * kOriginalPi / 36.0);
+        const double mountWave = std::sin(static_cast<double>(timer) * kOriginalPi / 50.0);
+        const auto mountAngle = normalizeAngle16(static_cast<int>(mountWave * 2000.0));
+        const double mountRadians = fixedAngleToRadiansDouble(mountAngle);
+        const float mountX = static_cast<float>(std::cos(mountRadians) * 95.0);
+        const float mountY = static_cast<float>(std::sin(mountRadians) * 95.0);
+        const float shiftedBodyWave = static_cast<float>(
+            std::sin(static_cast<double>(timer - 17) * kOriginalPi / 36.0));
+        const float rightX = enemy.x + mountX + 10.0f;
+        const float leftX = enemy.x - mountX - 10.0f;
+        const float sideY = enemy.y + shiftedBodyWave + mountY - 15.0f;
+
+        if (cycle == 0) {
+            enemy.secondaryAngle16 = radiansToFixedAngleTrunc(std::atan2(
+                static_cast<double>(player_.y - sideY),
+                static_cast<double>(player_.x - rightX)));
+            enemy.targetAngle16 = radiansToFixedAngleTrunc(std::atan2(
+                static_cast<double>(player_.y - sideY),
+                static_cast<double>(player_.x - leftX)));
         }
-        if ((cycle & 1) == 1) {
-            spawnProjectileNode(1, 0, rightX, y, aimAtPlayer(rightX, y), speed, 5);
-            spawnProjectileNode(1, 0, leftX, y, aimAtPlayer(leftX, y), speed, 5);
+
+        if (cycle < kActiveWindow[tableIndex]) {
+            const std::uint32_t jitterSeed =
+                static_cast<std::uint32_t>(frame_) * 0x6fu +
+                static_cast<std::uint32_t>(timer);
+            const int jitter = stageRandomIntInclusive(
+                jitterSeed, -kJitter[tableIndex], kJitter[tableIndex]);
+            const int visualSelector = (cycle & 1) == 0 ? 5 : 1;
+            const double baseSpeed = selectedStage_ > 4
+                                         ? kLateStageSpeed[tableIndex]
+                                         : kEarlyStageSpeed[tableIndex];
+            const double speed = baseSpeed + static_cast<double>(cycle) * 0.1;
+            spawnProjectileNode(visualSelector, 0, rightX, sideY,
+                                normalizeAngle16(static_cast<int>(enemy.secondaryAngle16) + jitter),
+                                0.0f, speed, 1, 0);
+            spawnProjectileNode(visualSelector, 0, leftX, sideY,
+                                normalizeAngle16(static_cast<int>(enemy.targetAngle16) + jitter),
+                                0.0f, speed, 1, 0);
         }
-        if (cycle == 0x41 || (difficulty > 2 && cycle % 0x20 == 0)) {
-            spawnProjectileSpread(0, 0, enemy.x, enemy.y + 20.0f, aimAtPlayer(enemy.x, enemy.y), speed - 0.4f, 5, 5 + difficulty * 2, kPi * 0.7f);
+
+        if (cycle == 0x41) {
+            const float centerY = enemy.y + static_cast<float>(bodyWave) - 30.0f;
+            const auto centerAim = radiansToFixedAngleTrunc(std::atan2(
+                static_cast<double>(player_.y - centerY),
+                static_cast<double>(player_.x - enemy.x)));
+            const int count = kFanCount[tableIndex];
+            const int spread = (count - 1) * 0xf0;
+            const double speed = selectedStage_ > 4
+                                     ? kLateStageFanSpeed[tableIndex]
+                                     : kEarlyStageFanSpeed[tableIndex];
+            const auto emitFanLayer = [&](double layerSpeed) {
+                spawnProjectileSpread(4, 0, enemy.x, centerY, centerAim,
+                                      0.0f, layerSpeed, 1, count, spread, 0);
+                if (difficulty > 0) {
+                    spawnProjectileSpread(4, 0, enemy.x, centerY,
+                                          normalizeAngle16(static_cast<int>(centerAim) + 10000),
+                                          0.0f, layerSpeed, 1, count, spread, 0);
+                    spawnProjectileSpread(4, 0, enemy.x, centerY,
+                                          normalizeAngle16(static_cast<int>(centerAim) - 10000),
+                                          0.0f, layerSpeed, 1, count, spread, 0);
+                }
+            };
+            emitFanLayer(speed);
+            if (difficulty > 2) {
+                emitFanLayer(speed + 1.2);
+            }
         }
         return;
     }
@@ -6282,6 +8815,7 @@ void StageRuntime::updateStage04Enemy(StageEnemy& enemy, int activeAge) {
         else if (enemy.helperState == 2) {
             enemy.vy = static_cast<float>(enemy.helperTimer) * 0.06f;
             if (enemy.helperTimer == 60) {
+                spawnEnemyDeathEffects(enemy, 2);
                 enemy.active = false;
             }
         }
@@ -7835,56 +10369,283 @@ void StageRuntime::collectRewardItem(const RewardItem& item) {
 }
 
 void StageRuntime::spawnEnemyDeathRewardBurst(const StageEnemy& enemy, int payoutWindow) {
-    if (payoutWindow > 0) {
-        int payout = 1;
-        if (enemy.targetableTimer < payoutWindow) {
-            payout = static_cast<int>((static_cast<double>(payoutWindow - enemy.targetableTimer) /
-                                       static_cast<double>(payoutWindow)) * enemy.rewardWeight);
-        }
-        if (player_.specialGauge < 0) {
-            payout *= 2;
-        }
+    int payout = 1;
+    if (payoutWindow - enemy.targetableTimer > 0) {
+        payout = static_cast<int>(
+            (static_cast<double>(payoutWindow - enemy.targetableTimer) /
+             static_cast<double>(payoutWindow)) *
+            static_cast<double>(enemy.rewardWeight));
+    }
+    const bool feverActive = player_.specialGauge < 0;
+    if (feverActive) {
+        payout *= 2;
+    }
 
-        int highCount = 0;
-        if (payout > 49) {
-            highCount = payout / 20;
-            payout -= highCount * 10;
+    int highCount = 0;
+    if (payout > 49) {
+        highCount = payout / 20;
+        payout -= highCount * 10;
+    }
+    int mediumCount = 0;
+    if (payout > 9) {
+        mediumCount = payout / 10;
+        payout -= mediumCount * 5;
+    }
+    const int lowCount = payout;
+    const std::uint32_t globalFrame = static_cast<std::uint32_t>(frame_);
+    const auto emitTier = [this, &enemy, globalFrame](int itemType, int count,
+                                                      std::uint32_t angleOffset,
+                                                      std::uint32_t speedOffset,
+                                                      int radiusOrScale) {
+        for (int i = 0; i < count; ++i) {
+            const auto ordinal = static_cast<std::uint32_t>(i);
+            spawnRewardItem(
+                itemType, enemy.x, enemy.y,
+                scriptRandomAngle(globalFrame + angleOffset + ordinal),
+                static_cast<float>(scriptRandomHundredth(
+                    globalFrame + speedOffset + ordinal, 0.0, 16.0)),
+                radiusOrScale);
         }
-        int mediumCount = 0;
-        if (payout > 9) {
-            mediumCount = payout / 10;
-            payout -= mediumCount * 5;
-        }
-        const int lowCount = std::max(0, payout);
-        int ordinal = 0;
-        auto emit = [&](int itemType, int count) {
-            for (int i = 0; i < count; ++i, ++ordinal) {
-                const float angle = deterministicUnit(enemy.entityId * 0x6f + ordinal, enemy.helperTimer + itemType * 0x457) * kTau;
-                const float speed = 1.8f + deterministicUnit(enemy.entityId + ordinal * 0x21, itemType + 0x14d) * 1.4f;
-                spawnRewardItem(itemType, enemy.x, enemy.y, radiansToFixedAngle(angle), speed, 12);
-            }
-        };
-        emit(2, highCount);
-        emit(1, mediumCount);
-        emit(0, lowCount);
-        ++player_.keyStateCount;
+    };
+    emitTier(2, highCount, 666u, 555u, 60);
+    emitTier(1, mediumCount, 444u, 333u, 45);
+    emitTier(0, lowCount, 222u, 111u, 30);
+
+    const double deltaX = static_cast<double>(player_.x) - static_cast<double>(enemy.x);
+    const double deltaY = static_cast<double>(player_.y) - static_cast<double>(enemy.y);
+    const int proximity = static_cast<int>(std::sqrt(deltaX * deltaX + deltaY * deltaY)) -
+                          enemy.radius;
+    int feedbackMultiplier = 1;
+    if (proximity <= 150) {
+        feedbackMultiplier = 10;
+    }
+    else if (proximity < 450) {
+        feedbackMultiplier = std::max(1, (450 - proximity) / 30);
+    }
+    if (feverActive) {
+        feedbackMultiplier = 10;
+    }
+    spawnStageEffect(0x1d, -1, 0, 0, enemy.x, enemy.y, 0,
+                     0.0, static_cast<double>(feedbackMultiplier),
+                     static_cast<double>(enemy.radius + 60),
+                     enemyDeathFeedbackStrength(enemy.spawnType, enemy.radius) * 3,
+                     0xff, 0xff, 0xff, 0xc0);
+
+    const double progressScale = proximity <= 500
+                                     ? 1.0 + static_cast<double>(500 - proximity) / 200.0
+                                     : 1.0;
+    player_.stockProgress += static_cast<int>(
+        static_cast<double>(enemy.radius + 100) * progressScale);
+    if (feverActive) {
+        spawnPlayerSideObject(0x1a, enemy.x, enemy.y, 0.0, 0, 0,
+                              static_cast<float>(enemy.radius) * 1.5f + 60.0f);
+    }
+
+    spawnPostDeathCounterEntity(enemy, static_cast<double>(enemy.radius) * 0.6);
+    if (!defersEnemyDeathEffects(enemy.spawnType)) {
+        spawnEnemyDeathEffects(enemy, immediateEnemyDeathEffectMode(enemy.spawnType));
+    }
+    ++player_.keyStateCount;
+}
+
+void StageRuntime::spawnEnemyDeathEffects(const StageEnemy& enemy, int mode) {
+    if (mode < 0 || mode > 2) {
         return;
     }
 
-    // Compact runtime approximation of FUN_14007b010: original emits type 2,
-    // then 1, then 0 reward items based on entity payout and gauge state.
-    const bool largeEnemy = enemy.radius >= 45 || enemy.sourceDispatchKind >= 24 || enemy.spawnType == 0x0e ||
-                            enemy.spawnType == 0x0f || enemy.spawnType == 0x10 || enemy.spawnType == 0x138;
-    const int count = largeEnemy ? 5 : 2 + (enemy.entityId % 2);
+    switch (mode) {
+    case 0:
+        playPlayerSound(enemyDown1SoundHandle_, 19);
+        break;
+    case 1:
+        playPlayerSound(enemyDown2SoundHandle_, 22);
+        break;
+    case 2:
+        playPlayerSound(enemyDown3SoundHandle_, 25);
+        break;
+    default:
+        break;
+    }
+
+    const int count = stageRandomIntInclusive(
+        static_cast<std::uint32_t>(enemy.entityId) * 111u +
+            static_cast<std::uint32_t>(frame_),
+        enemy.radius / 4, enemy.radius / 3);
+    const int burstHandle = effectMediumFrames_.size() > 5 ? effectMediumFrames_[5] : -1;
+    const int sparkHandle = playerFrames_.size() > 14 ? playerFrames_[14] : -1;
+    const std::uint32_t baseSeed =
+        static_cast<std::uint32_t>(enemy.entityId) * 666u +
+        static_cast<std::uint32_t>(frame_);
     for (int i = 0; i < count; ++i) {
-        const int itemType = largeEnemy && i == 0 ? 2 : (largeEnemy && i < 3 ? 1 : 0);
-        const float angle = -kPi * 0.5f + (static_cast<float>(i) - static_cast<float>(count - 1) * 0.5f) * kRewardBurstSpread;
-        spawnRewardItem(itemType, enemy.x, enemy.y, radiansToFixedAngle(angle), kRewardBurstSpeed + 0.18f * i, 12);
+        const auto ordinal = static_cast<std::uint32_t>(i);
+        const std::uint32_t burstSeed = baseSeed + ordinal;
+        const int distance = stageRandomIntInclusive(burstSeed, 0, enemy.radius + 60);
+        const std::uint16_t burstAngle = scriptRandomAngle(burstSeed);
+        const double burstRadians = fixedAngleToRadiansDouble(burstAngle);
+        const float burstX = enemy.x +
+                             static_cast<float>(std::cos(burstRadians) * distance);
+        const float burstY = enemy.y +
+                             static_cast<float>(std::sin(burstRadians) * distance);
+        const double burstScale = scriptRandomHundredth(
+            burstSeed, static_cast<double>(enemy.radius) / 200.0 + 0.4,
+            static_cast<double>(enemy.radius) / 200.0 + 0.7);
+        spawnStageEffect(0x2a, burstHandle, 200, 0x3e, burstX, burstY,
+                         burstAngle, 1.0, burstScale, burstScale, 24,
+                         0xff, 0xff, 0xff, 0xff);
+
+        std::uint32_t angleSeed = static_cast<std::uint32_t>(frame_);
+        std::uint32_t scaleSeed = baseSeed;
+        std::uint32_t speedSeed = static_cast<std::uint32_t>(frame_);
+        double scaleMinimum = 0.7;
+        double scaleMaximum = 1.0;
+        double speedMinimum = 6.0;
+        double speedMaximum = 9.0;
+        if (mode == 0) {
+            angleSeed += ordinal * 11u;
+            scaleSeed += ordinal * 1111u;
+            speedSeed += ordinal * 555u;
+        }
+        else if (mode == 1) {
+            angleSeed += ordinal * 22u;
+            scaleSeed += ordinal * 2222u;
+            speedSeed += ordinal * 222u;
+            scaleMinimum = 0.9;
+            scaleMaximum = 1.5;
+            speedMinimum = 10.0;
+            speedMaximum = 15.0;
+        }
+        else {
+            angleSeed += ordinal * 33u;
+            scaleSeed += ordinal * 3333u;
+            speedSeed = baseSeed + ordinal * 333u;
+            scaleMinimum = 1.0;
+            scaleMaximum = 2.2;
+            speedMinimum = 16.0;
+            speedMaximum = 26.0;
+        }
+        const double sparkScale = scriptRandomHundredth(
+            scaleSeed, scaleMinimum, scaleMaximum);
+        spawnStageEffect(0x2c, sparkHandle, 80, 0x3e, enemy.x, enemy.y,
+                         scriptRandomAngle(angleSeed),
+                         scriptRandomHundredth(speedSeed, speedMinimum, speedMaximum),
+                         sparkScale, sparkScale, 0,
+                         0xff, 0xff, 0xff, 0xc0);
     }
-    if (selectedStage_ == 1 && enemy.spawnType == 0x10) {
-        spawnRewardItem(6, enemy.x, enemy.y, radiansToFixedAngle(-kPi * 0.5f), 2.2f, 18);
+
+    if (mode != 2 && player_.specialGauge >= 0) {
+        const int ringHandle = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
+        const double ringScale = static_cast<double>(enemy.radius) / 16.0;
+        spawnStageEffect(0x0c, ringHandle, 200, 0x3d, enemy.x, enemy.y, 0,
+                         0.0, ringScale, ringScale, 24,
+                         0xff, 0xff, 0xff, 0x60);
     }
-    ++player_.keyStateCount;
+}
+
+void StageRuntime::spawnPostDeathCounterEntity(const StageEnemy& enemy, double lifetime) {
+    if (enemies_.size() + pendingEnemies_.size() >= kStageEntityCap) {
+        return;
+    }
+
+    StageEnemy counter;
+    counter.entityId = nextEntityId_++;
+    counter.spawnType = 0x137;
+    counter.sourceHitPoints = 99999999;
+    counter.sourceX = static_cast<int>(enemy.x);
+    counter.sourceY = static_cast<int>(enemy.y);
+    counter.sourceNote = "post-death counter entity 0x137";
+    counter.updateCase = 0x137;
+    counter.sourceDispatchKind = 0;
+    counter.sourceDispatchField = enemy.radius;
+    counter.x = enemy.x;
+    counter.y = enemy.y;
+    counter.originX = enemy.x;
+    counter.originY = enemy.y;
+    counter.sourceSpeed = lifetime;
+    counter.speed = static_cast<float>(lifetime);
+    counter.hp = 99999999;
+    counter.maxHp = 99999999;
+    counter.drawHp = 99999999;
+    counter.radius = enemy.radius;
+    counter.activationDelay = 0;
+    counter.rewardWeight = 0;
+    counter.targetable = false;
+    pendingEnemies_.push_back(counter);
+}
+
+void StageRuntime::updatePostDeathCounterEntity(StageEnemy& enemy) {
+    enemy.vx = 0.0f;
+    enemy.vy = 0.0f;
+    enemy.drawBodyThisFrame = false;
+    enemy.drawMarkerThisFrame = false;
+    if (config_.counterMode != 1) {
+        enemy.active = false;
+        return;
+    }
+
+    const int difficulty = std::clamp(config_.difficulty, 0, 4);
+    const int interval = std::array<int, 5>{{5, 4, 3, 2, 2}}[
+        static_cast<std::size_t>(difficulty)];
+    const int timer = enemy.helperTimer;
+    if (player_.score != 0 && timer >= 0 && timer % interval == 0 && enemy.y < 600.0f) {
+        const std::uint32_t entityId = static_cast<std::uint32_t>(enemy.entityId);
+        const std::uint16_t radialAngle = scriptRandomAngle(
+            static_cast<std::uint32_t>(timer) * 666u + entityId);
+        const int radialLength = stageRandomIntInclusive(
+            static_cast<std::uint32_t>(timer) * 6666u + entityId,
+            0, enemy.radius);
+        const double radialRadians = fixedAngleToRadiansDouble(radialAngle);
+        const float pointX = enemy.x +
+                             static_cast<float>(std::cos(radialRadians) * radialLength);
+        const float pointY = enemy.y +
+                             static_cast<float>(std::sin(radialRadians) * radialLength);
+        const std::uint16_t aimedAngle = radiansToFixedAngleTrunc(std::atan2(
+            static_cast<double>(player_.y - pointY),
+            static_cast<double>(player_.x - pointX)));
+        const int jitter = stageRandomIntInclusive(
+            static_cast<std::uint32_t>(timer) * 3333u + entityId,
+            -1000, 1000);
+        const std::uint16_t heading = normalizeAngle16(
+            static_cast<int>(aimedAngle) + jitter);
+        const int threshold = stageRandomIntInclusive(
+            static_cast<std::uint32_t>(timer) * 777u + entityId,
+            180, 480);
+        const double playerDistance = std::sqrt(
+            static_cast<double>(distanceSquared(pointX, pointY, player_.x, player_.y)));
+        const std::uint32_t itemSeed =
+            static_cast<std::uint32_t>(timer) * 7777u + entityId;
+        if (playerDistance <= 480.0 && playerDistance < static_cast<double>(threshold)) {
+            spawnRewardItem(0, pointX, pointY, scriptRandomAngle(itemSeed),
+                            static_cast<float>(scriptRandomHundredth(itemSeed, 0.0, 16.0)),
+                            30);
+            const std::uint16_t feedbackAngle = normalizeAngle16(
+                static_cast<int>(scriptRandomAngle(
+                    static_cast<std::uint32_t>(timer) * 77777u + entityId)) +
+                static_cast<int>(heading) + 0x4000);
+            spawnStageEffect(0x1a, -1, 0, 0x49, pointX, pointY, feedbackAngle,
+                             1.0, 1.0, 0.5, 50,
+                             0xff, 0xff, 0xff, 0xc0);
+            const int ringHandle = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
+            spawnStageEffect(0x0c, ringHandle, 200, 0x3d, pointX, pointY, 0,
+                             0.0, 0.6, 0.6, 16,
+                             0xff, 0xff, 0xff, 0xff);
+        }
+        else {
+            constexpr std::array<double, 5> kMinimumSpeed{{3.5, 4.0, 4.5, 5.5, 6.5}};
+            const double minimum = kMinimumSpeed[static_cast<std::size_t>(difficulty)] +
+                                   static_cast<double>(selectedStage_) * 0.1;
+            spawnProjectileNode(0x0f, 0x16, pointX, pointY, heading, 0.0f,
+                                scriptRandomHundredth(itemSeed, minimum, minimum + 2.0),
+                                1, 0);
+        }
+    }
+
+    int lifetime = static_cast<int>(enemy.sourceSpeed);
+    if (difficulty == 0) {
+        lifetime /= 2;
+    }
+    if (timer == lifetime) {
+        enemy.active = false;
+    }
 }
 
 void StageRuntime::updateSpecialGaugeAction() {
@@ -8419,21 +11180,19 @@ bool StageRuntime::enemyUsesMediumFrame(const StageEnemy& enemy) const {
 }
 
 int StageRuntime::enemyVisualFrameForSpawnType(const StageEnemy& enemy) const {
-    if (selectedStage_ == 1) {
-        switch (enemy.spawnType) {
-        case 0x06:
-        case 0x08: return 8 + (enemy.entityId % 3);
-        case 0x09: return 11;
-        case 0x0a: return 15;
-        case 0x0b: return 4;
-        case 0x0c: return 6;
-        case 0x0d: return 9;
-        case 0x0e: return 16 + (enemy.entityId % 6);
-        case 0x0f: return 22 + (enemy.entityId % 4);
-        case 0x10: return 26 + (enemy.entityId % 6);
-        case 0x11: return 32 + (enemy.childIndex % 2);
-        default: break;
-        }
+    switch (enemy.spawnType) {
+    case 0x06:
+    case 0x08: return 8 + (enemy.entityId % 3);
+    case 0x09: return 11;
+    case 0x0a: return 15;
+    case 0x0b: return 4;
+    case 0x0c: return 6;
+    case 0x0d: return 9;
+    case 0x0e: return 16 + (enemy.entityId % 6);
+    case 0x0f: return 22 + (enemy.entityId % 4);
+    case 0x10: return 26 + (enemy.entityId % 6);
+    case 0x11: return 32 + (enemy.childIndex % 2);
+    default: break;
     }
     return enemy.visualFrame;
 }
@@ -8482,9 +11241,13 @@ void StageRuntime::handlePlayerSideObjectEnemyCollisions() {
     for (auto& enemy : enemies_) {
         // The entity dispatcher tests targetability after calling the helper;
         // it does not re-test the entity's active link flag. Preserve that
-        // terminal collision call for the exact type-0x0a helper.
-        const bool terminalType0A = enemy.spawnType == 0x0a && enemy.drawBodyThisFrame;
-        if ((!enemy.active && !terminalType0A) || !enemy.targetable) {
+        // terminal collision call for exact helpers that queued a body before
+        // setting their link flag inactive in the death/bounds tail.
+        const bool terminalExactEnemy =
+            (((enemy.spawnType >= 0x0a && enemy.spawnType <= 0x0f) ||
+              (enemy.spawnType >= 0x32 && enemy.spawnType <= 0x34)) &&
+             enemy.drawBodyThisFrame);
+        if ((!enemy.active && !terminalExactEnemy) || !enemy.targetable) {
             continue;
         }
         for (std::size_t objectIndex = 0; objectIndex < playerSideObjects_.size(); ++objectIndex) {
@@ -8947,37 +11710,48 @@ void StageRuntime::drawPlayer() const {
 
 void StageRuntime::drawEnemies() const {
     for (const auto& enemy : enemies_) {
-        const float x = screenX(enemy.x);
-        const float y = screenY(enemy.y);
-        if (selectedStage_ == 1 && drawStage01BossExact(enemy, x, y)) {
+        if (enemy.spawnType == 0x137 || enemy.spawnType == 0x153) {
             continue;
         }
-        if (selectedStage_ == 2 &&
-            (drawStage02Type19Exact(enemy, x, y) ||
+        const float x = screenX(enemy.x);
+        const float y = screenY(enemy.y);
+        if (drawStage01BossExact(enemy, x, y)) {
+            continue;
+        }
+        if (drawStage02BossExact(enemy, x, y)) {
+            continue;
+        }
+        if (drawStage02Type19Exact(enemy, x, y) ||
              drawStage02Type1AExact(enemy, x, y) ||
              drawStage02Type1BExact(enemy, x, y) ||
              drawStage02Type1CExact(enemy, x, y) ||
              drawStage02Type1DOr1EExact(enemy, x, y) ||
              drawStage02Type1FExact(enemy, x, y) ||
-             drawStage02Type20Exact(enemy, x, y) || drawStage02Type21Exact(enemy, x, y))) {
+             drawStage02Type20Exact(enemy, x, y) || drawStage02Type21Exact(enemy, x, y)) {
             continue;
         }
-        if (selectedStage_ == 3 && drawStage03EnemyExact(enemy, x, y)) {
+        if (drawStage03EnemyExact(enemy, x, y)) {
             continue;
         }
         if (drawType0AExact(enemy, x, y)) {
             continue;
         }
-        const auto& frames = (enemy.spawnType == 0x138 || enemy.spawnType == 0x13a)
+        if (drawStage01Type0EExact(enemy, x, y)) {
+            continue;
+        }
+        if (drawStage01Type0FExact(enemy, x, y)) {
+            continue;
+        }
+        if (drawStage01SmallEnemyExact(enemy, x, y)) {
+            continue;
+        }
+        const auto& frames = (enemy.spawnType >= 0x138 && enemy.spawnType <= 0x13b)
                                  ? bossFrames_
                                  : (enemyUsesMediumFrame(enemy) ? enemyMediumFrames_ : enemySmallFrames_);
         const int visualFrame = enemyVisualFrameForSpawnType(enemy);
         const int index = frames.empty() ? -1 : std::min(visualFrame, static_cast<int>(frames.size()) - 1);
         const int handle = index < 0 ? -1 : frames[static_cast<std::size_t>(index)];
         if (handle != -1) {
-            if (selectedStage_ == 1 && drawStage01SmallEnemyExact(enemy, x, y)) {
-                continue;
-            }
             if (drawStage04EnemyExact(enemy, x, y)) {
                 continue;
             }
@@ -9113,6 +11887,556 @@ bool StageRuntime::drawStage01BossExact(const StageEnemy& enemy, float x, float 
     drawSmall(12, x, y + middleWave, 0, false);
     drawSmall(11, x, y + rearWave - 32.0f, 0, false);
     return true;
+}
+
+bool StageRuntime::drawStage02BossExact(const StageEnemy& enemy, float x, float y) const {
+    const bool root = enemy.spawnType == 0x139;
+    const bool child = enemy.spawnType >= 0x22 && enemy.spawnType <= 0x24 &&
+                       enemy.parentSpawnType == 0x139;
+    if (!root && !child) {
+        return false;
+    }
+    if (!enemy.drawBodyThisFrame) {
+        return true;
+    }
+
+    const auto handleAt = [](const std::vector<int>& frames, int index) {
+        return index >= 0 && index < static_cast<int>(frames.size())
+                   ? frames[static_cast<std::size_t>(index)]
+                   : -1;
+    };
+    const auto drawNode = [this](int handle, float drawX, float drawY,
+                                 std::uint16_t angle, double scaleX,
+                                 double scaleY, bool reverseX = false) {
+        if (handle != -1) {
+            drawOriginalMode7Node(handle, drawX, drawY, angle,
+                                  scaleX, scaleY, reverseX);
+        }
+    };
+
+    if (child) {
+        const int timer = enemy.drawHelperTimer;
+        if (enemy.spawnType == 0x22) {
+            const int medium = handleAt(enemyMediumFrames_, 39 + (enemy.childIndex & 3));
+            const int core = handleAt(enemySmallFrames_, 20 + (timer / 3) % 3);
+            const double bodyScaleX = 1.0 - 0.05 * std::sin(
+                static_cast<double>(timer) * kTau / 25.0);
+            double bodyScaleY = 1.0;
+            double coreScale = 1.0;
+            if (enemy.drawHelperState == 0 && timer < 30) {
+                bodyScaleY = std::sin(static_cast<double>(timer) * kPi / 60.0);
+                coreScale = 0.0;
+            }
+            else if (enemy.drawHelperState == 0 && timer < 50) {
+                coreScale = std::sin(static_cast<double>(timer - 30) * kPi / 40.0);
+            }
+            if (medium != -1) {
+                SetDrawBlendMode(DX_BLENDMODE_ALPHA, 64);
+                SetDrawBright(0, 0, 0);
+                drawNode(medium, x, y - 50.0f, 0, bodyScaleX, bodyScaleY);
+                SetDrawBright(255, 255, 255);
+                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+                drawNode(medium, x, y + 50.0f, 0, bodyScaleX, bodyScaleY);
+            }
+            drawNode(core, x, y - 60.0f, 0, coreScale, coreScale);
+            return true;
+        }
+
+        const int body = handleAt(enemySmallFrames_, 23);
+        int parentTimer = 0;
+        for (const auto& candidate : enemies_) {
+            if (candidate.entityId == enemy.parentEntityId &&
+                candidate.spawnType == 0x139) {
+                parentTimer = candidate.drawHelperTimer;
+                break;
+            }
+        }
+        const double orbitScale = 1.0 + 0.1 * std::sin(
+            static_cast<double>(parentTimer) * kTau / 44.0);
+        if (body != -1) {
+            drawNode(body, x, y, enemy.sourceAngle16, orbitScale, orbitScale);
+        }
+        return true;
+    }
+
+    const int state = enemy.drawHelperState;
+    const int timer = enemy.drawHelperTimer;
+    if (state <= 3 || (state == 4 && timer < 130)) {
+        const float yShift = state > 2 || (state == 2 && timer > 100)
+                                 ? -160.0f
+                                 : 0.0f;
+        const double pulse = 1.0 + 0.1 * std::sin(static_cast<double>(timer) *
+                                                  kTau / 60.0);
+        const int largeRotor = handleAt(enemyLargeFrames_, 8);
+        const int largeMiddle = handleAt(enemyLargeFrames_, 7);
+        const int largeBody = handleAt(enemyLargeFrames_, 6);
+        const int mediumDecoration = handleAt(enemyMediumFrames_, 46);
+        const int mediumMount = handleAt(enemyMediumFrames_, 47);
+        const int mediumOrbit = handleAt(enemyMediumFrames_, 48);
+        const auto drawOrbitHalf = [&](bool backHalf) {
+            if (mediumOrbit == -1) {
+                return;
+            }
+            for (int i = 0; i < 13; ++i) {
+                const auto orbitAngle = normalizeAngle16(frame_ * 0xde + i * 0x13b1);
+                const bool isBackHalf = orbitAngle > 0x8000;
+                if (isBackHalf != backHalf) {
+                    continue;
+                }
+                const double radians = fixedAngleToRadiansDouble(orbitAngle);
+                drawNode(mediumOrbit,
+                         x - static_cast<float>(std::cos(radians) * 120.0),
+                         y + yShift + 80.0f +
+                             static_cast<float>(std::sin(radians) * 215.0),
+                         0, 1.0, 1.0);
+            }
+        };
+        static constexpr std::array<int, 6> kDecorationAngles{{
+            0, 0x2aaa, 0x5554, 0x7ffe, 0xaaa8, 0xd552,
+        }};
+        const auto drawDecorations = [&](int begin, int end) {
+            for (int i = begin; i < end; ++i) {
+                const double radians = fixedAngleToRadiansDouble(
+                    normalizeAngle16(kDecorationAngles[static_cast<std::size_t>(i)]));
+                drawNode(mediumDecoration,
+                         x - static_cast<float>(std::cos(radians) * 90.0),
+                         y - 80.0f + static_cast<float>(std::sin(radians) * 140.0),
+                         0, pulse, 1.0);
+            }
+        };
+
+        for (int i = 0; i < 4; ++i) {
+            drawNode(largeRotor, x, y + yShift + 250.0f,
+                     normalizeAngle16(frame_ * 600 + i * 0x4000),
+                     1.0, 1.0);
+        }
+        drawNode(largeMiddle, x, y + yShift + 160.0f, 0, 1.0, 1.0);
+
+        if (state < 2 || (state == 2 && timer <= 100)) {
+            drawOrbitHalf(true);
+            drawNode(largeBody, x, y, 0, 1.0, 1.0);
+            // The two upper ellipse nodes share the body layer. The lower four
+            // and the mount are one layer forward in the original queue.
+            drawDecorations(4, 6);
+            drawOrbitHalf(false);
+            drawNode(mediumMount, x, y - 90.0f, 0, 1.0, 1.0);
+            drawDecorations(0, 4);
+        }
+        else {
+            const int upper = handleAt(bossFrames_, 10 + (timer / 5) % 3);
+            if (upper != -1) {
+                SetDrawBlendMode(DX_BLENDMODE_ALPHA, 64);
+                SetDrawBright(0, 0, 0);
+                drawNode(upper, x, y + yShift, 0, 1.0, 1.0);
+                SetDrawBright(255, 255, 255);
+                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            }
+            drawOrbitHalf(true);
+            if (upper != -1) {
+                drawNode(upper, x, y + yShift, 0, 1.0, 1.0);
+            }
+            drawOrbitHalf(false);
+        }
+        return true;
+    }
+
+    int bossFrame = -1;
+    double scale = 1.0;
+    switch (state) {
+    case 4:
+        bossFrame = 10 + (timer / 5) % 3;
+        break;
+    case 5:
+    case 7:
+        bossFrame = timer < 10 ? 13 + (timer / 5) % 2
+                               : 15 + ((timer - 10) / 5) % 3;
+        break;
+    case 6:
+        bossFrame = 18 + (timer / 5) % 2;
+        scale = 1.0 - 0.3 * std::sin(static_cast<double>(timer) * kTau / 360.0);
+        break;
+    case 8:
+        if (timer < 240) {
+            bossFrame = 18 + (timer / 5) % 2;
+        }
+        break;
+    default:
+        break;
+    }
+    drawNode(handleAt(bossFrames_, bossFrame), x, y, 0, scale, scale);
+    return true;
+}
+
+void StageRuntime::drawStage02BossHud() const {
+    const StageEnemy* boss = nullptr;
+    for (const auto& enemy : enemies_) {
+        if (enemy.spawnType == 0x139 && (enemy.active || enemy.drawBodyThisFrame)) {
+            boss = &enemy;
+            break;
+        }
+    }
+    if (boss == nullptr) {
+        return;
+    }
+
+    const int timer = boss->drawHelperTimer;
+    if (boss->drawHelperState == 8 && timer >= 60 && timer < 240) {
+        const double presentationScale = timer < 76
+                                             ? static_cast<double>(sineEaseIn(timer - 60, 16, 1.0f))
+                                             : (timer >= 224
+                                                    ? static_cast<double>(sineEaseOut(timer - 224, 16, 1.0f))
+                                                    : 1.0);
+        SetDrawBright(255, 255, 255);
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255);
+        if (textBoxFrames_.size() > 1 && textBoxFrames_[1] != -1) {
+            DrawRotaGraph3F(640.0f, 60.0f, 300.0f, 50.0f,
+                            1.0, presentationScale, 0.0,
+                            textBoxFrames_[1], TRUE);
+        }
+        const int iconIndex = selectedStage_ + 2;
+        if (iconIndex >= 0 && iconIndex < static_cast<int>(textIconFrames_.size()) &&
+            textIconFrames_[static_cast<std::size_t>(iconIndex)] != -1) {
+            DrawRotaGraphF(390.0f, 60.0f, presentationScale, 0.0,
+                           textIconFrames_[static_cast<std::size_t>(iconIndex)], TRUE);
+        }
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    }
+
+    if (bossGaugeFrames_.empty()) {
+        return;
+    }
+
+    int playerAlpha = 255;
+    if (player_.y < 150.0f) {
+        playerAlpha = 55;
+    }
+    else if (player_.y < 200.0f) {
+        playerAlpha = static_cast<int>(player_.y - 150.0f) * 4 + 55;
+    }
+    int baseAlpha = playerAlpha;
+    int overlayAlpha = 0;
+    int fillRed = 64;
+    int fillGreen = 64;
+    int fillBlue = 64;
+    double fill = 0.0;
+    switch (stage02BossPhaseMode_) {
+    case 0:
+        baseAlpha = timer < 0
+                        ? 0
+                        : (timer < 8
+                               ? static_cast<int>(std::sin(static_cast<double>(timer) *
+                                                           kPi / 16.0) * 255.0)
+                               : 255);
+        fill = timer >= 50 ? 1.0 : std::max(0, timer) * 0.02;
+        fillRed = 0;
+        fillGreen = 255;
+        fillBlue = 255;
+        break;
+    case 1:
+        fill = stage02BossMaxHp_ > 0
+                   ? std::clamp(static_cast<double>(boss->drawHp) /
+                                    static_cast<double>(stage02BossMaxHp_),
+                                0.0, 1.0)
+                   : 0.0;
+        if (fill <= 0.5) {
+            fillRed = static_cast<int>(255.0 - fill * 511.0);
+            fillGreen = static_cast<int>(fill * 511.0);
+            fillBlue = 0;
+        }
+        else {
+            fillRed = 0;
+            fillGreen = 255;
+            fillBlue = static_cast<int>((fill - 0.5) * 511.0);
+        }
+        break;
+    case 2:
+        fill = timer < 40 ? 0.0 : (timer < 70 ? (timer - 40) / 30.0 : 1.0);
+        fillRed = 0;
+        fillGreen = 255;
+        fillBlue = 255;
+        break;
+    case -1:
+        overlayAlpha = timer >= 0 && timer < 64
+                           ? static_cast<int>(std::sin(static_cast<double>(timer) *
+                                                       kPi / 64.0) * 255.0)
+                           : 0;
+        if (timer >= 32) {
+            baseAlpha = 0;
+        }
+        break;
+    default:
+        break;
+    }
+
+    const auto frameHandle = [this](int index) {
+        return index >= 0 && index < static_cast<int>(bossGaugeFrames_.size())
+                   ? bossGaugeFrames_[static_cast<std::size_t>(index)]
+                   : -1;
+    };
+    const auto drawTopLeft = [](int handle, float x, float y,
+                                double scaleX = 1.0, double scaleY = 1.0) {
+        if (handle != -1) {
+            DrawRotaGraph3F(x, y, 0.0f, 0.0f, scaleX, scaleY,
+                            0.0, handle, TRUE);
+        }
+    };
+
+    const int gauge0 = frameHandle(0);
+    const int gauge1 = frameHandle(1);
+    SetDrawBright(255, 255, 255);
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(baseAlpha, 0, 255));
+    drawTopLeft(gauge0, 378.0f, 30.0f);
+    drawTopLeft(gauge1, 402.0f, 30.0f);
+
+    SetDrawBlendMode(DX_BLENDMODE_ADD, std::clamp(overlayAlpha, 0, 255));
+    drawTopLeft(gauge0, 378.0f, 30.0f);
+    drawTopLeft(gauge1, 402.0f, 30.0f);
+
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(baseAlpha, 0, 255));
+    drawTopLeft(frameHandle(2), 390.0f, 30.0f, fill, 1.0);
+    SetDrawBright(std::clamp(fillRed, 0, 255),
+                  std::clamp(fillGreen, 0, 255),
+                  std::clamp(fillBlue, 0, 255));
+    SetDrawBlendMode(DX_BLENDMODE_ADD, std::clamp(baseAlpha, 0, 255));
+    drawTopLeft(frameHandle(3), 390.0f, 30.0f, fill, 1.0);
+
+    SetDrawBright(255, 255, 255);
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(baseAlpha, 0, 255));
+    if (bossNameFrames_.size() > 1 && bossNameFrames_[1] != -1) {
+        drawTopLeft(bossNameFrames_[1], 372.0f, 0.0f);
+    }
+    const int breakHandle = frameHandle(7);
+    if (breakHandle != -1) {
+        for (int i = 0; i < stage02BossBreaksRemaining_; ++i) {
+            int breakAlpha = baseAlpha;
+            double breakScale = 1.0;
+            if (stage02BossPhaseMode_ == 0) {
+                const int start = i * 6;
+                if (timer < start) {
+                    breakAlpha = 0;
+                }
+                else if (timer < start + 20) {
+                    const double entrance = std::sin(
+                        static_cast<double>(timer - start) * kPi / 40.0);
+                    breakAlpha = static_cast<int>(entrance * 255.0);
+                    breakScale = 3.0 - entrance * 2.0;
+                }
+            }
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA,
+                             std::clamp(breakAlpha, 0, 255));
+            DrawRotaGraphF(400.0f + static_cast<float>(i * 20),
+                           74.0f, breakScale, 0.0, breakHandle, TRUE);
+        }
+    }
+    if (stage02BossPhaseMode_ == 1) {
+        const int countdown = std::max(0, stage02BossCountdownDraw_);
+        const int display = std::min(countdown, 5999);
+        const int frames = display % 60;
+        const int seconds = display / 60;
+        const int tint = std::min(countdown, 255);
+        SetDrawBright(255, tint, tint);
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(baseAlpha, 0, 255));
+        const auto drawDigit = [this](int digit, float x, float y, double scale) {
+            if (digit >= 0 && digit < static_cast<int>(numSmallFrames_.size())) {
+                const int handle = numSmallFrames_[static_cast<std::size_t>(digit)];
+                if (handle != -1) {
+                    DrawRotaGraphF(x, y, scale, 0.0, handle, TRUE);
+                }
+            }
+        };
+        drawDigit(seconds / 10, 854.0f, 16.0f, 1.0);
+        drawDigit(seconds % 10, 870.0f, 16.0f, 1.0);
+        drawDigit(frames / 10, 885.0f, 20.0f, 0.6);
+        drawDigit(frames % 10, 895.0f, 20.0f, 0.6);
+    }
+    SetDrawBright(255, 255, 255);
+    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+}
+
+void StageRuntime::drawStage03BossHud() const {
+    const StageEnemy* boss = nullptr;
+    for (const auto& enemy : enemies_) {
+        if (enemy.spawnType == 0x13a && (enemy.active || enemy.drawBodyThisFrame)) {
+            boss = &enemy;
+            break;
+        }
+    }
+    if (boss == nullptr) {
+        return;
+    }
+
+    const int timer = boss->drawHelperTimer;
+    if (boss->drawHelperState == 8 && timer >= 60 && timer < 240) {
+        const double presentationScale = timer < 76
+                                             ? static_cast<double>(sineEaseIn(timer - 60, 16, 1.0f))
+                                             : (timer >= 224
+                                                    ? static_cast<double>(sineEaseOut(timer - 224, 16, 1.0f))
+                                                    : 1.0);
+        SetDrawBright(255, 255, 255);
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255);
+        if (textBoxFrames_.size() > 1 && textBoxFrames_[1] != -1) {
+            DrawRotaGraph3F(640.0f, 60.0f, 300.0f, 50.0f,
+                            1.0, presentationScale, 0.0,
+                            textBoxFrames_[1], TRUE);
+        }
+        constexpr int kStage03TextIcon = 5;
+        if (textIconFrames_.size() > kStage03TextIcon &&
+            textIconFrames_[kStage03TextIcon] != -1) {
+            DrawRotaGraphF(390.0f, 60.0f, presentationScale, 0.0,
+                           textIconFrames_[kStage03TextIcon], TRUE);
+        }
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    }
+
+    if (bossGaugeFrames_.empty()) {
+        return;
+    }
+
+    int playerAlpha = 255;
+    if (player_.y < 150.0f) {
+        playerAlpha = 55;
+    }
+    else if (player_.y < 200.0f) {
+        playerAlpha = static_cast<int>(player_.y - 150.0f) * 4 + 55;
+    }
+    int baseAlpha = playerAlpha;
+    int overlayAlpha = 0;
+    int fillRed = 64;
+    int fillGreen = 64;
+    int fillBlue = 64;
+    double fill = 0.0;
+    switch (stage03BossPhaseMode_) {
+    case 0:
+        baseAlpha = timer < 0
+                        ? 0
+                        : (timer < 8
+                               ? static_cast<int>(std::sin(static_cast<double>(timer) *
+                                                           kPi / 16.0) * 255.0)
+                               : 255);
+        fill = timer >= 50 ? 1.0 : std::max(0, timer) * 0.02;
+        fillRed = 0;
+        fillGreen = 255;
+        fillBlue = 255;
+        break;
+    case 1:
+        fill = stage03BossMaxHp_ > 0
+                   ? std::clamp(static_cast<double>(boss->drawHp) /
+                                    static_cast<double>(stage03BossMaxHp_),
+                                0.0, 1.0)
+                   : 0.0;
+        if (fill <= 0.5) {
+            fillRed = static_cast<int>(255.0 - fill * 511.0);
+            fillGreen = static_cast<int>(fill * 511.0);
+            fillBlue = 0;
+        }
+        else {
+            fillRed = 0;
+            fillGreen = 255;
+            fillBlue = static_cast<int>((fill - 0.5) * 511.0);
+        }
+        break;
+    case 2:
+        fill = timer < 40 ? 0.0 : (timer < 70 ? (timer - 40) / 30.0 : 1.0);
+        fillRed = 0;
+        fillGreen = 255;
+        fillBlue = 255;
+        break;
+    case -1:
+        overlayAlpha = timer >= 0 && timer < 64
+                           ? static_cast<int>(std::sin(static_cast<double>(timer) *
+                                                       kPi / 64.0) * 255.0)
+                           : 0;
+        if (timer >= 32) {
+            baseAlpha = 0;
+        }
+        break;
+    default:
+        break;
+    }
+
+    const auto frameHandle = [this](int index) {
+        return index >= 0 && index < static_cast<int>(bossGaugeFrames_.size())
+                   ? bossGaugeFrames_[static_cast<std::size_t>(index)]
+                   : -1;
+    };
+    const auto drawTopLeft = [](int handle, float x, float y,
+                                double scaleX = 1.0, double scaleY = 1.0) {
+        if (handle != -1) {
+            DrawRotaGraph3F(x, y, 0.0f, 0.0f, scaleX, scaleY,
+                            0.0, handle, TRUE);
+        }
+    };
+
+    const int gauge0 = frameHandle(0);
+    const int gauge1 = frameHandle(1);
+    SetDrawBright(255, 255, 255);
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(baseAlpha, 0, 255));
+    drawTopLeft(gauge0, 378.0f, 30.0f);
+    drawTopLeft(gauge1, 402.0f, 30.0f);
+
+    SetDrawBlendMode(DX_BLENDMODE_ADD, std::clamp(overlayAlpha, 0, 255));
+    drawTopLeft(gauge0, 378.0f, 30.0f);
+    drawTopLeft(gauge1, 402.0f, 30.0f);
+
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(baseAlpha, 0, 255));
+    drawTopLeft(frameHandle(2), 390.0f, 30.0f, fill, 1.0);
+    SetDrawBright(std::clamp(fillRed, 0, 255),
+                  std::clamp(fillGreen, 0, 255),
+                  std::clamp(fillBlue, 0, 255));
+    SetDrawBlendMode(DX_BLENDMODE_ADD, std::clamp(baseAlpha, 0, 255));
+    drawTopLeft(frameHandle(3), 390.0f, 30.0f, fill, 1.0);
+
+    SetDrawBright(255, 255, 255);
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(baseAlpha, 0, 255));
+    if (bossNameFrames_.size() > 2 && bossNameFrames_[2] != -1) {
+        drawTopLeft(bossNameFrames_[2], 372.0f, 0.0f);
+    }
+    const int breakHandle = frameHandle(7);
+    if (breakHandle != -1) {
+        for (int i = 0; i < stage03BossBreaksRemaining_; ++i) {
+            int breakAlpha = baseAlpha;
+            double breakScale = 1.0;
+            if (stage03BossPhaseMode_ == 0) {
+                const int start = i * 6;
+                if (timer < start) {
+                    breakAlpha = 0;
+                }
+                else if (timer < start + 20) {
+                    const double entrance = std::sin(
+                        static_cast<double>(timer - start) * kPi / 40.0);
+                    breakAlpha = static_cast<int>(entrance * 255.0);
+                    breakScale = 3.0 - entrance * 2.0;
+                }
+            }
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA,
+                             std::clamp(breakAlpha, 0, 255));
+            DrawRotaGraphF(400.0f + static_cast<float>(i * 20),
+                           74.0f, breakScale, 0.0, breakHandle, TRUE);
+        }
+    }
+    if (stage03BossPhaseMode_ == 1) {
+        const int countdown = std::max(0, stage03BossCountdownDraw_);
+        const int display = std::min(countdown, 5999);
+        const int frames = display % 60;
+        const int seconds = display / 60;
+        const int tint = std::min(countdown, 255);
+        SetDrawBright(255, tint, tint);
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(baseAlpha, 0, 255));
+        const auto drawDigit = [this](int digit, float x, float y, double scale) {
+            if (digit >= 0 && digit < static_cast<int>(numSmallFrames_.size())) {
+                const int handle = numSmallFrames_[static_cast<std::size_t>(digit)];
+                if (handle != -1) {
+                    DrawRotaGraphF(x, y, scale, 0.0, handle, TRUE);
+                }
+            }
+        };
+        drawDigit(seconds / 10, 854.0f, 16.0f, 1.0);
+        drawDigit(seconds % 10, 870.0f, 16.0f, 1.0);
+        drawDigit(frames / 10, 885.0f, 20.0f, 0.6);
+        drawDigit(frames % 10, 895.0f, 20.0f, 0.6);
+    }
+    SetDrawBright(255, 255, 255);
+    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 }
 
 void StageRuntime::drawEnemyGaugeExact(const StageEnemy& enemy, int mode, float x, float y) const {
@@ -9458,7 +12782,8 @@ bool StageRuntime::drawStage02Type21Exact(const StageEnemy& enemy, float x, floa
 }
 
 bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float y) const {
-    if (!isStage03FocusedType(enemy.spawnType)) {
+    if (!isStage03FocusedType(enemy.spawnType) &&
+        !isStage03BossNodeType(enemy.spawnType)) {
         return false;
     }
 
@@ -9502,6 +12827,69 @@ bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float
 
     const int timer = enemy.drawHelperTimer;
     switch (enemy.spawnType) {
+    case 0x13a: {
+        const int state = enemy.drawHelperState;
+        if (state <= 3 || (state == 4 && timer < 130)) {
+            draw(large(13), x, y, 0);
+            for (int i = 0; i < 4; ++i) {
+                draw(large(15), x, y - 255.0f,
+                     normalizeAngle16(frame_ * 0x500 + i * 0x4000));
+            }
+            break;
+        }
+
+        int bossFrame = -1;
+        if ((state == 4 && timer >= 130) || state == 5 || state == 7) {
+            bossFrame = 20 + (timer / 7) % 3;
+        }
+        else if (state == 6 || (state == 8 && timer < 240)) {
+            bossFrame = 23 + (timer / 5) % 2;
+        }
+        if (bossFrame >= 0 && bossFrame < static_cast<int>(bossFrames_.size())) {
+            draw(bossFrames_[static_cast<std::size_t>(bossFrame)], x, y, 0);
+        }
+        break;
+    }
+    case 0x30: {
+        if (enemy.drawHelperState <= 2) {
+            const int bodyFrame = enemy.drawHelperState == 2 ? 16 : 14;
+            draw(large(bodyFrame), x, y, 0);
+        }
+        if (!effectSmallFrames_.empty() && effectSmallFrames_[0] != -1) {
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 192);
+            if (timer % 4 >= 2) {
+                SetDrawBright(255, 128, 0);
+            }
+            const float accentX = x + (enemy.originX < 0.0f ? 85.0f : -85.0f);
+            draw(effectSmallFrames_[0], accentX, y - 255.0f, 0);
+            SetDrawBright(255, 255, 255);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        }
+        if (enemy.targetable) {
+            drawEnemyGaugeExact(enemy, 1, x, y);
+        }
+        break;
+    }
+    case 0x31:
+        draw(medium(62), x, y, enemy.sourceAngle16);
+        break;
+    case 0x32:
+    case 0x33:
+    case 0x34: {
+        draw(small(30), x, y, 0);
+        draw(small(29), x, y, 0);
+        static constexpr std::array<int, 5> kLeafOffset{{
+            0, 0x3333, 0x6666, -0x6667, -0x3334,
+        }};
+        for (const int offset : kLeafOffset) {
+            draw(small(31), x, y - 30.0f,
+                 normalizeAngle16(static_cast<int>(enemy.secondaryAngle16) + offset));
+        }
+        if (enemy.targetable) {
+            drawEnemyGaugeExact(enemy, 2, x, y);
+        }
+        break;
+    }
     case 0x25: {
         if (!effectSmallFrames_.empty()) {
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, 192);
@@ -9975,6 +13363,147 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
     return true;
 }
 
+bool StageRuntime::drawStage01Type0EExact(const StageEnemy& enemy, float x, float y) const {
+    if (enemy.spawnType != 0x0e) {
+        return false;
+    }
+
+    if (enemy.drawMarkerThisFrame) {
+        const int marker = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
+        if (marker != -1) {
+            const double scale = std::max(
+                0.0, 3.0 - static_cast<double>(enemy.markerDrawTimer) * 0.15);
+            drawOriginalMode7Node(marker, screenX(enemy.markerDrawX),
+                                  screenY(enemy.markerDrawY), 0,
+                                  scale, scale, false);
+        }
+    }
+    if (!enemy.drawBodyThisFrame) {
+        return true;
+    }
+
+    const auto mediumHandle = [this](int frame) {
+        return frame >= 0 && frame < static_cast<int>(enemyMediumFrames_.size())
+                   ? enemyMediumFrames_[static_cast<std::size_t>(frame)]
+                   : -1;
+    };
+    const auto drawMedium = [&](int frame, float drawX, float drawY,
+                                std::uint16_t angle16, bool reverseX) {
+        const int handle = mediumHandle(frame);
+        if (handle != -1) {
+            drawOriginalMode7Node(handle, drawX, drawY, angle16,
+                                  1.0, 1.0, reverseX);
+        }
+    };
+
+    constexpr double kOriginalPi = 3.14159265358979;
+    constexpr double kBodyWave = 2.0 * kOriginalPi / 63.0;
+    constexpr double kMountWave = 2.0 * kOriginalPi / 36.0;
+    const int timer = enemy.drawHelperTimer;
+    const float frontY = static_cast<float>(
+        2.0 * std::sin(static_cast<double>(timer) * kBodyWave) - 24.0);
+    const float middleY = static_cast<float>(
+        2.0 * std::sin(static_cast<double>(timer - 23) * kBodyWave));
+    const float rearY = static_cast<float>(
+        2.0 * std::sin(static_cast<double>(timer - 46) * kBodyWave));
+    const int bodyAngle = static_cast<int>(
+        std::sin(static_cast<double>(timer) * kBodyWave) * 2400.0);
+    const int innerAngle = static_cast<int>(
+        std::sin(static_cast<double>(timer) * kMountWave) * 2000.0);
+    const int outerAngle = static_cast<int>(
+        std::sin(static_cast<double>(timer - 3) * kMountWave) * 2000.0) + 10000;
+
+    const double innerRadians = fixedAngleToRadiansDouble(normalizeAngle16(innerAngle));
+    const float innerX = static_cast<float>(std::cos(innerRadians) * 85.0);
+    const float innerY = static_cast<float>(std::sin(innerRadians) * 85.0);
+    const double outerRadians = fixedAngleToRadiansDouble(normalizeAngle16(outerAngle));
+    const float outerX = static_cast<float>(std::cos(outerRadians) * 70.0);
+    const float outerY = static_cast<float>(std::sin(outerRadians) * 70.0);
+
+    drawMedium(21, x + outerX, y + middleY + outerY,
+               normalizeAngle16(outerAngle), false);
+    drawMedium(21, x - outerX, y + middleY + outerY,
+               normalizeAngle16(-outerAngle), true);
+    drawMedium(20, x + innerX, y + middleY + innerY,
+               normalizeAngle16(innerAngle), false);
+    drawMedium(20, x - innerX, y + middleY + innerY,
+               normalizeAngle16(-innerAngle), true);
+    drawMedium(19, x, y + rearY, 0, false);
+    drawMedium(18, x, y + middleY, 0, false);
+    drawMedium(17, x + 45.0f, y + frontY - 60.0f,
+               normalizeAngle16(bodyAngle - 1000), false);
+    drawMedium(17, x - 45.0f, y + frontY - 60.0f,
+               normalizeAngle16(1000 - bodyAngle), true);
+    drawMedium(16, x, y + frontY, 0, false);
+
+    StageEnemy gaugeSnapshot = enemy;
+    gaugeSnapshot.hp = enemy.drawHp;
+    // FUN_140079c10(entity, 1, ..., xOffset=0, yOffset=-120).
+    drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 120.0f);
+    return true;
+}
+
+bool StageRuntime::drawStage01Type0FExact(const StageEnemy& enemy, float x, float y) const {
+    if (enemy.spawnType != 0x0f) {
+        return false;
+    }
+
+    if (enemy.drawMarkerThisFrame) {
+        const int marker = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
+        if (marker != -1) {
+            const double scale = std::max(
+                0.0, 3.0 - static_cast<double>(enemy.markerDrawTimer) * 0.15);
+            drawOriginalMode7Node(marker, screenX(enemy.markerDrawX),
+                                  screenY(enemy.markerDrawY), 0,
+                                  scale, scale, false);
+        }
+    }
+    if (!enemy.drawBodyThisFrame) {
+        return true;
+    }
+
+    const auto mediumHandle = [this](int frame) {
+        return frame >= 0 && frame < static_cast<int>(enemyMediumFrames_.size())
+                   ? enemyMediumFrames_[static_cast<std::size_t>(frame)]
+                   : -1;
+    };
+    const auto drawMedium = [&](int frame, float drawX, float drawY,
+                                std::uint16_t angle16, bool reverseX) {
+        const int handle = mediumHandle(frame);
+        if (handle != -1) {
+            drawOriginalMode7Node(handle, drawX, drawY, angle16,
+                                  1.0, 1.0, reverseX);
+        }
+    };
+
+    constexpr double kOriginalPi = 3.14159265358979;
+    const int timer = enemy.drawHelperTimer;
+    const float frontWave = static_cast<float>(
+        std::sin(static_cast<double>(timer) * kOriginalPi / 36.0));
+    const float middleWave = static_cast<float>(
+        std::sin(static_cast<double>(timer - 17) * kOriginalPi / 36.0));
+    const float rearWave = static_cast<float>(
+        std::sin(static_cast<double>(timer - 34) * kOriginalPi / 36.0));
+    const auto mountAngle = normalizeAngle16(static_cast<int>(
+        std::sin(static_cast<double>(timer) * kOriginalPi / 50.0) * 2000.0));
+    const double mountRadians = fixedAngleToRadiansDouble(mountAngle);
+    const float mountX = static_cast<float>(std::cos(mountRadians) * 95.0);
+    const float mountY = static_cast<float>(std::sin(mountRadians) * 95.0);
+
+    drawMedium(25, x + mountX + 10.0f, y + middleWave + mountY - 15.0f,
+               mountAngle, false);
+    drawMedium(25, x - mountX - 10.0f, y + middleWave + mountY - 15.0f,
+               normalizeAngle16(-static_cast<int>(mountAngle)), true);
+    drawMedium(24, x, y + rearWave, 0, false);
+    drawMedium(23, x, y + middleWave, 0, false);
+    drawMedium(22, x, y + frontWave, 0, false);
+
+    StageEnemy gaugeSnapshot = enemy;
+    gaugeSnapshot.hp = enemy.drawHp;
+    drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 120.0f);
+    return true;
+}
+
 bool StageRuntime::drawType0AExact(const StageEnemy& enemy, float x, float y) const {
     if (enemy.spawnType != 0x0a || enemyMediumFrames_.empty()) {
         return false;
@@ -10018,7 +13547,8 @@ bool StageRuntime::drawType0AExact(const StageEnemy& enemy, float x, float y) co
 }
 
 bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, float y) const {
-    if (selectedStage_ != 1 || enemyUsesMediumFrame(enemy) || enemySmallFrames_.empty() || enemy.helperState != 1) {
+    const bool sharedType0BTo0D = enemy.spawnType >= 0x0b && enemy.spawnType <= 0x0d;
+    if (enemyUsesMediumFrame(enemy) || enemySmallFrames_.empty()) {
         return false;
     }
 
@@ -10036,21 +13566,46 @@ bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, 
         }
     };
 
+    if (sharedType0BTo0D) {
+        if (enemy.drawMarkerThisFrame) {
+            const int marker = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
+            if (marker != -1) {
+                const double scale = std::max(
+                    0.0, 2.0 - static_cast<double>(enemy.markerDrawTimer) * 0.1);
+                drawOriginalMode7Node(marker, screenX(enemy.markerDrawX),
+                                      screenY(enemy.markerDrawY), 0,
+                                      scale, scale, false);
+            }
+        }
+        if (!enemy.drawBodyThisFrame) {
+            return true;
+        }
+    }
+    else if (enemy.helperState != 1) {
+        return false;
+    }
+
     switch (enemy.spawnType) {
     case 0x0b: {
         // FUN_14007d4e0: DAT_140e44670 body, then four DAT_140e44674 wing/orbit nodes.
         // The manual nodes are literal 0x48 render queue nodes at decompile lines 244-350.
-        const std::uint16_t bodyAngle = static_cast<std::uint16_t>(0);
-        const double bodyScaleX = 1.0 + std::sin(enemy.age * 0.12319971190548208) * 0.1;
+        constexpr double kBodyWaveStep = 0.12319971190548208;
+        const int timer = enemy.drawHelperTimer;
+        const std::uint16_t bodyAngle = 0;
+        const double bodyScaleX =
+            1.0 + std::sin(static_cast<double>(timer) * kBodyWaveStep) * 0.1;
         const double bodyScaleY = 1.0;
         drawSmall(4, x, y, bodyAngle, bodyScaleX, bodyScaleY, false);
 
         constexpr float kWingOffsetY = 45.0f; // DAT_14053acb0 as float, evidence: .rdata @ 14053acb0.
-        const std::uint16_t wingBase = normalizeAngle16(enemy.age * 2000);
+        const std::uint16_t wingBase = normalizeAngle16(timer * 2000);
         drawSmall(5, x, y - kWingOffsetY, wingBase, 1.0, 1.0, false);
         drawSmall(5, x, y - kWingOffsetY, normalizeAngle16(static_cast<int>(wingBase) + 0x4000), 1.0, 1.0, false);
         drawSmall(5, x, y - kWingOffsetY, normalizeAngle16(static_cast<int>(wingBase) - 0x8000), 1.0, 1.0, false);
         drawSmall(5, x, y - kWingOffsetY, normalizeAngle16(static_cast<int>(wingBase) - 0x4000), 1.0, 1.0, false);
+        StageEnemy gaugeSnapshot = enemy;
+        gaugeSnapshot.hp = enemy.drawHp;
+        drawEnemyGaugeExact(gaugeSnapshot, 2, x, y - 50.0f);
         return true;
     }
     case 0x0c: {
@@ -10060,16 +13615,22 @@ bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, 
         constexpr double kAngleScale = 2400.0;               // _DAT_14053aa40 as double.
         constexpr float kFrontBodyYOffset = 7.0f;            // DAT_14053abf8 as float.
         constexpr float kBackBodyYOffset = 14.0f;            // _DAT_14053ac40 as float.
-        const double age = static_cast<double>(enemy.age);
-        const float wingY = y + static_cast<float>(std::cos(age * kYOffsetStep));
-        const float backBodyWaveY = y + static_cast<float>(std::cos((age - 17.0) * kYOffsetStep));
-        const auto wingAngle = static_cast<std::int16_t>(static_cast<int>(std::sin(age * kAngleStep) * kAngleScale));
+        const double timer = static_cast<double>(enemy.drawHelperTimer);
+        const float wingY =
+            y + static_cast<float>(std::sin((timer - 17.0) * kYOffsetStep));
+        const float backBodyWaveY =
+            y + static_cast<float>(std::sin(timer * kYOffsetStep));
+        const auto wingAngle = static_cast<std::int16_t>(
+            static_cast<int>(std::sin(timer * kAngleStep) * kAngleScale));
         const std::uint16_t wingAngle16 = static_cast<std::uint16_t>(wingAngle);
         const std::uint16_t bodyAngle16 = 0;
         drawSmall(8, x, wingY, wingAngle16, 1.0, 1.0, false);
         drawSmall(8, x, wingY, static_cast<std::uint16_t>(-wingAngle), 1.0, 1.0, true);
         drawSmall(7, x, wingY - kFrontBodyYOffset, bodyAngle16, 1.0, 1.0, false);
         drawSmall(6, x, backBodyWaveY - kBackBodyYOffset, bodyAngle16, 1.0, 1.0, false);
+        StageEnemy gaugeSnapshot = enemy;
+        gaugeSnapshot.hp = enemy.drawHp;
+        drawEnemyGaugeExact(gaugeSnapshot, 2, x, y - 50.0f);
         return true;
     }
     case 0x0d: {
@@ -10079,10 +13640,12 @@ bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, 
         constexpr double kAngleScale = 6666.0;                 // _DAT_14053ab40 as double.
         constexpr float kSideOffset = 6.0f;                    // DAT_14053ab70 as float.
         constexpr float kSecondWingYOffset = 12.0f;            // DAT_14053ac34 as float.
-        const double scale = 1.0 + std::sin(enemy.age * kScaleWaveStep) * 0.1;
-        const int localAngleAge = enemy.age - (enemy.age / 33) * 33;
+        const int timer = enemy.drawHelperTimer;
+        const double scale =
+            1.0 + std::sin(static_cast<double>(timer) * kScaleWaveStep) * 0.1;
+        const int localAngleAge = timer % 33;
         const auto flap = static_cast<std::int16_t>(static_cast<int>(std::sin(localAngleAge * kAngleStep) * kAngleScale));
-        const bool sourceBelowC000 = enemy.sourceAngle16 < 0xc000;
+        const bool sourceBelowC000 = enemy.secondaryAngle16 < 0xc000;
         std::uint16_t secondAngle = 0;
         if (sourceBelowC000) {
             const std::uint16_t firstAngle = normalizeAngle16(0x4000 - flap);
@@ -10097,6 +13660,9 @@ bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, 
             drawSmall(10, x + kSideOffset, y - kSecondWingYOffset, secondAngle, scale, scale, false);
         }
         drawSmall(9, x, y, 0, scale, scale, sourceBelowC000);
+        StageEnemy gaugeSnapshot = enemy;
+        gaugeSnapshot.hp = enemy.drawHp;
+        drawEnemyGaugeExact(gaugeSnapshot, 2, x, y - 50.0f);
         return true;
     }
     default:
