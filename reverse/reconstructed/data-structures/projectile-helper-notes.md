@@ -44,12 +44,12 @@ Observed prototype:
 
 ```c
 void spawn_projectile_node(
+    int visual_selector_or_variant,
     int projectile_id,
-    int variant_or_owner,
     float x,
     float y,
     uint16_t angle,
-    float speed_or_accel_hint,
+    float initial_travel,
     double speed,
     int collision_radius,
     int arg8_or_aux);
@@ -61,13 +61,13 @@ Field mapping for the allocated `0x50`-byte node:
 |---:|---|---|---|
 | `+0x00` | `active` | constant `1` | Main loop removes nodes with `active == 0`. |
 | `+0x04` | `age` | zeroed by allocator / incremented externally | Main loop increments `piVar17[1]` each frame. |
-| `+0x08` | `variant_or_owner` | arg2 | In draw/update helpers this is primarily the visible bullet selector passed to `FUN_140070250`; in scripted child helpers it can also encode subpattern/owner/variant. See `bullet-frame-visual-map.md`. |
-| `+0x0c` | `projectile_id` | arg1 | Main loop dispatch switch key. |
+| `+0x08` | `visual_selector_or_variant` | arg1 | Visible bullet selector passed to `FUN_140070250`; some scripted helpers also inspect it as a subpattern/owner/variant. See `bullet-frame-visual-map.md`. |
+| `+0x0c` | `projectile_id` | arg2 | Main loop dispatch switch key. |
 | `+0x10` | `x` | arg3 | Position. |
 | `+0x14` | `y` | arg4 | Position. |
 | `+0x18` | `prev_x` | arg3 | Mirrored initial position. |
 | `+0x1c` | `prev_y` | arg4 | Mirrored initial position. |
-| `+0x20` | `speed_or_accel_hint` | arg6 | Some update IDs use it as acceleration / steering magnitude. |
+| `+0x20` | `accumulated_travel` | arg6 | Initial anchor-relative travel; common/scripted/reflect helpers add `speed` before deriving the current draw/collision point. Specialized helpers reuse it as radius/scratch. |
 | `+0x24` | `angle` | arg5 | 16-bit fixed angle; update helpers feed it through sin/cos. |
 | `+0x26` | `prev_angle` | arg5 | Mirrored initial angle. |
 | `+0x28` | `speed` | arg7 | Primary motion speed; update helpers add `cos/sin(angle) * speed`. |
@@ -88,12 +88,12 @@ Observed prototype:
 
 ```c
 void spawn_projectile_spread(
+    int visual_selector_or_variant,
     int projectile_id,
-    int variant_or_owner,
     float x,
     float y,
     uint16_t center_angle,
-    float speed_or_accel_hint,
+    float initial_travel,
     double speed,
     int collision_radius,
     uint32_t count,

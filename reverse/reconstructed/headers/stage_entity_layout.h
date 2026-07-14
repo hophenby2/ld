@@ -50,7 +50,7 @@ struct ProjectileNode {
     float y;                        // +0x14
     float prev_x;                   // +0x18
     float prev_y;                   // +0x1c
-    float speed_or_accel_hint;      // +0x20
+    float accumulated_travel;       // +0x20: anchor-relative distance for radial helpers.
     FixedAngle16 angle;             // +0x24
     FixedAngle16 prev_angle;        // +0x26
     double speed;                   // +0x28
@@ -104,14 +104,14 @@ struct EffectNode {
 static_assert(sizeof(EffectNode) == 0x60, "EffectNode layout size must match allocation");
 
 // Helper prototypes in readable form.
-void spawn_projectile_node_candidate(int projectile_id, int variant_or_owner,
+void spawn_projectile_node_candidate(int visual_selector_or_variant, int projectile_id,
                                      float x, float y, FixedAngle16 angle,
-                                     float speed_or_accel_hint, double speed,
+                                     float initial_travel, double speed,
                                      int collision_radius, int arg8_or_aux);
 
-void spawn_projectile_spread_candidate(int projectile_id, int variant_or_owner,
+void spawn_projectile_spread_candidate(int visual_selector_or_variant, int projectile_id,
                                        float x, float y, FixedAngle16 center_angle,
-                                       float speed_or_accel_hint, double speed,
+                                       float initial_travel, double speed,
                                        int collision_radius, uint32_t count,
                                        int spread_angle, int arg8_or_aux);
 

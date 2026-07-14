@@ -28,8 +28,8 @@ void spawn_player_side_object_candidate(
     float y,
     double speed_or_scale,
     FixedAngle16 angle,
-    int radius_or_lifetime,
-    float aux_radius_or_scale);
+    int damage_or_lifetime,
+    float collision_radius_or_scale);
 ```
 
 Field map from the allocator:
@@ -45,7 +45,7 @@ Field map from the allocator:
 | `+0x18` | `node[6]` | `prev_or_origin_y` | Mirrored initial y. |
 | `+0x1c` | `*(short *)(node + 7)` | `angle` | 16-bit fixed angle; many render paths use it. |
 | `+0x20` | `*(double *)(node + 8)` | `speed_or_scale` | Movement speed/scale; used for types `0..0xa`, `0xc`, etc. |
-| `+0x28` | `node[10]` | `alpha_or_lifetime` | Often alpha/lifetime-like; allocator multiplies it by 100 when `DAT_140e9fd20 == 1`. |
+| `+0x28` | `node[10]` | `damage_or_lifetime` | Damage for moving shot types `0..0x0a`; helper-specific lifetime/value for special objects. The allocator multiplies it by 100 when `DAT_140e9fd20 == 1`. |
 | `+0x2c` | `node[11]` | `collision_radius_or_scale` | Radius/scale used by collision and several expanding render paths. |
 | `+0x30` | `node[12]` | `aux_radius_or_scale` | Mirrored final argument; type `0x14/0x15/0x16` use it as a target radius/scale. |
 | `+0x34` | `node[13]` | `field_34` | Initialized zero. |
@@ -94,7 +94,7 @@ Why not only “player shot collision”:
 Evidence anchors:
 
 - Object list traversal and type filter: `reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/1400cd750_FUN_1400cd750.c:40` through `:50`.
-- Enemy projectile traversal and predicted projectile test point: same file `:56` through `:75`.
+- Enemy projectile traversal and current visible projectile `x/y` test point: same file `:56` through `:75`.
 - Requires projectile `active == 1` and `collision_enabled == 1` before selected cancel paths: same file `:75` through `:76` and `:298` through `:299`.
 - Deactivates enemy projectile on overlap: same file `:278` and `:335`.
 
@@ -125,8 +125,75 @@ Do not confuse the three nearby linked lists:
 
 The special-gauge action scaffold in `StageRuntime::updateSpecialGaugeAction()` also spawns an existing player-side object family when `specialGauge >= 50000`, then enters a `-600..0` cooldown. This is a conservative reconstruction of the `player_update_input_movement_candidate` evidence; the exact original special/hyper label, type `0x18` chain, and bitmask `0x63737000` filtering remain deferred.
 
+## Type table and cancel mask pass — 2026-07-07
+
+Focused reads of `reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/140109780_FUN_140109780.c` and `1400cd750_FUN_1400cd750.c` resolve the top-level type families and the original projectile-cancel filter.
+
+### Update/render type families
+
+| Type | Role / behavior evidence | Runtime status |
+|---:|---|---|
+| `0..0x0a` | Moving player-shot-like objects. They move by `angle/speed`, draw from `DAT_140e44e70` player frames with frame groups selected by `DAT_140e445c0`, and expire on extended bounds (`140109780.c:125-373`). | Implemented as normal player-side shots; frame semantics still approximate. |
+| `0x0b` | Parent special/bomb-like object. On age `0`, spawns type `0x1a`; at ages `0`, `8`, `0x10`, `0x18`, spawns type `0x0c` children and plays `DAT_140e47250` (`140109780.c:376-447`). | Documented; runtime pending. |
+| `0x0c` | Bouncing/reflecting child. Reflects inside bounds for about `0x14` frames, then expires with type `0x0d` effect and `DAT_140e47254` (`140109780.c:448-563`). | Partially modeled only as cancel-capable. |
+| `0x0d` | Expiry/impact visual for type `0x0c`; draws `DAT_140e45064`, group `0x3c`, lifetime to `0x82` (`140109780.c:564-595`). | Runtime pending. |
+| `0x0e` | Special variant that spawns type `0x19` and bouncing/effect visuals, including `DAT_140e4725c` at age `0x1e` (`140109780.c:596-773`). | Runtime pending. |
+| `0x0f` | Centered special variant; repeatedly spawns type `0x10` children and type `0x13` effect generators (`140109780.c:774-840`). | Runtime pending. |
+| `0x10` | Child object spawned by `0x0f`; moves/draws `DAT_140e41a5c` and emits effect node selector `0x3b` (`140109780.c:841-897`). | Runtime pending. |
+| `0x11` | Long special variant; age `0` spawns type `0x18` and sets `DAT_140e44658 = 600`; lifetime around `600` frames (`140109780.c:898-949`). | Runtime pending. |
+| `0x12` | Long special/generator variant; periodically creates type `0x13` generators (`140109780.c:950-1045`). | Runtime pending. |
+| `0x13` | Timed generator; every five frames spawns multiple type `0x14` children and plays `DAT_140e47264` (`140109780.c:1046-1072`). | Runtime pending. |
+| `0x14` | Generated child visual/cancel object drawing `DAT_140e41a70`, group `0x3c`; lifetime `0x1e` (`140109780.c:1073-1097`). | Runtime pending. |
+| `0x15` | Screen-field style object that draws repeated `DAT_140e45074`, `DAT_140e45070`, and `DAT_140e41938` visuals and plays `DAT_140e47268` every `0x14` frames (`140109780.c:1098-1256`). | Runtime pending. |
+| `0x16` | Ring object; on age `0` emits repeated `FUN_140070d00` effect nodes, then draws `DAT_140e45078` (`140109780.c:1257-1328`). | Runtime pending. |
+| `0x17` / `0x18` | Expanding ring/cancel visuals drawing `DAT_140e45060`, group `0x46`; age `0` raises `DAT_140e44654` if below `100`; lifetime `0x30` (`140109780.c:1329-1357`). | Runtime pending; `0x18` participates in special-gauge chain. |
+| `0x19` | Shorter expanding ring/cancel visual drawing `DAT_140e45060`, group `0x46`; lifetime `0x18` (`140109780.c:1358-1385`). | Runtime pending. |
+| `0x1a` | Expanding ring/cancel visual drawing `DAT_140e41a54`, group `0x46`; lifetime `0x18` (`140109780.c:1386-1408`). | Explicit cancel path retained in runtime. |
+
+### Original projectile-cancel type filter
+
+`FUN_1400cd750` first filters the mixed player-side object list with:
+
+```c
+(type < 0x1f) && ((0x63737000U >> (type & 0x1f)) & 1)
+```
+
+Decoded selected type IDs:
+
+```text
+0x0c, 0x0d, 0x0e, 0x10, 0x11, 0x14, 0x15, 0x16, 0x18, 0x19, 0x1d, 0x1e
+```
+
+The same function has a separate explicit `type == 0x1a` path (`1400cd750.c:562-566`) that jumps into the same switch body. Runtime now uses this bitmask plus explicit `0x1a` instead of the earlier broad radius heuristic.
+
+Cancel reward evidence:
+
+- `FUN_1400cd750` tests predicted enemy projectile position and requires projectile `active == 1` plus `collision_enabled == 1` in the main paths (`1400cd750.c:56-77`, `:298-300`).
+- Projectile radius `< 2` emits reward item type `3`; larger/special paths emit type `4` (`1400cd750.c:90-97`, `:178-185`, `:377-380`, `:459-461`).
+- On overlap it deactivates the projectile and allocates impact/cancel effect nodes.
+
 ## Next targets
 
 1. Build a `RewardItem` type table for the `DAT_140e46e90` list now identified in `reward-item-list.md`.
-2. Build a table of `PlayerSideObject` type IDs (`0..0x1a`) with spawn sites and visual resources.
+2. Port the highest-impact `PlayerSideObject` type chains (`0x0b -> 0x0c/0x1a`, `0x0f -> 0x10`, `0x13 -> 0x14`) into the runtime probe incrementally.
 3. Cross-reference `DAT_140e445c0` / `DAT_140e445cc` player variant settings to name the player shot families more concretely.
+
+## Exact Bomb/Fever port - 2026-07-13
+
+The earlier pending/scaffold status above is superseded by
+`player-special-mode-exact-notes.md`.  The runtime now implements the six
+equipment-selected root objects and their `0x0b..0x1a` chains, including
+per-frame radius writes used by the original cancel mask.  Auto/Manual Fever,
+the `9999999` Manual-ready sentinel, and the `-600..0` active-Fever interval are
+also connected from the equipment menu to `StageRuntimeConfig`.
+
+Direct core sprites use the recovered `Effect_m[5/6/7/12]` and
+`Effect_l[0/1/4/5/6]` handles.  Generic secondary effect-list emissions remain
+separately deferred; they do not replace or broaden the recovered object
+collision fields.
+
+The enemy consumer `FUN_1400cc2f0` is now represented as an enemy-outer,
+player-object-inner walk without an `active` test. This restores normal-shot
+terminal hits, `0x0c -> 0x0d` impact conversion, and persistent Bomb damage for
+`0x0d/0x0e/0x14/0x15`. The projectile consumer now also keeps the original
+three cancel groups instead of collapsing them into one reward heuristic.

@@ -42,15 +42,14 @@ inline constexpr int kMenu2YOffset = 68;
 } // namespace title_layout
 
 namespace gameplay_layout {
-// Original screen layout reserves 340px side panels and places the 600x720
-// controllable area in the center: x=340..940. Player/enemy coordinates in this
-// reconstruction stay local 0..600/0..720 and are translated by kPlayScreenOrigin.
-inline constexpr RectI kPlayLocalRect{0, 0, 600, kScreenHeight};
-inline constexpr PointI kPlayScreenOrigin{340, 0};
+// Original entities use x=60..660 and are translated by +280 for the central
+// screen playfield at x=340..940. Stage scripts retain those original values.
+inline constexpr RectI kPlayLocalRect{60, 0, 600, kScreenHeight};
+inline constexpr PointI kPlayScreenOrigin{280, 0};
 inline constexpr PointI kStageBackOrigin{280, 0};
 inline constexpr RectI kStageBackRect{kStageBackOrigin.x, kStageBackOrigin.y, 720, kScreenHeight};
-inline constexpr RectI kStageFrameRect{kPlayScreenOrigin.x, kPlayScreenOrigin.y, 600, kScreenHeight};
-inline constexpr PointI kPlayerStart{300, 620};
+inline constexpr RectI kStageFrameRect{340, 0, 600, kScreenHeight};
+inline constexpr PointI kPlayerStart{360, 620};
 } // namespace gameplay_layout
 
 namespace hud_layout {

@@ -41,7 +41,7 @@ constexpr std::array<GraphResourceSpec, 23> kFrontendGraphs{{
     {"GFX_system_WhiteBack_frontend", "media\\system\\WhiteBack.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Startup},
 }};
 
-constexpr std::array<GraphResourceSpec, 56> kExpandedGraphs{{
+constexpr std::array<GraphResourceSpec, 59> kExpandedGraphs{{
     {"GFX_system_BetaLogo", "media\\system\\BetaLogo.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
     {"GFX_system_DemoEnd", "media\\system\\DemoEnd.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
     {"GFX_system_TitleMenu", "media\\system\\TitleMenu.png", GraphLoadKind::Div, 9, 1, 9, 0x21c, 0x3c, ResourceSource::Primary},
@@ -66,6 +66,9 @@ constexpr std::array<GraphResourceSpec, 56> kExpandedGraphs{{
     {"GFX_effect_Effect_m", "media\\effect\\Effect_m.png", GraphLoadKind::Div, 0x1e, 10, 3, 200, 200, ResourceSource::Primary},
     {"GFX_effect_Effect_l", "media\\effect\\Effect_l.png", GraphLoadKind::Div, 0x1e, 10, 3, 600, 600, ResourceSource::Primary},
     {"GFX_stage_StageBack1", "media\\stage\\StageBack1.png", GraphLoadKind::Div, 10, 10, 1, 0x2d0, 0xa00, ResourceSource::Primary},
+    {"GFX_stage_StageBack1b", "media\\stage\\StageBack1b.png", GraphLoadKind::Div, 10, 10, 1, 0x2d0, 0xa00, ResourceSource::Primary},
+    {"GFX_stage_StageBack1c", "media\\stage\\StageBack1c.png", GraphLoadKind::Div, 0x0c, 0x0c, 1, 0x2d0, 0xa00, ResourceSource::Primary},
+    {"GFX_stage_StageBack1d", "media\\stage\\StageBack1d.png", GraphLoadKind::Div, 10, 10, 1, 0x2d0, 0xa00, ResourceSource::Primary},
     {"GFX_stage_StageBack2", "media\\stage\\StageBack2.png", GraphLoadKind::Div, 10, 10, 1, 0x2d0, 0x2d0, ResourceSource::Primary},
     {"GFX_stage_Enemy_s", "media\\stage\\Enemy_s.png", GraphLoadKind::Div, 0xaa, 10, 0x11, 100, 100, ResourceSource::Primary},
     {"GFX_stage_Enemy_m", "media\\stage\\Enemy_m.png", GraphLoadKind::Div, 0xe6, 10, 0x17, 200, 200, ResourceSource::Primary},
@@ -100,7 +103,7 @@ constexpr std::array<GraphResourceSpec, 56> kExpandedGraphs{{
     {"GFX_gallery_GalleryPic_ch2", "media\\gallery\\GalleryPic_ch2.png", GraphLoadKind::Div, 0x14, 5, 4, 0, 0, ResourceSource::Secondary},
 }};
 
-constexpr std::array<SoundResourceSpec, 34> kSounds{{
+constexpr std::array<SoundResourceSpec, 48> kSounds{{
     {"BGM_bgm_Opening", "media\\bgm\\Opening.ogg", SoundKind::Bgm, 3},
     {"BGM_bgm_Title", "media\\bgm\\Title.ogg", SoundKind::Bgm, 3},
     {"BGM_bgm_Tutorial", "media\\bgm\\Tutorial.ogg", SoundKind::Bgm, 3},
@@ -131,10 +134,24 @@ constexpr std::array<SoundResourceSpec, 34> kSounds{{
     {"SE_se_Text", "media\\se\\Text.wav", SoundKind::Se, 3},
     {"SE_se_Miss", "media\\se\\Miss.wav", SoundKind::Se, 3},
     {"SE_se_Shot1", "media\\se\\Shot1.wav", SoundKind::Se, 3},
+    {"SE_se_Shothit", "media\\se\\Shothit.wav", SoundKind::Se, 3},
+    {"SE_se_Shothit2", "media\\se\\Shothit2.wav", SoundKind::Se, 3},
     {"SE_se_Item1", "media\\se\\Item1.wav", SoundKind::Se, 3},
     {"SE_se_BossApproach", "media\\se\\BossApproach.wav", SoundKind::Se, 3},
     {"SE_se_BossLife", "media\\se\\BossLife.wav", SoundKind::Se, 3},
     {"SE_se_Notice", "media\\se\\Notice.wav", SoundKind::Se, 3},
+    {"SE_se_Bomb1", "media\\se\\Bomb1.wav", SoundKind::Se, 3},
+    {"SE_se_Bomb2", "media\\se\\Bomb2.wav", SoundKind::Se, 3},
+    {"SE_se_Bomb3", "media\\se\\Bomb3.wav", SoundKind::Se, 3},
+    {"SE_se_Bomb4", "media\\se\\Bomb4.wav", SoundKind::Se, 3},
+    {"SE_se_Bomb5", "media\\se\\Bomb5.wav", SoundKind::Se, 3},
+    {"SE_se_Bomb6", "media\\se\\Bomb6.wav", SoundKind::Se, 3},
+    {"SE_se_Bomb7", "media\\se\\Bomb7.wav", SoundKind::Se, 3},
+    {"SE_se_Bomb8", "media\\se\\Bomb8.wav", SoundKind::Se, 3},
+    {"SE_se_Fever1", "media\\se\\Fever1.wav", SoundKind::Se, 3},
+    {"SE_se_Fever2", "media\\se\\Fever2.mp3", SoundKind::Se, 3},
+    {"SE_se_Fever3", "media\\se\\Fever3.wav", SoundKind::Se, 3},
+    {"SE_se_Fever4", "media\\se\\Fever4.wav", SoundKind::Se, 3},
 }};
 
 constexpr std::array<TextResourceSpec, 4> kTexts{{

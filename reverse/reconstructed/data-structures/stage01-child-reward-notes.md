@@ -35,12 +35,18 @@ The runtime now has a minimal `RewardItem` subsystem sufficient for Stage 1 type
 
 - `RewardItem` mirrors the known list identity from `reward-item-list.md`: type, position, angle, speed, radius/scale, age, and homing flag.
 - `spawnRewardItem()` allocates into a compact vector capped by `kRewardItemCap`.
-- `updateRewardItems()` moves items, enables homing after a short delay / top-of-screen collection condition, and applies collection rewards.
+- `updateRewardItems()` now incorporates the recovered `FUN_1400ca7b0` movement constants for type `6`: special-item bounce/float path, homing turn cap `0x1000`, homing speed snap `12.0`, and late non-homing speed `4.0`.
 - Stage 1 type `0x10` emits reward type `6` both on early death and at the long-controller exit point.
-- Type `6` collection maps the original `DAT_140e45d88` stock-progress effect to `PlayerState::stockProgress` and a lives/top-up probe value.
+- Type `6` collection maps the original `DAT_140e45d88` stock-progress effect to `PlayerState::stockProgress` using the recovered `DAT_140538bd8` threshold table (`{56000, 70000, 70000, 70000, 70000}`).
+
+Recovered exact type `6` collection evidence from `1400ca7b0_FUN_1400ca7b0.c:551-591`:
+
+- If `DAT_140e45d34 < 3`, add one threshold chunk: `DAT_140e45d88 += DAT_140538bd8[DAT_140e419b8]`.
+- Play `DAT_140e47274`, mapped in the audio table to `media\\se\\Item3.wav`.
+- Spawn effect node type `0x16` with handle `DAT_140e419c8[DAT_140e445c0 * 10]`, selector `0x6f`, scale `1.0`, lifetime `0x78`, and full RGB/alpha values.
 
 Deferred / not claimed complete:
 
-- Original reward list allocator/list-link shape (`DAT_140e46e90` / `DAT_140e46e98`).
-- Original type `6` draw resource handles, sound, and effect type `0x16` node.
-- Final naming of the stock/life/guard HUD semantics.
+- Original linked-list allocation shape (`DAT_140e46e90` / `DAT_140e46e98`) remains represented by the runtime vector.
+- The type `0x16` effect is documented and can be exposed as a debug event, but the runtime does not yet recreate the full original effect-node renderer.
+- Final naming of the stock/life/guard HUD semantics awaits visual label confirmation.

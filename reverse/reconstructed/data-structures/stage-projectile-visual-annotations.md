@@ -15,9 +15,9 @@ Machine-readable version: `stage-projectile-visual-annotations.csv`.
 
 | Spawn type | Semantic label | Helper | Projectile pair | Bullet visual | Pattern interpretation | Confidence |
 |---|---|---|---|---|---|---|
-| `0x3f` | `stage04_boss_like_multipart_pattern_controller` | `FUN_140095130` | `id=0x07, selector=0x00` | frame 0, magenta thin oval / small pellet | Early/medium active boss-like volleys use fast/common `id=7` movement but visually default pellets. | High |
-| `0x3f` | `stage04_boss_like_multipart_pattern_controller` | `FUN_140095130` | `id=0x04, selector=0x00` | frame 0, magenta thin oval / small pellet | Later/fan child shots stay visually default; distinction from `id=7` is movement/update behavior, not sprite. | High |
-| `0x3f` | `stage04_boss_like_multipart_pattern_controller` | `FUN_140095130` | `id=0x02, selector=0x00 or dynamic` | frame 0 for fixed selector; dynamic unresolved | Half-circle/spread phase uses `id=2`; one call has dynamic arg2 and needs value tracing. | Medium |
+| `0x3f` | `stage04_boss_like_multipart_pattern_controller` | `FUN_140095130` | `selector=0x07, id=0x00` | frame 7, blue horizontal capsule / bar | Alternating four-mount volleys use selector 7 with basic movement id 0. | High |
+| `0x3f` | `stage04_boss_like_multipart_pattern_controller` | `FUN_140095130` | `selector=0x04, id=0x00` | frame 4, magenta small round / bead | Saved-aim jitter windows use selector 4 with basic movement id 0. | High |
+| `0x3f` | `stage04_boss_like_multipart_pattern_controller` | `FUN_140095130` | `selector=0x02, id=0x00` | frame 2, magenta large round / orb | Half-circle fans use selector 2; the apparent dynamic second argument is the modulo remainder already proven zero at the guarded call. | High |
 | `0x4f` | `stage05_boss_like_multi_phase_summoner` | `FUN_14009b5f0` | `id=0x0a, selector=0x02` | frame 2, magenta large orb | First active fan family uses heavy/common `id=0x0a` movement with large magenta orb visual. | High |
 | `0x4f` | `stage05_boss_like_multi_phase_summoner` | `FUN_14009b5f0` | `id=0x0b, selector=0x02` | frame 2, magenta large orb | Second fan family changes to delayed-retarget `id=0x0b` while preserving large magenta orb visual. | High |
 | `0x4f` | `stage05_boss_like_multi_phase_summoner` | `FUN_14009b5f0` | `id=0x03, selector=0x1c` | draw-helper default frame 0 unless rewritten | Late direct volleys use selector-overflow arg2; likely subpattern/phase rather than an explicit Bullet.png selector. | Medium |
@@ -36,7 +36,15 @@ Machine-readable version: `stage-projectile-visual-annotations.csv`.
 
 ### Stage04 `0x3f` boss-like controller
 
-The high-value projectile IDs (`0x07`, `0x04`, `0x02`) are mostly visually conservative: default magenta small pellets. The helper's visual identity comes more from multipart enemy resources and scripted phasing than from special bullet sprites.
+The helper uses three distinct visual selectors with the basic movement id `0`:
+
+- selector `7`: blue horizontal capsule/bar for alternating mount volleys;
+- selector `4`: magenta bead for saved-aim jitter windows;
+- selector `2`: magenta large orb for half-circle fans.
+
+The older `id=7/4/2, selector=0` annotation had the constructor fields reversed;
+`FUN_14006c2f0` stores its first argument at projectile `+0x08` and its second at
+`+0x0c`, while the update dispatcher switches on `+0x0c`.
 
 ### Stage05 `0x4f` boss-like summoner
 

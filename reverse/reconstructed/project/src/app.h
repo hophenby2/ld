@@ -7,6 +7,7 @@
 #include "stage_runtime.h"
 #include "text_database.h"
 
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -50,6 +51,7 @@ private:
     StageRuntime stageRuntime_;
     FrontendRuntime frontendRuntime_;
     int diagnosticsPage_ = 0;
+    std::uint64_t displayFrame_ = 0;
     bool dxInitialized_ = false;
     bool fontsLoaded_ = false;
 };

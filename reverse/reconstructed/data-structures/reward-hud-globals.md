@@ -146,8 +146,54 @@ Interpretation:
 
 Deferred: exact `DAT_140e45d20` flash timer, exact stock threshold table, `9999999` gauge state, right-HUD `State`/`DataWindow2` frame semantics, and final in-game names for stock/buzz/hyper-like concepts.
 
+## HUD labels, gauge states, and stock table pass — 2026-07-07
+
+### Right HUD label handles from `FUN_1400c2860`
+
+A focused read of `reverse/ghidra-or-ida/exports/main-gameplay/neighborhood-decompiled/1400c2860_FUN_1400c2860.c` ties the previously deferred label/icon handles to concrete HUD rows. Final user-facing text still needs visual confirmation from the `State.png` / `DataWindow2.png` frames, so these remain semantic candidates rather than final “buzz” / “hyper” renames.
+
+| Global / handle | Draw evidence | Current semantic use | Naming status |
+|---|---|---|---|
+| `DAT_140e46b38` | drawn after the run-score rows at `1400c2860.c:449-475`, then `DAT_1407c77a8` is rendered at y `DAT_14053ae88` | score item base value row label | candidate: `score_item_base_value_label_handle` |
+| `DAT_140e46b3c` | drawn at `1400c2860.c:575-601` immediately before `DAT_140e45d18` gauge drawing | special gauge row label | candidate: `special_gauge_or_hyper_label_handle` |
+| `DAT_140e46b40` | drawn at `1400c2860.c:660-687` before token/pip row | token/pip row label | candidate: `special_token_stock_label_handle` |
+| `DAT_140e46b50` | repeatedly drawn inactive/active in the token loop at `1400c2860.c:691-746` | token/pip icon | candidate: `special_token_pip_icon_handle` |
+| `DAT_140e46b44` | drawn after the token loop at `1400c2860.c:747-777` | lower stock/status label | candidate pending visual confirmation |
+
+### `DAT_140e45d18` gauge state model
+
+`DAT_140e45d18` has at least four distinct states:
+
+| State | Evidence | Interpretation |
+|---|---|---|
+| normal charge `0..49999` | reward collection adds scaled amounts; HUD computes a proportional meter at `1400c2860.c:559-564` | filling special gauge |
+| ready `>=50000` | player update gates action at `50000`; HUD switches to special full/ready color path at `1400c2860.c:565-573` | full/ready special gauge |
+| negative cooldown `-600..0` | `140106be0_player_update_input_movement_candidate.c:979-1038` counts toward zero after spending | cooldown / recovery interval |
+| forced full `9999999` | `140106be0_player_update_input_movement_candidate.c:1254` assigns this sentinel; HUD treats any `>49999` as ready/full | forced full / terminal full state candidate |
+
+Runtime status: `stage_runtime.cpp` now preserves the `9999999` sentinel separately from the normal `50000` ready cap and renders all values above `49999` as full/ready rather than proportional overflow.
+
+### Original stock threshold table
+
+The raw `DAT_140538bd8` table was recovered directly from `reverse/inputs/LikeDreamer.exe` at VA `0x140538bd8` (`.rdata` file offset `0x537bd8`):
+
+| Index (`DAT_140e419b8`) | Threshold chunk |
+|---:|---:|
+| `0` | `56000` |
+| `1` | `70000` |
+| `2` | `70000` |
+| `3` | `70000` |
+| `4` | `70000` |
+
+Usage evidence:
+
+- Reset/init: `DAT_140e45d88 = DAT_140538bd8[DAT_140e419b8] * DAT_140e474ec` in `1400f6c40_FUN_1400f6c40.c:17`.
+- Replay/setup restore: `DAT_140e45d88 = threshold * param_1[5] + (threshold / 0x14) * param_1[6]`, with a `param_1[6] == 0x14` minus-one edge case in `1401105c0_FUN_1401105c0.c:129-134`.
+- Progress clamp and stock-level increment: `FUN_14010e250` clamps to `3 * threshold`, computes the current band, plays `DAT_140e47278` (`DreamPower.wav`) when crossing into the next stock level, increments `DAT_140e45d34`, and spawns effect nodes type `0x17` / `0x16` (`14010e250_FUN_14010e250.c:23-154`).
+- Reward item type `6` adds one threshold chunk if `DAT_140e45d34 < 3` (`1400ca7b0_FUN_1400ca7b0.c:551-558`).
+
 ## Next targets
 
-1. Cross-reference HUD graphics around `DAT_140e46b38`, `DAT_140e46b3c`, `DAT_140e46b40`, `DAT_140e46b44`, and `DAT_140e46b50` to name the HUD labels/icons for score, gauge, stock, and token count.
-2. Decode exact reward-item gauge deltas and stock thresholds from `FUN_1400ca7b0` / `FUN_14010e250`.
+1. Visually inspect `State.png` / `DataWindow2.png` label frames for final English/Japanese/Chinese wording before replacing candidate “special gauge/token/stock” names with final “buzz” or “hyper” terms.
+2. Decode exact reward-item gauge deltas from `FUN_1400ca7b0`.
 3. Inspect result-screen text and save fields to decide whether `stock_level` is best named life, shield, guard, or another game-specific term.

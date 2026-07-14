@@ -18,7 +18,7 @@ Counts include duplicate export sets; use as a coverage estimate rather than a u
 |---|---|---|---|
 | Stage04 type `0x36` | `140091540_FUN_140091540.c` | `FUN_14006c2f0(4, 0, x, y, angle + offsets, 0, speed, flags, 0)` | Side-entry curving multipart emitter; centered 3/5-shot spread. |
 | Stage04 type `0x37` | `140092230_FUN_140092230.c` | `FUN_14006c2f0(0, 0, x, y, aimed_angle + jitter, 0, speed, 1, 0)` | Random drifting aimed microburst emitter; high difficulty adds extra shot. |
-| Stage04 type `0x3f` | `140095130_FUN_140095130.c` | IDs `7` and `4`, plus nearby spread id `2` | Boss-like multipart pattern controller; half-circle/fan spreads. |
+| Stage04 type `0x3f` | `140095130_FUN_140095130.c` | Selectors `7` and `4` with id `0`, plus selector `2` / id `0` spreads | Boss-like multipart pattern controller; alternating mounts, jitter windows, and half-circle fans. |
 | Stage04 types `0x39/0x3a` | `140093540_FUN_140093540.c` | `FUN_14006c2f0(8, variant_mod, x, y, angle, speed, ..., flags, 0)` | Directional child carrier pair; also uses id `3` spread wrapper. |
 | Stage05 type `0x4f` | `14009b5f0_FUN_14009b5f0.c` | `FUN_14006c2f0(3, 0x1c, x, y, angle + phase terms, 0, ..., flags, 0)` | Boss-like multi-phase summoner; later direct volleys after spread phases. |
 | Stage07 type `0x75` | `1400a4fe0_FUN_1400a4fe0.c` | `FUN_14006c2f0(5, 0, x, y, aim + fan_offsets, 0, speed, flags, extra)` | Lower anchor dense aimed/fan emitter. |
@@ -38,7 +38,7 @@ Counts include duplicate export sets; use as a coverage estimate rather than a u
 | Stage04 type `0x38` | `140092b20_FUN_140092b20.c` | `FUN_1400709b0(9, 0, ..., count, variable_spread, 0)` and `FUN_1400709b0(8, 0, ..., count, 20000, 0)` | Large sinusoidal multipart pattern emitter. |
 | Stage04 types `0x39/0x3a` | `140093540_FUN_140093540.c` | `FUN_1400709b0(3, 1, ..., count, 22000, 0)` | Child-carrier pair; player-aimed/fan spreads. |
 | Stage04 type `0x3d` | `1400941d0_FUN_1400941d0.c` | `FUN_1400709b0(5, 0, ..., base_angle ± constants, count, spread, 0)` | Three-anchor symmetric spread emitter. |
-| Stage04 type `0x3f` | `140095130_FUN_140095130.c` | `FUN_1400709b0(2, variant, ..., count, 0x8000, 0)` | Boss-like half-circle/fan spread. |
+| Stage04 type `0x3f` | `140095130_FUN_140095130.c` | `FUN_1400709b0(2, 0, ..., count, 0x8000, 0)`; the guarded modulo value passed as arg2 is zero | Boss-like half-circle/fan spread using selector 2 and basic movement id 0. |
 | Stage05 type `0x4f` | `14009b5f0_FUN_14009b5f0.c` | IDs `10` and `0xb`, count-dependent spreads `count*7000-7000` / `count*12000-12000` | Boss-like summoner multi-phase fan families. |
 | Stage07 type `0x70` | `1400a2310_FUN_1400a2310.c` | `FUN_1400709b0(0xc, 0, ..., count, count*0x1c2-0x1c2, 0)` and spread `3000` | Dual-anchor aimed spread emitter. |
 | Stage07 type `0x73` | `1400a3990_FUN_1400a3990.c` | `FUN_1400709b0(7, ...)` from four offsets and `FUN_1400709b0(0xc, 0, center_x, center_y, ...)` | Drifting multipart emitter; offset-point bursts plus center spreads. |

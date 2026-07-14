@@ -7,11 +7,11 @@ Status: first-pass spawn-call coverage that joins literal projectile constructor
 Scanned decompiled exports under `reverse/ghidra-or-ida/exports/**/*.c` for calls with literal first two arguments:
 
 ```c
-FUN_14006c2f0(projectile_id, visual_selector_or_variant, ...)
-FUN_1400709b0(projectile_id, visual_selector_or_variant, ...)
+FUN_14006c2f0(visual_selector_or_variant, projectile_id, ...)
+FUN_1400709b0(visual_selector_or_variant, projectile_id, ...)
 ```
 
-Then joined `visual_selector_or_variant` to `bullet-frame-visual-map.csv` via `FUN_140070250` selector behavior.
+Then joined the raw argument pair to `bullet-frame-visual-map.csv` via `FUN_140070250` selector behavior. The generated CSV headers predate the constructor correction below and must be read with their first two semantic labels swapped.
 
 Generated machine-readable files:
 
@@ -20,7 +20,7 @@ Generated machine-readable files:
 
 ## Important interpretation caveat
 
-The second projectile constructor argument is stored at `ProjectileNode +0x08`. In most update helpers it is passed directly to `FUN_140070250` as the bullet visual selector, but some scripted helpers also use larger values as subpattern/owner/phase variants.
+The first projectile constructor argument is stored at `ProjectileNode +0x08`. In most update helpers it is passed directly to `FUN_140070250` as the bullet visual selector, while the second argument at `+0x0c` is the movement/update ID. Some scripted helpers also inspect the first value as a subpattern/owner/phase variant. See `projectile-runtime-exact-audit.md` for the direct constructor and dispatcher evidence.
 
 `FUN_140070250` explicitly handles visual selectors `0x00..0x14`. For observed selector values above `0x14`, the current decompilation leaves the draw helper's default graph as `DAT_140e451c0`, so those projectiles likely render as the default magenta small pellet unless another not-yet-seen path rewrites `node->variant_or_owner` before drawing.
 

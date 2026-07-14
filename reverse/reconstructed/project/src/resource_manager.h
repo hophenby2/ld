@@ -55,6 +55,7 @@ public:
     const std::vector<LoadedGraph>& graphs() const { return graphs_; }
     const std::vector<LoadedSound>& sounds() const { return sounds_; }
     const ResourceLoadSummary& summary() const { return summary_; }
+    const std::filesystem::path& assetRoot() const { return assetRoot_; }
     int graphHandle(const std::string& logicalPath) const;
     int graphFrame(std::string_view logicalPath, int frame) const;
     int graphHandleById(std::string_view id) const;

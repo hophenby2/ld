@@ -43,9 +43,9 @@ Evidence: `game_startup_init_candidate @ 0x1400f4f70`, `config_handler_candidate
 ```cpp
 // Not original source.
 struct ConfigBlock {
-    int32_t field0; // observed sample: 1
+    int32_t field0; // original missing-file default: 0
     int32_t field1; // observed sample: 0
-    int32_t field2; // observed sample: 0
+    int32_t field2; // original missing-file default: 1
     int32_t field3; // observed sample: 0
     int32_t field4; // observed sample: 1
     int32_t field5; // observed sample: 0
@@ -71,6 +71,14 @@ void config_menu_update() {
     // Exact UI labels still need mapping against config menu textures/text.
 }
 ```
+
+Runtime status: `SaveConfigStore` now creates missing files from the exact
+default save block and config tuple `{0,0,1,0,1,0,0}`. Existing files are never
+rewritten during startup. Versions `100..199` use the original in-memory field
+migration, other invalid versions use the original default block in memory,
+and short reads retain their available prefix. The normalized memory block is
+passed to `FrontendRuntime`; a full block is written only when the frontend
+actually saves menu changes.
 
 ## Replay slot scan
 

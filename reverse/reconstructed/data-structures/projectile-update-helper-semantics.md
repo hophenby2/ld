@@ -1,6 +1,6 @@
 # Projectile Update Helper Semantics
 
-Status: first-pass semantic pass over the six projectile update helpers using the `ProjectileNode` layout. Names remain conservative until collision/lifetime and more runtime traces confirm behavior.
+Status: superseded where noted by `projectile-runtime-exact-audit.md`. In particular, constructor arg1 is the visual selector, arg2 is the movement ID, and `+0x20` is accumulated anchor-relative travel for common/scripted/reflect helpers rather than a generic acceleration term.
 
 ## Shared node field interpretation used here
 
@@ -14,7 +14,7 @@ Raw decompiler form is `undefined4 *param_1`; important field aliases:
 | `param_1[3]` | `projectile_id` | Movement/update behavior switch. |
 | `param_1[4]`, `param_1[5]` | `x`, `y` | Current position. |
 | `param_1[6]`, `param_1[7]` | `prev_x`, `prev_y` | Previous/origin/anchor scratch, helper-dependent. |
-| `param_1[8]` | `speed_or_accel_hint` | Float acceleration/additive speed term; several helpers add it to `speed` for movement distance. |
+| `param_1[8]` | `accumulated_travel` | Radial helpers add current speed to this value, then derive draw/collision position from anchor + direction * travel. Specialized helpers reuse it as radius/scratch. |
 | `*(short *)(param_1 + 9)` | `angle` | Current 16-bit fixed angle. |
 | `*(short *)((char*)param_1 + 0x26)` | `prev_angle` | Secondary/target angle in specialized helpers. |
 | `*(double *)(param_1 + 10)` | `speed` | Current speed. |
@@ -64,7 +64,7 @@ Dispatcher IDs: `0,1,2,3,4,5,6,7,9,10,0x0b,0x0d,0x0f,0x10,0x11,0x12,0x16`.
 
 Behavior summary:
 
-- Computes prospective position using `(speed + speed_or_accel_hint)` along `angle`.
+- Adds `speed` to accumulated travel, then computes the prospective point as `anchor + direction(angle) * travel`.
 - `projectile_id` then mutates `speed`, `angle`, or active state before drawing.
 - Draw call uses `variant_or_owner` as visual selector and `age` as animation frame input.
 - Out-of-bounds cleanup uses a common playfield margin and sets `active = 0`.

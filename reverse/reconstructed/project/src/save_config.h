@@ -37,7 +37,13 @@ public:
     const SaveConfigState& state() const { return state_; }
 
 private:
-    bool loadOrCreateFile(const std::filesystem::path& path, std::vector<std::uint8_t>& bytes, std::size_t size, bool& existed, bool& created, std::uintmax_t& actualSize);
+    bool loadOrCreateFile(const std::filesystem::path& path,
+                          std::vector<std::uint8_t>& bytes,
+                          const std::vector<std::uint8_t>& defaults,
+                          bool requireSaveVersion,
+                          bool& existed,
+                          bool& created,
+                          std::uintmax_t& actualSize);
 
     std::filesystem::path assetRoot_;
     SaveConfigState state_;

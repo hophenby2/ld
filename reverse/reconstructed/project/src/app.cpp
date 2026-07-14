@@ -7,7 +7,11 @@
 #include <DxLib.h>
 #include <Windows.h>
 
+#include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstring>
+#include <cstdint>
 #include <string>
 #include <utility>
 
@@ -17,6 +21,38 @@ namespace {
 
 constexpr unsigned int kWhite = 0xffffff;
 constexpr unsigned int kRed = 0xff6060;
+
+std::array<int, 7> startupSystemConfig(const SaveConfigState& state) {
+    std::array<int, 7> result{{0, 0, 1, 0, 1, 0, 0}};
+    if (state.configDat.size() == SaveConfigState::kConfigDatSize) {
+        std::array<std::int32_t, 7> stored{};
+        std::memcpy(stored.data(), state.configDat.data(), sizeof(stored));
+        result[0] = stored[0] != 0 ? 1 : 0;
+        result[1] = std::clamp(static_cast<int>(stored[1]), 0, 2);
+        result[2] = stored[2] != 0 ? 1 : 0;
+        result[3] = stored[3] != 0 ? 1 : 0;
+        result[4] = stored[4] != 0 ? 1 : 0;
+        result[5] = stored[5] != 0 ? 1 : 0;
+        result[6] = std::clamp(static_cast<int>(stored[6]), 0, 3);
+    }
+    return result;
+}
+
+void applyStartupSystemConfig(const std::array<int, 7>& config) {
+    ChangeWindowMode(config[0] == 0 ? TRUE : FALSE);
+    SetWaitVSyncFlag(config[2] != 0 ? TRUE : FALSE);
+
+    // FUN_1400f4f70 leaves mode 0 to DxLib's automatic backend selection.
+    if (config[6] == 1) {
+        SetEnableWASAPIFlag(TRUE, FALSE, -1, 44100);
+    }
+    else if (config[6] == 2) {
+        SetEnableWASAPIFlag(TRUE, TRUE, -1, 44100);
+    }
+    else if (config[6] == 3) {
+        SetEnableWASAPIFlag(FALSE, TRUE, -1, 44100);
+    }
+}
 
 std::filesystem::path fontPath(const std::filesystem::path& assetRoot, const char* name) {
     return assetRoot / name;
@@ -49,10 +85,11 @@ bool App::initialize() {
         return false;
     }
     saveConfigState_ = saveConfig.state();
+    const auto startupConfig = startupSystemConfig(saveConfigState_);
 
     SetOutApplicationLogValidFlag(TRUE);
     SetMainWindowText("LikeDreamerRe reconstruction scaffold");
-    ChangeWindowMode(TRUE);
+    applyStartupSystemConfig(startupConfig);
     SetGraphMode(notes::kScreenWidth, notes::kScreenHeight, 32);
     SetUseCharCodeFormat(DX_CHARCODEFORMAT_UTF8);
 
@@ -93,7 +130,7 @@ bool App::initialize() {
     }
     textDatabase_.load(textResources(), options_.assetRoot, options_.resourceMode);
     stageProbe_.loadDemoSummaries(options_.assetRoot);
-    frontendRuntime_.initialize(*resources_);
+    frontendRuntime_.initialize(*resources_, saveConfigState_);
 
     return true;
 }
@@ -152,23 +189,29 @@ void App::drawLoadingFrame(int frame) const {
 }
 
 int App::runSmokeTestLoop() {
-    while (ProcessMessage() == 0 && CheckHitKey(KEY_INPUT_ESCAPE) == 0) {
-        if (CheckHitKey(KEY_INPUT_F1) != 0) {
+    while (ProcessMessage() == 0) {
+        const int frameRateMode = frontendRuntime_.frameRateMode();
+        const bool advanceLogic = frameRateMode == 0 ||
+            (frameRateMode == 1 && displayFrame_ % 2 == 0) ||
+            (frameRateMode == 2 && displayFrame_ % 3 == 0);
+        const bool diagnosticsChord = options_.smokeTest &&
+            (CheckHitKey(KEY_INPUT_LCONTROL) != 0 || CheckHitKey(KEY_INPUT_RCONTROL) != 0);
+        if (diagnosticsChord && CheckHitKey(KEY_INPUT_F1) != 0) {
             diagnosticsPage_ = 1;
         }
-        else if (CheckHitKey(KEY_INPUT_F2) != 0) {
+        else if (diagnosticsChord && CheckHitKey(KEY_INPUT_F2) != 0) {
             diagnosticsPage_ = 2;
         }
-        else if (CheckHitKey(KEY_INPUT_F3) != 0) {
+        else if (diagnosticsChord && CheckHitKey(KEY_INPUT_F3) != 0) {
             diagnosticsPage_ = 3;
         }
-        else if (CheckHitKey(KEY_INPUT_F4) != 0) {
+        else if (diagnosticsChord && CheckHitKey(KEY_INPUT_F4) != 0) {
             diagnosticsPage_ = 4;
         }
-        else if (CheckHitKey(KEY_INPUT_F5) != 0) {
+        else if (diagnosticsChord && CheckHitKey(KEY_INPUT_F5) != 0) {
             diagnosticsPage_ = 5;
         }
-        else if (CheckHitKey(KEY_INPUT_F6) != 0) {
+        else if (diagnosticsChord && CheckHitKey(KEY_INPUT_F6) != 0) {
             diagnosticsPage_ = 6;
             if (resources_ && !stageRuntime_.initialized()) {
                 stageRuntime_.initialize(*resources_);
@@ -184,30 +227,52 @@ int App::runSmokeTestLoop() {
             stageRuntime_.setStage(4);
         }
 
-        if (diagnosticsPage_ == 0 && resources_) {
+        if (diagnosticsPage_ == 0 && resources_ && advanceLogic) {
             frontendRuntime_.update(*resources_);
             const auto request = frontendRuntime_.consumeGameplayRequest();
             if (request.requested) {
                 StageRuntime::StageRuntimeConfig config;
                 config.stage = request.stage;
                 config.routeMode = request.routeMode;
+                config.setupGroup = request.setupGroup;
                 config.playerOption = request.playerOption;
                 config.subOption = request.subOption;
                 config.loadoutId = request.loadoutId;
                 config.difficulty = request.difficulty;
                 config.counterMode = request.counterMode;
+                config.specialMode = request.specialMode;
+                config.dataWindowEnabled = request.dataWindowEnabled;
+                config.soundEffectVolume = request.soundEffectVolume;
+                config.itemVisibility = request.itemVisibility;
+                config.likeStyle = request.likeStyle;
                 config.optionSlots = request.optionSlots;
+                config.keyboardBindings = request.keyboardBindings;
+                config.controllerBindings = request.controllerBindings;
+                config.controlDevice = request.controlDevice;
+                config.controlModeEnabled = request.controlModeEnabled;
+                config.helpMode = request.helpMode;
+                config.helpAutoProgress = request.helpAutoProgress;
                 if (!stageRuntime_.initialized()) {
                     stageRuntime_.initialize(*resources_, config);
                 }
-                else {
-                    stageRuntime_.setConfig(config);
+                else if (!stageRuntime_.setConfig(config)) {
+                    stageRuntime_.reset();
                 }
                 diagnosticsPage_ = 6;
             }
         }
+        bool completeGameplayAfterDraw = false;
+        if (diagnosticsPage_ == 6 && advanceLogic && stageRuntime_.initialized()) {
+            stageRuntime_.update();
+            completeGameplayAfterDraw = stageRuntime_.stageComplete();
+        }
         drawSmokeTestFrame();
         ScreenFlip();
+        if (completeGameplayAfterDraw && resources_) {
+            frontendRuntime_.completeGameplay(*resources_);
+            diagnosticsPage_ = 0;
+        }
+        ++displayFrame_;
     }
     return 0;
 }
@@ -240,10 +305,9 @@ void App::drawSmokeTestFrame() {
     }
 
     DrawString(24, 24, "LikeDreamerRe reconstruction scaffold", GetColor(255, 240, 128));
-    DrawString(24, 48, "F1 title  F2 resources  F3 text CSV  F4 save/config  F5 stage probe  F6 playable stage (1/2/4 slice)  ESC exit", GetColor(255, 255, 255));
+    DrawString(24, 48, "Ctrl+F1 title  +F2 resources  +F3 text CSV  +F4 save/config  +F5 stage probe  +F6 playable stage", GetColor(255, 255, 255));
     if (diagnosticsPage_ == 6) {
         if (stageRuntime_.initialized()) {
-            stageRuntime_.update();
             stageRuntime_.draw();
         }
         else {
@@ -338,7 +402,7 @@ void App::drawSaveDiagnostics(int x, int y) const {
 void App::drawStageRuntimeUnavailable() const {
     DrawString(24, 84, "Playable Stage 01 runtime is unavailable", GetColor(255, 96, 96));
     DrawString(24, 112, "Required local resources: Player.png, Enemy_s.png, Bullet.png, StageBack1/2.png", GetColor(255, 255, 255));
-    DrawString(24, 140, "Check --asset-root and extracted re/ asset layout, then press F6 again.", GetColor(210, 210, 210));
+    DrawString(24, 140, "Check --asset-root and extracted re/ asset layout, then press Ctrl+F6 again.", GetColor(210, 210, 210));
 }
 
 void App::drawStageProbe(int x, int y) const {
