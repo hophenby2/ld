@@ -33,6 +33,7 @@ constexpr int kManualPageCount = 11;
 constexpr int kReplaySlotCount = 24;
 constexpr float kPi = 3.14159265358979323846f;
 constexpr int kTitleInputEnableFrame = 0x40;
+constexpr int kTitleAttractStartFrame = 0xe10;
 constexpr int kSetupInputEnableFrame = 0x32;
 constexpr int kSecondaryMenuInputEnableFrame = 0x20;
 constexpr int kAchievementInputEnableFrame = 0x3c;
@@ -701,6 +702,7 @@ void FrontendRuntime::initialize(ResourceManager& resources, const SaveConfigSta
     resultPhaseTransitionTimer_ = 0;
     resultRouteCompletion_ = 0;
     resultBgmStarted_ = false;
+    resetInputCounters();
     loadSaveBackedState(saveConfigState);
     loadMissingFrontendGraphs(resources);
     setupGroup_ = std::clamp(setupGroup_, 0, 2);
@@ -734,12 +736,12 @@ void FrontendRuntime::update(ResourceManager& resources) {
             stageCameraY_ = target.y;
         }
     }
+    auto input = readInput();
     if (transitionTimer_ != 0) {
         updateTransition(resources);
         return;
     }
 
-    auto input = readInput();
     switch (state_) {
     case MainState::TitleMenu: updateTitleMenu(resources, input); break;
     case MainState::StageSetup: updateStageSetup(resources, input); break;
@@ -895,6 +897,15 @@ FrontendRuntime::InputSnapshot FrontendRuntime::readInput() {
     return input;
 }
 
+void FrontendRuntime::resetInputCounters() {
+    upHeldFrames_ = 0;
+    downHeldFrames_ = 0;
+    leftHeldFrames_ = 0;
+    rightHeldFrames_ = 0;
+    confirmHeldFrames_ = 0;
+    cancelHeldFrames_ = 0;
+}
+
 void FrontendRuntime::updateHeldCounter(bool down, int& heldFrames) {
     heldFrames = down ? heldFrames + 1 : 0;
 }
@@ -1037,7 +1048,14 @@ void FrontendRuntime::setState(MainState state, int cursor) {
 
 void FrontendRuntime::updateTitleMenu(ResourceManager& resources, const InputSnapshot& input) {
     ensureTitleBgm(resources);
-    if (frame_ < kTitleInputEnableFrame || frame_ >= 0xe10) {
+    if (frame_ >= kTitleAttractStartFrame) {
+        // The original wipes into state 0x2a here. Until recorded-input playback
+        // exists, return to the first input-enabled title frame instead of
+        // leaving state 0x02 visible while permanently rejecting input.
+        frame_ = kTitleInputEnableFrame;
+        return;
+    }
+    if (frame_ < kTitleInputEnableFrame) {
         return;
     }
     if (input.upRepeat) {

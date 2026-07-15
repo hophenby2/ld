@@ -78,10 +78,10 @@ Startup consumes Full Screen and VSync before `DxLib_Init`. Sound modes `1..3`
 map to `SetEnableWASAPIFlag(1,0,-1,44100)`,
 `SetEnableWASAPIFlag(1,1,-1,44100)`, and
 `SetEnableWASAPIFlag(0,1,-1,44100)`; mode `0` leaves backend selection to
-DxLib. Frame-rate indices `0..2` advance game logic every one, two, or three
-display loops, matching the 60/30/20 dispatcher branches. The reconstruction
-now applies these paths. Text Animation still depends on the unported dialogue
-runtime and remains an explicit configuration gap.
+DxLib. Frame-rate indices `0..2` refresh the persistent presentation screen
+every one, two, or three 60 Hz logic ticks, matching the 60/30/20 dispatcher
+branches. The reconstruction now applies these paths. Text Animation still
+depends on the unported dialogue runtime and remains an explicit configuration gap.
 
 ## Options and key-config input semantics
 

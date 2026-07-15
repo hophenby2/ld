@@ -22,6 +22,25 @@ namespace {
 constexpr unsigned int kWhite = 0xffffff;
 constexpr unsigned int kRed = 0xff6060;
 
+class MainLoopPacer {
+public:
+    MainLoopPacer() : deadlineMilliseconds_(static_cast<double>(GetNowCount(FALSE))) {}
+
+    void finishTick() {
+        // game_startup_init_candidate advances the accumulated deadline by the
+        // exact DAT_14053a250 value and deliberately does not reset after a lag.
+        deadlineMilliseconds_ += 16.66;
+        int now = GetNowCount(FALSE);
+        if (static_cast<double>(now) < deadlineMilliseconds_) {
+            now = GetNowCount(FALSE);
+            WaitTimer(static_cast<int>(deadlineMilliseconds_) - now);
+        }
+    }
+
+private:
+    double deadlineMilliseconds_ = 0.0;
+};
+
 std::array<int, 7> startupSystemConfig(const SaveConfigState& state) {
     std::array<int, 7> result{{0, 0, 1, 0, 1, 0, 0}};
     if (state.configDat.size() == SaveConfigState::kConfigDatSize) {
@@ -100,6 +119,10 @@ bool App::initialize() {
     dxInitialized_ = true;
 
     SetDrawScreen(DX_SCREEN_BACK);
+    presentationScreen_ = MakeScreen(notes::kScreenWidth, notes::kScreenHeight, FALSE);
+    if (presentationScreen_ == -1) {
+        OutputDebugString("[LikeDreamerRe] Failed to create the persistent presentation screen.\n");
+    }
     SetDXArchiveKeyString(notes::kDxArchiveKey);
     loadFonts();
 
@@ -136,6 +159,10 @@ bool App::initialize() {
 }
 
 void App::shutdown() {
+    if (presentationScreen_ != -1 && dxInitialized_) {
+        DeleteGraph(presentationScreen_);
+        presentationScreen_ = -1;
+    }
     resources_.reset();
 
     if (fontsLoaded_) {
@@ -189,9 +216,10 @@ void App::drawLoadingFrame(int frame) const {
 }
 
 int App::runSmokeTestLoop() {
+    MainLoopPacer mainLoopPacer;
     while (ProcessMessage() == 0) {
         const int frameRateMode = frontendRuntime_.frameRateMode();
-        const bool advanceLogic = frameRateMode == 0 ||
+        const bool redrawFrame = frameRateMode == 0 ||
             (frameRateMode == 1 && displayFrame_ % 2 == 0) ||
             (frameRateMode == 2 && displayFrame_ % 3 == 0);
         const bool diagnosticsChord = options_.smokeTest &&
@@ -229,7 +257,7 @@ int App::runSmokeTestLoop() {
             stageRuntime_.setStage(4);
         }
 
-        if (diagnosticsPage_ == 0 && resources_ && advanceLogic) {
+        if (diagnosticsPage_ == 0 && resources_) {
             frontendRuntime_.update(*resources_);
             const auto request = frontendRuntime_.consumeGameplayRequest();
             if (request.requested) {
@@ -267,11 +295,26 @@ int App::runSmokeTestLoop() {
             }
         }
         bool completeGameplayAfterDraw = false;
-        if (diagnosticsPage_ == 6 && advanceLogic && stageRuntime_.initialized()) {
+        if (diagnosticsPage_ == 6 && stageRuntime_.initialized()) {
             stageRuntime_.update();
             completeGameplayAfterDraw = stageRuntime_.stageComplete();
         }
-        drawSmokeTestFrame();
+
+        if (presentationScreen_ != -1) {
+            if (redrawFrame) {
+                SetDrawScreen(presentationScreen_);
+                drawSmokeTestFrame();
+            }
+            SetDrawScreen(DX_SCREEN_BACK);
+            ClearDrawScreen();
+            DrawGraph(0, 0, presentationScreen_, FALSE);
+        }
+        else {
+            // Without a persistent screen, redraw every tick to avoid flipping
+            // between unrelated front and back buffers in the 30/20 FPS modes.
+            SetDrawScreen(DX_SCREEN_BACK);
+            drawSmokeTestFrame();
+        }
         ScreenFlip();
         if (completeGameplayAfterDraw && resources_) {
             frontendRuntime_.completeGameplay(
@@ -281,6 +324,7 @@ int App::runSmokeTestLoop() {
             diagnosticsPage_ = 0;
         }
         ++displayFrame_;
+        mainLoopPacer.finishTick();
     }
     return 0;
 }

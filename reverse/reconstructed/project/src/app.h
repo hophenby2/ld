@@ -51,6 +51,7 @@ private:
     StageRuntime stageRuntime_;
     FrontendRuntime frontendRuntime_;
     int diagnosticsPage_ = 0;
+    int presentationScreen_ = -1;
     std::uint64_t displayFrame_ = 0;
     bool dxInitialized_ = false;
     bool fontsLoaded_ = false;

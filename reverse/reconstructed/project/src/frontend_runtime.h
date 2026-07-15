@@ -103,6 +103,7 @@ private:
     };
 
     InputSnapshot readInput();
+    void resetInputCounters();
     static void updateHeldCounter(bool down, int& heldFrames);
     static bool repeatSlow(int heldFrames);
     static bool pressed(int heldFrames);
