@@ -22,6 +22,7 @@ public:
         int difficulty = 0;
         int counterMode = 0;
         int specialMode = 0;
+        int specialStageFlag = 0;
         int dataWindowEnabled = 1;
         int language = 0;
         int bgmVolume = 10;
@@ -39,6 +40,12 @@ public:
         int controlModeEnabled = 1;
         int helpMode = 6;
         int helpAutoProgress = 0;
+        int rawStartFrame = 0;
+        int firstDispatchFrame = 0;
+        int initialStock = -1;
+        int initialStockProgressSteps = -1;
+        int initialSpecialGauge = -1;
+        bool continueRun = false;
         const TextDatabase* textDatabase = nullptr;
     };
 
@@ -70,6 +77,9 @@ public:
         if (selectedStage_ == 2) return stage02ClearComplete_;
         if (selectedStage_ == 3) return stage03ClearComplete_;
         if (selectedStage_ == 4) return stage04ClearComplete_;
+        if (selectedStage_ >= 5 && selectedStage_ <= 10) {
+            return lateStageClearComplete_[static_cast<std::size_t>(selectedStage_)];
+        }
         return false;
     }
 
@@ -257,8 +267,18 @@ private:
     void spawnStage02OriginalSchedule();
     void spawnStage03OriginalSchedule();
     void spawnStage04OriginalSchedule();
-    void updateStage04BannerTextSound() const;
+    void spawnStage05OriginalSchedule();
+    void spawnStage06OriginalSchedule();
+    void spawnStage07OriginalSchedule();
+    void spawnStage08OriginalSchedule();
+    void spawnStage09OriginalSchedule();
+    void spawnStage10OriginalSchedule();
+    void updateStageBannerTextSound() const;
+    void updateEarlyStageApproachTimeline();
+    void updateLateStageTimeline();
+    void flushStageForBossHandoff(int bossBgmIndex);
     void spawnEnemy(const StageSpawnEvent& event);
+    bool configureLateStageEnemy(StageEnemy& enemy, const StageSpawnEvent& event);
     void spawnStage01Child(StageEnemy& parent, int childIndex, float offsetX, float offsetY, int hitPoints, const char* note);
     bool spawnStage01BossChild(StageEnemy& parent, int spawnType, int childIndex,
                                float offsetX, float offsetY, int hitPoints, const char* note);
@@ -351,6 +371,30 @@ private:
     void updateStage04Type40(StageEnemy& enemy, StageEnemy& parent);
     void updateStage04Type41(StageEnemy& enemy, StageEnemy& parent);
     void updateStage04Type42Or43(StageEnemy& enemy, StageEnemy& parent);
+    bool isLateStageEnemyType(int spawnType) const;
+    bool isLateStageBossType(int spawnType) const;
+    bool isLateStageFinalBossType(int spawnType) const;
+    bool isStage10FinalBossNodeType(int spawnType) const;
+    bool isLateStageGateOwner(const StageEnemy& enemy) const;
+    void clearLateStageGate(int stage);
+    void updateLateStageEnemy(StageEnemy& enemy, int activeAge);
+    void emitLateStageProjectiles(StageEnemy& enemy, int activeAge);
+    void updateLateStageBoss(StageEnemy& enemy);
+    void updateStage05Boss(StageEnemy& enemy);
+    void emitStage05BossProjectiles(StageEnemy& enemy);
+    void updateStage05BossChild(StageEnemy& enemy);
+    bool spawnStage05BossChild(StageEnemy& parent, int spawnType,
+                               float offsetX, float offsetY,
+                               std::uint16_t angle16, double speed,
+                               int radius, int hitPoints, int kind,
+                               const char* note);
+    void updateStage06Boss(StageEnemy& enemy);
+    void updateStage06BossNode(StageEnemy& enemy);
+    bool spawnStage06BossNode(StageEnemy& parent, int spawnType,
+                              int childIndex, float offsetX, float offsetY,
+                              std::uint16_t angle16, int radius);
+    void updateStage10FinalBossNode(StageEnemy& enemy);
+    bool spawnStage10FinalBossNode(StageEnemy& parent, int spawnType);
     void updateGenericEnemy(StageEnemy& enemy, int activeAge);
     void emitGenericProjectiles(StageEnemy& enemy, int activeAge);
     void updateProjectiles();
@@ -379,6 +423,7 @@ private:
     void startFever(bool manualActivation);
     void armManualFever();
     void playPlayerSound(int handle, int volumeMultiplier = 0x19) const;
+    void updateBossCountdownAudio(int hitPoints, int countdown) const;
     void updatePlayerSideObjects();
     std::uint16_t nearestTargetAngleForPlayerShot(const PlayerSideObject& object) const;
     void handleCollisions();
@@ -416,17 +461,25 @@ private:
     bool drawStage02Type20Exact(const StageEnemy& enemy, float x, float y) const;
     bool drawStage02Type21Exact(const StageEnemy& enemy, float x, float y) const;
     bool drawStage02BossExact(const StageEnemy& enemy, float x, float y) const;
+    void drawStage01BossHud() const;
     void drawStage02BossHud() const;
     void drawEnemyGaugeExact(const StageEnemy& enemy, int mode, float x, float y) const;
     bool drawStage03EnemyExact(const StageEnemy& enemy, float x, float y) const;
     void drawStage03BossHud() const;
     bool drawStage04BossExact(const StageEnemy& enemy, float x, float y) const;
     void drawStage04BossHud() const;
-    void drawStage04Approach() const;
-    void drawStage04BannerPanels() const;
-    void drawStage04BannerText() const;
+    void drawLateStageBossHud() const;
+    void drawSharedBossHud(const StageEnemy& boss, int phaseMode, int maxHp,
+                           int countdown, int breaksRemaining,
+                           int bossNameIndex) const;
+    void drawStageApproach() const;
+    void drawStageBannerPanels() const;
+    void drawStageBannerText() const;
     const std::vector<int>& localizedBossApproach1Frames() const;
     bool drawStage04EnemyExact(const StageEnemy& enemy, float x, float y) const;
+    bool drawLateStageBoss(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage10FinalBossNode(const StageEnemy& enemy, float x, float y) const;
+    bool drawLateStageEnemy(const StageEnemy& enemy, float x, float y) const;
     void drawOriginalMode7Node(int handle, float x, float y, std::uint16_t angle16, double scaleX, double scaleY, bool reverseX) const;
     void drawStageEffects(bool foreground, int exactLayer = -1) const;
     void drawProjectiles() const;
@@ -459,6 +512,7 @@ private:
     std::vector<int> enemySmallFrames_;
     std::vector<int> enemyMediumFrames_;
     std::vector<int> enemyLargeFrames_;
+    std::vector<int> enemyExtraLargeFrames_;
     std::vector<int> effectSmallFrames_;
     std::vector<int> effectMediumFrames_;
     std::vector<int> effectLargeFrames_;
@@ -489,7 +543,11 @@ private:
     int bossSe4SecondSoundHandle_ = -1;
     int bossSe5SoundHandle_ = -1;
     int bossSe6SoundHandle_ = -1;
+    int bossSe7SoundHandle_ = -1;
     int bossSe8SoundHandle_ = -1;
+    int bossSe9SoundHandle_ = -1;
+    std::array<int, 10> stageBgmHandles_{{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
+    std::array<int, 5> bossBgmHandles_{{-1, -1, -1, -1, -1}};
     int stage04BgmHandle_ = -1;
     int stage04BossBgmHandle_ = -1;
     int textSoundHandle_ = -1;
@@ -513,6 +571,14 @@ private:
     std::vector<int> stageBack1cFrames_;
     std::vector<int> stageBack1dFrames_;
     std::vector<int> stageBack2Frames_;
+    int stage2BackHandle_ = -1;
+    int stage3BackHandle_ = -1;
+    int stage6BackHandle_ = -1;
+    int stage8Back1Handle_ = -1;
+    int stage8Back2Handle_ = -1;
+    mutable std::array<double, 4> lateBackgroundScroll_{};
+    mutable int lateBackgroundScrollFrame_ = -0x3fffffff;
+    std::array<int, 6> stage09BossDefeatFrames_{{-1, -1, -1, -1, -1, -1}};
     std::vector<int> stageFrameFrames_;
     std::vector<int> numSmallFrames_;
     std::vector<int> numMediumFrames_;
@@ -538,12 +604,19 @@ private:
     bool stage02GateFlag_ = false;
     bool stage03GateFlag_ = false;
     bool stage04GateFlag_ = false;
+    bool stage05GateFlag_ = false;
+    bool stage06GateFlag_ = false;
+    bool stage07GateFlag_ = false;
+    bool stage08GateFlag_ = false;
+    bool stage09GateFlag_ = false;
+    bool stage10GateFlag_ = false;
     bool stage01EndVisualQueued_ = false;
     bool stage01EndFlushed_ = false;
     bool stage01BossSpawned_ = false;
     int stage01BossPhaseMode_ = 0;
     int stage01BossMaxHp_ = 100000;
     int stage01BossCountdown_ = 0;
+    int stage01BossCountdownDraw_ = 0;
     int stage01BossBreaksRemaining_ = 3;
     int stage01BossPhaseIndex_ = 0;
     float stage01BossTargetX_ = 360.0f;
@@ -584,7 +657,23 @@ private:
     bool stage04ClearStarted_ = false;
     bool stage04ClearTransition_ = false;
     bool stage04ClearComplete_ = false;
-    int stage04ApproachAgeDraw_ = -1;
+    int earlyStageApproachAgeDraw_ = -1;
+    std::array<bool, 11> lateStageClearComplete_{};
+    int lateStageApproachAgeDraw_ = -1;
+    int lateStageClearTimer_ = 0;
+    int lateStageBossPhaseMode_ = 0;
+    int lateStageBossPhaseIndex_ = 0;
+    int lateStageBossBreaksRemaining_ = 0;
+    int lateStageBossCountdown_ = 0;
+    int lateStageBossCountdownDraw_ = 0;
+    int lateStageBossMaxHp_ = 100000;
+    float lateStageBossTargetX_ = 360.0f;
+    float lateStageBossTargetY_ = 200.0f;
+    bool lateStageBossSpawned_ = false;
+    bool lateStageClearStarted_ = false;
+    int activeBossBgmIndex_ = -1;
+    bool stage10TransitionStarted_ = false;
+    bool stage10FinalBossSpawned_ = false;
     int stage01EndFrame_ = 5700;
     int nextEntityId_ = 1;
 };

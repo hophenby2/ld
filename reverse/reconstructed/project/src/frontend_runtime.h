@@ -47,6 +47,7 @@ public:
         int difficulty = 0;
         int counterMode = 0;
         int specialMode = 0;
+        int specialStageFlag = 0;
         int dataWindowEnabled = 1;
         int language = 0;
         int bgmVolume = 10;
@@ -60,6 +61,12 @@ public:
         int controlModeEnabled = 1;
         int helpMode = 6;
         int helpAutoProgress = 0;
+        int rawStartFrame = 0;
+        int firstDispatchFrame = 0;
+        int initialStock = -1;
+        int initialStockProgressSteps = -1;
+        int initialSpecialGauge = -1;
+        bool continueRun = false;
     };
 
     void initialize(ResourceManager& resources, const SaveConfigState& saveConfigState);
@@ -178,6 +185,7 @@ private:
     void beginCancelTransition(MainState target);
     void moveCursor(ResourceManager& resources, int delta, int count);
     void refreshOptionSlots();
+    void queueGameplayRequest(bool continueRun = false, bool manualTrialContinue = false);
     int resultHelpLevel() const;
     bool shouldPromptResultSubmit() const;
 

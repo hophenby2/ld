@@ -41,7 +41,7 @@ constexpr std::array<GraphResourceSpec, 23> kFrontendGraphs{{
     {"GFX_system_WhiteBack_frontend", "media\\system\\WhiteBack.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Startup},
 }};
 
-constexpr std::array<GraphResourceSpec, 59> kExpandedGraphs{{
+constexpr std::array<GraphResourceSpec, 65> kExpandedGraphs{{
     {"GFX_system_BetaLogo", "media\\system\\BetaLogo.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
     {"GFX_system_DemoEnd", "media\\system\\DemoEnd.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
     {"GFX_system_TitleMenu", "media\\system\\TitleMenu.png", GraphLoadKind::Div, 9, 1, 9, 0x21c, 0x3c, ResourceSource::Primary},
@@ -70,9 +70,15 @@ constexpr std::array<GraphResourceSpec, 59> kExpandedGraphs{{
     {"GFX_stage_StageBack1c", "media\\stage\\StageBack1c.png", GraphLoadKind::Div, 0x0c, 0x0c, 1, 0x2d0, 0xa00, ResourceSource::Primary},
     {"GFX_stage_StageBack1d", "media\\stage\\StageBack1d.png", GraphLoadKind::Div, 10, 10, 1, 0x2d0, 0xa00, ResourceSource::Primary},
     {"GFX_stage_StageBack2", "media\\stage\\StageBack2.png", GraphLoadKind::Div, 10, 10, 1, 0x2d0, 0x2d0, ResourceSource::Primary},
+    {"GFX_stage_Stage2Back", "media\\stage\\Stage2Back.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
+    {"GFX_stage_Stage3Back", "media\\stage\\Stage3Back.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
+    {"GFX_stage_Stage6Back", "media\\stage\\Stage6Back.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
+    {"GFX_stage_Stage8Back1", "media\\stage\\Stage8Back1.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
+    {"GFX_stage_Stage8Back2", "media\\stage\\Stage8Back2.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
     {"GFX_stage_Enemy_s", "media\\stage\\Enemy_s.png", GraphLoadKind::Div, 0xaa, 10, 0x11, 100, 100, ResourceSource::Primary},
     {"GFX_stage_Enemy_m", "media\\stage\\Enemy_m.png", GraphLoadKind::Div, 0xe6, 10, 0x17, 200, 200, ResourceSource::Primary},
     {"GFX_stage_Enemy_l", "media\\stage\\Enemy_l.png", GraphLoadKind::Div, 0x6e, 10, 0xb, 600, 600, ResourceSource::Primary},
+    {"GFX_stage_Enemy_xl", "media\\stage\\Enemy_xl.png", GraphLoadKind::Div, 8, 4, 2, 800, 800, ResourceSource::Primary},
     {"GFX_stage_Boss", "media\\stage\\Boss.png", GraphLoadKind::Div, 0xa0, 10, 0x10, 200, 200, ResourceSource::Primary},
     {"GFX_stage_Bullet", "media\\stage\\Bullet.png", GraphLoadKind::Div, 0x28, 10, 4, 0x3c, 0x3c, ResourceSource::Primary},
     {"GFX_gallery_NoticeFrame", "media\\gallery\\NoticeFrame.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},

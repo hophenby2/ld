@@ -76,14 +76,16 @@ bool StageProbe::loadDemoSummaries(const std::filesystem::path& assetRoot) {
 
 const std::vector<StageResourceHint>& stageResourceHints() {
     static const std::vector<StageResourceHint> hints = {
-        {1, "Stage group 1", "StageBack1/1b/1c/1d + StageBack2", "Stage1.ogg", "Boss1.ogg", "1400ced90 resource table + replay checkpoint defaults"},
-        {2, "Stage 2", "Stage2Back", "Stage2.ogg", "Boss2.ogg", "1400ced90 single graph and BGM table"},
-        {3, "Stage 3", "Stage3Back", "Stage3.ogg", "Boss3.ogg", "1400ced90 single graph and BGM table"},
-        {4, "Stage 4", "background unknown from current string evidence", "Stage4.ogg", "Boss2.ogg", "FUN_14011cdd0 selects the shared Boss2 handle"},
-        {5, "Stage 5", "background unknown from current string evidence", "Stage5.ogg", "Boss5.ogg", "BGM table only so far"},
-        {6, "Stage 6", "Stage6Back", "Stage6.ogg", "unknown", "1400ced90 single graph and BGM table"},
-        {8, "Stage 8", "Stage8Back1 + Stage8Back2", "Stage8.ogg", "unknown", "1400ced90 single graph and BGM table"},
-        {10, "Stage 10", "background unknown from current string evidence", "Stage10.ogg", "unknown", "BGM table only so far"},
+        {1, "Stage 1", "StageBack1/1b/1c/1d + StageBack2", "Stage1.ogg", "Boss1.ogg", "FUN_1400be7a0 case 1 + stage handler handoff"},
+        {2, "Stage 2", "Stage2Back", "Stage2.ogg", "Boss1.ogg", "FUN_1400be7a0 case 2 + DAT_140e4513c handoff"},
+        {3, "Stage 3", "Stage3Back", "Stage3.ogg", "Boss1.ogg", "FUN_1400be7a0 case 3 + DAT_140e4513c handoff"},
+        {4, "Stage 4", "shared StageBack composition", "Stage4.ogg", "Boss2.ogg", "FUN_1400be7a0 case 4 + DAT_140e45140 handoff"},
+        {5, "Stage 5", "shared StageBack composition", "Stage5.ogg", "Boss2.ogg", "FUN_1400be7a0 case 5 + DAT_140e45140 handoff"},
+        {6, "Stage 6", "Stage6Back", "Stage6.ogg", "Boss2.ogg", "FUN_1400be7a0 case 6 + DAT_140e45140 handoff"},
+        {7, "Stage 7", "StageBack1c sequence", "Stage7.ogg", "Boss2.ogg", "FUN_1400be7a0 case 7 + DAT_140e45140 handoff"},
+        {8, "Stage 8", "Stage8Back1 + Stage8Back2", "Stage8.ogg", "Boss2/Boss3.ogg", "FUN_1400be7a0 case 8 + 0x13f phase switch"},
+        {9, "Stage 9", "StageBack1d frames 0..2", "Stage9.ogg", "Boss3/Boss4.ogg", "FUN_1400be7a0 case 9 + 0x140 phase switch"},
+        {10, "Stage 10", "StageBack1d frames 3..5", "Stage10.ogg", "Boss5.ogg", "FUN_1400be7a0 case 10 + 0x14c to 0x141 chain"},
     };
     return hints;
 }

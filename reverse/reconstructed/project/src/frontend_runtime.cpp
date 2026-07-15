@@ -65,6 +65,28 @@ constexpr std::array<int, 11> kDefaultControllerBindings{{
     0x10, 0x20, 0x10, 0x40, 0x20, 0x200, 0x800,
 }};
 
+// FUN_1401105c0 builds this 11x7 table on its stack before indexing
+// [stage][practice phase]. Row zero belongs to the unused stage zero handler.
+constexpr std::array<std::array<int, 7>, 11> kPracticeStartFrame{{
+    {{0, 0, 0, 0, 0, 0, 0}},
+    {{0, 2700, 3750, 5700, 0, 0, 0}},
+    {{0, 5200, 6420, 9700, 0, 0, 0}},
+    {{0, 2860, 4350, 9500, 0, 0, 0}},
+    {{0, 3590, 4990, 8580, 11700, 0, 0}},
+    {{0, 3560, 6340, 8240, 11800, 0, 0}},
+    {{0, 1099, 6000, 8190, 12500, 0, 0}},
+    {{0, 4000, 7980, 9310, 12500, 0, 0}},
+    {{0, 6840, 8350, 10700, 17300, 21420, 0}},
+    {{0, 4080, 5960, 8980, 11840, 13880, 17900}},
+    {{0, 4700, 8800, 11900, 18000, 0, 0}},
+}};
+
+// UNK_140538ad8[stage], used by Trial submode 1 to enter 330 ticks before
+// the ordinary stage handoff.
+constexpr std::array<int, 11> kStageLength{{
+    0, 5700, 9700, 9500, 11700, 11800, 12500, 12500, 21420, 17900, 12000,
+}};
+
 // FUN_1400b5c70 indexes Achievement.png through this 50-entry .rdata table.
 constexpr std::array<int, kAchievementCount> kAchievementIconFrames{{
     0, 0, 0, 0, 0, 0, 0, 0, 1, 2,
@@ -271,6 +293,13 @@ int practicePhaseMax(int stage) {
     return stage >= 0 && stage < static_cast<int>(maxima.size())
         ? maxima[static_cast<std::size_t>(stage)]
         : 5;
+}
+
+int practiceStartFrame(int stage, int phase) {
+    const int normalizedStage = std::clamp(stage, 1, 10);
+    const int normalizedPhase = std::clamp(phase, 0, practicePhaseMax(normalizedStage));
+    return kPracticeStartFrame[static_cast<std::size_t>(normalizedStage)]
+                              [static_cast<std::size_t>(normalizedPhase)];
 }
 
 std::array<int, 2> trialNextStageRange(int stage) {
@@ -841,14 +870,26 @@ void FrontendRuntime::completeGameplay(ResourceManager& resources, int score, in
     stopAllBgm(resources);
 
     // FUN_1400c6e10 routes Practice directly to 0x23. Early Trial stages use
-    // 0x22 to choose the next stage; completed normal runs pass through 0x20.
+    // 0x22 to choose the next stage. The other ordinary Trial submodes advance
+    // automatically, as do submode 0 clears after its Stage 5 selector.
     if (routeMode_ == 2) {
         setState(MainState::ReplayPrompt, 0);
         return;
     }
-    if (routeMode_ == 1 && selectedStage_ >= 1 && selectedStage_ <= 5) {
-        setState(MainState::TrialContinue, 0);
-        return;
+    if (routeMode_ == 1) {
+        const int trialMapStage = std::clamp(savedStageByRoute_[1], 10, 14);
+        if (trialMapStage >= 11 && selectedStage_ >= 1 && selectedStage_ <= 7) {
+            const int trialSubmode = trialMapStage - 11;
+            if (trialSubmode == 0 && selectedStage_ <= 5) {
+                setState(MainState::TrialContinue, 0);
+                return;
+            }
+
+            selectedStage_ = trialSubmode == 0 ? 8 : selectedStage_ + 1;
+            setState(MainState::Gameplay, 0);
+            queueGameplayRequest(true);
+            return;
+        }
     }
 
     setState(MainState::ResultSummary, 0);
@@ -977,6 +1018,89 @@ void FrontendRuntime::refreshOptionSlots() {
     playerOption_ = optionSlots_[0];
     subOption_ = optionSlots_[1];
     loadoutId_ = optionSlots_[2];
+}
+
+void FrontendRuntime::queueGameplayRequest(bool continueRun, bool manualTrialContinue) {
+    // State 0x04 uses 11..14 for the ordinary Trial map nodes. The gameplay
+    // initializer stores node-11 as its submode and starts those routes at
+    // active Stage 1; node 10 remains the standalone special stage.
+    const int trialMapStage = routeMode_ == 1 && selectedStage_ != 10
+                                  ? std::clamp(savedStageByRoute_[1], 11, 14)
+                                  : selectedStage_;
+    if (routeMode_ == 1 && selectedStage_ >= 11 && selectedStage_ <= 14) {
+        selectedStage_ = 1;
+    }
+    // Both Trial special and Practice descriptors force Stage 10 to difficulty 2.
+    if (selectedStage_ == 10) {
+        selectedDifficulty_ = 2;
+    }
+
+    resultRouteCompletion_ = 0;
+    refreshOptionSlots();
+
+    int rawStartFrame = 0;
+    if (routeMode_ == 2) {
+        rawStartFrame = practiceStartFrame(selectedStage_, practiceOptions_[4]);
+    }
+    else if (routeMode_ == 1 && trialMapStage == 12) {
+        const int stage = std::clamp(selectedStage_, 1, 10);
+        rawStartFrame = std::max(0, kStageLength[static_cast<std::size_t>(stage)] - 330);
+    }
+    // gameplay_context_init/FUN_1401105c0 stores the selected start frame in
+    // DAT_140e418c8 before state 14 dispatches the stage handler. The handler
+    // therefore sees rawStartFrame itself, then the state increments it.
+    int firstDispatchFrame = continueRun ? rawStartFrame + 1 : rawStartFrame;
+    if (manualTrialContinue) {
+        firstDispatchFrame = 1;
+    }
+
+    gameplayRequest_ = {};
+    gameplayRequest_.requested = true;
+    gameplayRequest_.stage = selectedStage_;
+    gameplayRequest_.routeMode = routeMode_;
+    gameplayRequest_.setupGroup = setupGroup_;
+    gameplayRequest_.playerOption = playerOption_;
+    gameplayRequest_.subOption = subOption_;
+    gameplayRequest_.loadoutId = loadoutId_;
+    gameplayRequest_.difficulty = selectedDifficulty_;
+    gameplayRequest_.counterMode = counterMode_;
+    gameplayRequest_.specialMode = feverMode_;
+    gameplayRequest_.specialStageFlag = routeMode_ == 2
+                                            ? practiceOptions_[3]
+                                            : (routeMode_ == 1 && trialMapStage == 14 ? 1 : 0);
+    gameplayRequest_.dataWindowEnabled = dataWindowEnabled_;
+    gameplayRequest_.language = language_;
+    gameplayRequest_.bgmVolume = bgmVolume_;
+    gameplayRequest_.soundEffectVolume = seVolume_;
+    gameplayRequest_.itemVisibility = systemConfig_[3];
+    gameplayRequest_.likeStyle = systemConfig_[5];
+    gameplayRequest_.optionSlots = optionSlots_;
+    gameplayRequest_.keyboardBindings = keyBindings_;
+    gameplayRequest_.controllerBindings = controllerBindings_;
+    gameplayRequest_.controlDevice = controlDevice_;
+    gameplayRequest_.controlModeEnabled = controlModeEnabled_;
+    gameplayRequest_.helpMode = helpMode_;
+    gameplayRequest_.rawStartFrame = rawStartFrame;
+    gameplayRequest_.firstDispatchFrame = firstDispatchFrame;
+    gameplayRequest_.continueRun = continueRun;
+    if (routeMode_ == 2) {
+        gameplayRequest_.initialStock = practiceOptions_[5];
+        gameplayRequest_.initialStockProgressSteps = practiceOptions_[6];
+        gameplayRequest_.initialSpecialGauge = practiceOptions_[7] * 2500;
+    }
+
+    int progressStage = selectedStage_;
+    if (routeMode_ == 1 && selectedStage_ != 10) {
+        progressStage = std::clamp(savedStageByRoute_[1], 11, 14);
+    }
+    const std::size_t helpProgressOffset = 0xac +
+        static_cast<std::size_t>((progressStage * 3 + setupGroup_) * 50 + selectedDifficulty_) * 4;
+    std::int32_t helpProgress = 0;
+    if (helpProgressOffset + sizeof(helpProgress) <= saveBackingBytes_.size()) {
+        std::memcpy(&helpProgress, saveBackingBytes_.data() + helpProgressOffset,
+                    sizeof(helpProgress));
+    }
+    gameplayRequest_.helpAutoProgress = static_cast<int>(helpProgress);
 }
 
 void FrontendRuntime::setState(MainState state, int cursor) {
@@ -2321,39 +2445,8 @@ void FrontendRuntime::updateTransition(ResourceManager& resources) {
         ensureTitleBgm(resources);
     }
     if (target == MainState::Gameplay) {
-        resultRouteCompletion_ = 0;
-        refreshOptionSlots();
-        gameplayRequest_ = {};
-        gameplayRequest_.requested = true;
-        gameplayRequest_.stage = selectedStage_;
-        gameplayRequest_.routeMode = routeMode_;
-        gameplayRequest_.setupGroup = setupGroup_;
-        gameplayRequest_.playerOption = playerOption_;
-        gameplayRequest_.subOption = subOption_;
-        gameplayRequest_.loadoutId = loadoutId_;
-        gameplayRequest_.difficulty = selectedDifficulty_;
-        gameplayRequest_.counterMode = counterMode_;
-        gameplayRequest_.specialMode = feverMode_;
-        gameplayRequest_.dataWindowEnabled = dataWindowEnabled_;
-        gameplayRequest_.language = language_;
-        gameplayRequest_.bgmVolume = bgmVolume_;
-        gameplayRequest_.soundEffectVolume = seVolume_;
-        gameplayRequest_.itemVisibility = systemConfig_[3];
-        gameplayRequest_.likeStyle = systemConfig_[5];
-        gameplayRequest_.optionSlots = optionSlots_;
-        gameplayRequest_.keyboardBindings = keyBindings_;
-        gameplayRequest_.controllerBindings = controllerBindings_;
-        gameplayRequest_.controlDevice = controlDevice_;
-        gameplayRequest_.controlModeEnabled = controlModeEnabled_;
-        gameplayRequest_.helpMode = helpMode_;
-        const std::size_t helpProgressOffset = 0xac +
-            static_cast<std::size_t>((selectedStage_ * 3 + setupGroup_) * 50 + selectedDifficulty_) * 4;
-        std::int32_t helpProgress = 0;
-        if (helpProgressOffset + sizeof(helpProgress) <= saveBackingBytes_.size()) {
-            std::memcpy(&helpProgress, saveBackingBytes_.data() + helpProgressOffset,
-                        sizeof(helpProgress));
-        }
-        gameplayRequest_.helpAutoProgress = static_cast<int>(helpProgress);
+        const bool manualTrialContinue = source == MainState::TrialContinue;
+        queueGameplayRequest(manualTrialContinue, manualTrialContinue);
     }
 }
 

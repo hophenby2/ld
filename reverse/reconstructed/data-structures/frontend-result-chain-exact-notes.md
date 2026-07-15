@@ -202,9 +202,8 @@ invalid file.
   current runtime data exposes score and elapsed frames but not every original
   per-run statistic.
 - Split the Trial frontend node (`10..14`) from the active gameplay stage and
-  preserve the original cross-stage Trial context. StageRuntime currently
-  accepts only reconstructed stages `1..4`, so the full node-to-submode launch,
-  automatic continuation, and stage-8/stage-9 terminal choice are not yet
-  representable. `resultRouteCompletion_` consequently covers the original
-  default terminal values but not custom end-stage overrides or a future
+  preserve the original cross-stage Trial context. StageRuntime now accepts
+  stages `1..10`, including the Stage 9 midboss chain and Stage 10 final-boss
+  handoff, but `resultRouteCompletion_` still covers the original default
+  terminal values rather than custom end-stage overrides or a future
   `DAT_140e44e68` continuation signal.

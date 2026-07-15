@@ -253,8 +253,29 @@ int App::runSmokeTestLoop() {
         else if (diagnosticsPage_ == 6 && CheckHitKey(KEY_INPUT_2) != 0) {
             stageRuntime_.setStage(2);
         }
+        else if (diagnosticsPage_ == 6 && CheckHitKey(KEY_INPUT_3) != 0) {
+            stageRuntime_.setStage(3);
+        }
         else if (diagnosticsPage_ == 6 && CheckHitKey(KEY_INPUT_4) != 0) {
             stageRuntime_.setStage(4);
+        }
+        else if (diagnosticsPage_ == 6 && CheckHitKey(KEY_INPUT_5) != 0) {
+            stageRuntime_.setStage(5);
+        }
+        else if (diagnosticsPage_ == 6 && CheckHitKey(KEY_INPUT_6) != 0) {
+            stageRuntime_.setStage(6);
+        }
+        else if (diagnosticsPage_ == 6 && CheckHitKey(KEY_INPUT_7) != 0) {
+            stageRuntime_.setStage(7);
+        }
+        else if (diagnosticsPage_ == 6 && CheckHitKey(KEY_INPUT_8) != 0) {
+            stageRuntime_.setStage(8);
+        }
+        else if (diagnosticsPage_ == 6 && CheckHitKey(KEY_INPUT_9) != 0) {
+            stageRuntime_.setStage(9);
+        }
+        else if (diagnosticsPage_ == 6 && CheckHitKey(KEY_INPUT_0) != 0) {
+            stageRuntime_.setStage(10);
         }
 
         if (diagnosticsPage_ == 0 && resources_) {
@@ -271,6 +292,7 @@ int App::runSmokeTestLoop() {
                 config.difficulty = request.difficulty;
                 config.counterMode = request.counterMode;
                 config.specialMode = request.specialMode;
+                config.specialStageFlag = request.specialStageFlag;
                 config.dataWindowEnabled = request.dataWindowEnabled;
                 config.language = request.language;
                 config.bgmVolume = request.bgmVolume;
@@ -284,6 +306,12 @@ int App::runSmokeTestLoop() {
                 config.controlModeEnabled = request.controlModeEnabled;
                 config.helpMode = request.helpMode;
                 config.helpAutoProgress = request.helpAutoProgress;
+                config.rawStartFrame = request.rawStartFrame;
+                config.firstDispatchFrame = request.firstDispatchFrame;
+                config.initialStock = request.initialStock;
+                config.initialStockProgressSteps = request.initialStockProgressSteps;
+                config.initialSpecialGauge = request.initialSpecialGauge;
+                config.continueRun = request.continueRun;
                 config.textDatabase = &textDatabase_;
                 if (!stageRuntime_.initialized()) {
                     stageRuntime_.initialize(*resources_, config);

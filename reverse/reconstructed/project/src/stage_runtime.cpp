@@ -26,6 +26,9 @@ constexpr int kSpecialGaugeReady = 50000;
 constexpr int kSpecialGaugeForcedFull = 9999999;
 constexpr int kFeverActiveFrames = 600;
 constexpr int kSpecialTokenCap = 9;
+constexpr std::array<int, 11> kStageEndFrames{{
+    0, 5700, 9700, 9500, 11700, 11800, 12500, 12500, 21420, 17900, 12000,
+}};
 constexpr std::array<int, 5> kOriginalStockThresholds{{56000, 70000, 70000, 70000, 70000}};
 constexpr int kGrazeMargin = 24;
 constexpr std::array<double, 5> kProjectileId1Acceleration{{0.06, 0.07, 0.08, 0.10, 0.10}};
@@ -119,21 +122,62 @@ constexpr std::array<double, 5> kStage04Type3FJitterSpeed{{3.0, 4.0, 4.5, 4.5, 6
 constexpr std::array<int, 5> kStage04Type3FFanInterval{{100, 70, 60, 50, 25}};
 constexpr std::array<int, 5> kStage04Type3FFanCount{{7, 9, 11, 13, 15}};
 constexpr std::array<double, 5> kStage04Type3FFanSpeed{{3.5, 4.5, 5.0, 5.0, 6.0}};
-struct Stage04BannerSpec {
+struct StageBannerSpec {
+    int stage;
     int textIdBase;
     int iconIndex;
     int startFrame;
     int endFrame;
     int mode;
+    bool addSetupGroupToTextId;
 };
 
-// iconIndex -1 selects the current setup group. These are the three
-// FUN_14012e8e0 calls made by Stage 4 and its boss-approach presentation.
-constexpr std::array<Stage04BannerSpec, 3> kStage04Banners{{
-    {130, -1, 50, 230, 0},
-    {133, 7, 11400, 11560, 1},
-    {136, -1, 11540, 11700, 0},
+// iconIndex -1 selects the current setup group. Stages 1-9 call
+// FUN_14012e8e0 for their opening and FUN_140001060 for the final approach;
+// Stage 10 uses the latter at frame 50. Stage 9 owns the 0xb7/0xb8 special
+// branch, while Stage 7 owns the additional mode-2 speaker at y=160.
+constexpr std::array<StageBannerSpec, 30> kStageBanners{{
+    {1, 100, -1, 50, 230, 0, true},
+    {2, 110, -1, 50, 230, 0, true},
+    {3, 120, -1, 50, 230, 0, true},
+    {4, 130, -1, 50, 230, 0, true},
+    {5, 140, -1, 50, 230, 0, true},
+    {6, 150, -1, 50, 230, 0, true},
+    {7, 160, -1, 50, 230, 0, true},
+    {8, 170, -1, 50, 230, 0, true},
+    {9, 180, -1, 50, 230, 0, true},
+
+    {1, 103, 4, 5400, 5560, 1, true},
+    {1, 106, -1, 5540, 5700, 0, true},
+    {2, 113, 5, 9400, 9560, 1, true},
+    {2, 116, -1, 9540, 9700, 0, true},
+    {3, 123, 6, 9200, 9360, 1, true},
+    {3, 126, -1, 9340, 9500, 0, true},
+    {4, 133, 7, 11400, 11560, 1, true},
+    {4, 136, -1, 11540, 11700, 0, true},
+    {5, 143, 8, 11500, 11660, 1, true},
+    {5, 146, -1, 11640, 11800, 0, true},
+    {6, 153, 9, 12200, 12360, 1, true},
+    {6, 156, -1, 12340, 12500, 0, true},
+    {7, 163, 10, 12200, 12360, 1, true},
+    {7, 200, 15, 12200, 12360, 2, true},
+    {7, 166, -1, 12340, 12500, 0, true},
+    {8, 173, 11, 21120, 21280, 1, true},
+    {8, 176, -1, 21260, 21420, 0, true},
+    {9, 0xb7, 0x0c, 17600, 17760, 1, false},
+    {9, 0xb8, 0x0c, 17740, 17900, 1, false},
+    {10, 193, 13, 50, 210, 1, true},
+    {10, 196, -1, 190, 350, 0, true},
 }};
+
+int stageBannerTextId(const StageBannerSpec& banner, int setupGroup,
+                      bool specialStage) {
+    int base = banner.textIdBase;
+    if (banner.stage == 1 && banner.startFrame == 50 && specialStage) {
+        base = 0x127;
+    }
+    return base + (banner.addSetupGroupToTextId ? setupGroup : 0);
+}
 constexpr double kStageTextBobStep = 0.08849556770675474;
 constexpr float kPlayLeft = static_cast<float>(notes::gameplay_layout::kPlayLocalRect.x);
 constexpr float kPlayRight = static_cast<float>(notes::gameplay_layout::kPlayLocalRect.right());
@@ -992,8 +1036,12 @@ const StageRuntime::StageSpawnEvent* StageRuntime::eventsForStage(int stage, std
         count = kStage04Events.size();
         return kStage04Events.data();
     }
-    count = kStage01Events.size();
-    return kStage01Events.data();
+    if (stage == 1) {
+        count = kStage01Events.size();
+        return kStage01Events.data();
+    }
+    count = 0;
+    return nullptr;
 }
 
 bool StageRuntime::initialize(ResourceManager& resources, int stage) {
@@ -1008,6 +1056,7 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
     enemySmallFrames_ = resources.loadDivGraph("media\\stage\\Enemy_s.png", 0xaa, 10, 0x11, 100, 100);
     enemyMediumFrames_ = resources.loadDivGraph("media\\stage\\Enemy_m.png", 0xe6, 10, 0x17, 200, 200);
     enemyLargeFrames_ = resources.loadDivGraph("media\\stage\\Enemy_l.png", 0x6e, 10, 0x0b, 600, 600);
+    enemyExtraLargeFrames_ = resources.loadDivGraph("media\\stage\\Enemy_xl.png", 8, 4, 2, 800, 800);
     effectSmallFrames_ = resources.loadDivGraph("media\\effect\\Effect_s.png", 0x14, 10, 2, 100, 100);
     effectMediumFrames_ = resources.loadDivGraph("media\\effect\\Effect_m.png", 0x1e, 10, 3, 200, 200);
     effectLargeFrames_ = resources.loadDivGraph("media\\effect\\Effect_l.png", 0x1e, 10, 3, 600, 600);
@@ -1048,6 +1097,15 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
     stageBack1cFrames_ = resources.loadDivGraph("media\\stage\\StageBack1c.png", 0x0c, 0x0c, 1, 0x2d0, 0xa00);
     stageBack1dFrames_ = resources.loadDivGraph("media\\stage\\StageBack1d.png", 10, 10, 1, 0x2d0, 0xa00);
     stageBack2Frames_ = resources.loadDivGraph("media\\stage\\StageBack2.png", 10, 10, 1, 0x2d0, 0x2d0);
+    const auto graphOrLoad = [&resources](const char* id, const char* path) {
+        const int loaded = resources.graphHandleById(id);
+        return loaded != -1 ? loaded : resources.loadGraph(path);
+    };
+    stage2BackHandle_ = graphOrLoad("GFX_stage_Stage2Back", "media\\stage\\Stage2Back.png");
+    stage3BackHandle_ = graphOrLoad("GFX_stage_Stage3Back", "media\\stage\\Stage3Back.png");
+    stage6BackHandle_ = graphOrLoad("GFX_stage_Stage6Back", "media\\stage\\Stage6Back.png");
+    stage8Back1Handle_ = graphOrLoad("GFX_stage_Stage8Back1", "media\\stage\\Stage8Back1.png");
+    stage8Back2Handle_ = graphOrLoad("GFX_stage_Stage8Back2", "media\\stage\\Stage8Back2.png");
 
     stageFrameFrames_ = resources.loadDivGraph("media\\system\\StageFrame.png", 2, 2, 1, 600, 720);
     numSmallFrames_ = resources.loadDivGraph("media\\system\\Num_s.png", 0x0e, 0x0e, 1, 0x14, 0x1e);
@@ -1097,26 +1155,58 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
     bossSe4SecondSoundHandle_ = resources.soundHandleById("SE_se_BossSE4_2");
     bossSe5SoundHandle_ = resources.soundHandleById("SE_se_BossSE5");
     bossSe6SoundHandle_ = resources.soundHandleById("SE_se_BossSE6");
+    bossSe7SoundHandle_ = resources.soundHandleById("SE_se_BossSE7");
     bossSe8SoundHandle_ = resources.soundHandleById("SE_se_BossSE8");
-    stage04BgmHandle_ = resources.soundHandleById("BGM_bgm_Stage4");
-    stage04BossBgmHandle_ = resources.soundHandleById("BGM_bgm_Boss2");
+    bossSe9SoundHandle_ = resources.soundHandleById("SE_se_BossSE9");
+    constexpr std::array<const char*, 10> kStageBgmIds{{
+        "BGM_bgm_Stage1", "BGM_bgm_Stage2", "BGM_bgm_Stage3", "BGM_bgm_Stage4",
+        "BGM_bgm_Stage5", "BGM_bgm_Stage6", "BGM_bgm_Stage7", "BGM_bgm_Stage8",
+        "BGM_bgm_Stage9", "BGM_bgm_Stage10",
+    }};
+    constexpr std::array<const char*, 5> kBossBgmIds{{
+        "BGM_bgm_Boss1", "BGM_bgm_Boss2", "BGM_bgm_Boss3",
+        "BGM_bgm_Boss4", "BGM_bgm_Boss5",
+    }};
+    for (std::size_t i = 0; i < stageBgmHandles_.size(); ++i) {
+        stageBgmHandles_[i] = resources.soundHandleById(kStageBgmIds[i]);
+    }
+    for (std::size_t i = 0; i < bossBgmHandles_.size(); ++i) {
+        bossBgmHandles_[i] = resources.soundHandleById(kBossBgmIds[i]);
+    }
+    stage04BgmHandle_ = stageBgmHandles_[3];
+    // Stage 4-8 hand off to DAT_140e45140, the second loaded boss track.
+    stage04BossBgmHandle_ = bossBgmHandles_[1];
     textSoundHandle_ = resources.soundHandleById("SE_se_Text");
     text2SoundHandle_ = resources.soundHandleById("SE_se_Text2");
 
     config_ = config;
-    selectedStage_ = (config.stage >= 1 && config.stage <= 4) ? config.stage : 1;
+    selectedStage_ = (config.stage >= 1 && config.stage <= 10) ? config.stage : 1;
     config_.stage = selectedStage_;
     config_.controlDevice = std::clamp(config_.controlDevice, 0, 5);
     config_.controlModeEnabled = config_.controlModeEnabled != 0 ? 1 : 0;
     config_.helpMode = std::clamp(config_.helpMode, 0, 6);
     config_.helpAutoProgress = std::max(config_.helpAutoProgress, 0);
     config_.specialMode = config_.specialMode != 0 ? 1 : 0;
+    config_.specialStageFlag = config_.specialStageFlag != 0 ? 1 : 0;
     config_.dataWindowEnabled = config_.dataWindowEnabled != 0 ? 1 : 0;
     config_.language = std::clamp(config_.language, 0, 3);
     config_.bgmVolume = std::clamp(config_.bgmVolume, 0, 10);
     config_.soundEffectVolume = std::clamp(config_.soundEffectVolume, 0, 10);
     config_.itemVisibility = config_.itemVisibility != 0 ? 1 : 0;
     config_.likeStyle = config_.likeStyle != 0 ? 1 : 0;
+    config_.rawStartFrame = std::max(config_.rawStartFrame, 0);
+    config_.firstDispatchFrame = std::max(config_.firstDispatchFrame, -1);
+    config_.initialStock = config_.initialStock < 0
+                               ? -1
+                               : std::clamp(config_.initialStock, 0, 3);
+    config_.initialStockProgressSteps = config_.initialStockProgressSteps < 0
+                                            ? -1
+                                            : std::clamp(config_.initialStockProgressSteps, 0, 20);
+    config_.initialSpecialGauge = config_.initialSpecialGauge < 0
+                                      ? -1
+                                      : std::clamp(config_.initialSpecialGauge, 0,
+                                                   kSpecialGaugeReady);
+    config_.continueRun = false;
     initialized_ = !playerFrames_.empty() && playerFrames_.front() != -1 &&
                    !itemFrames_.empty() && itemFrames_.front() != -1 &&
                    !enemySmallFrames_.empty() && enemySmallFrames_.front() != -1 &&
@@ -1133,25 +1223,37 @@ void StageRuntime::setStage(int stage) {
 
 bool StageRuntime::setConfig(const StageRuntimeConfig& config) {
     auto next = config;
-    const int normalized = (next.stage >= 1 && next.stage <= 4) ? next.stage : 1;
+    const int normalized = (next.stage >= 1 && next.stage <= 10) ? next.stage : 1;
     next.stage = normalized;
     next.controlDevice = std::clamp(next.controlDevice, 0, 5);
     next.controlModeEnabled = next.controlModeEnabled != 0 ? 1 : 0;
     next.helpMode = std::clamp(next.helpMode, 0, 6);
     next.helpAutoProgress = std::max(next.helpAutoProgress, 0);
     next.specialMode = next.specialMode != 0 ? 1 : 0;
+    next.specialStageFlag = next.specialStageFlag != 0 ? 1 : 0;
     next.dataWindowEnabled = next.dataWindowEnabled != 0 ? 1 : 0;
     next.language = std::clamp(next.language, 0, 3);
     next.bgmVolume = std::clamp(next.bgmVolume, 0, 10);
     next.soundEffectVolume = std::clamp(next.soundEffectVolume, 0, 10);
     next.itemVisibility = next.itemVisibility != 0 ? 1 : 0;
     next.likeStyle = next.likeStyle != 0 ? 1 : 0;
+    next.rawStartFrame = std::max(next.rawStartFrame, 0);
+    next.firstDispatchFrame = std::max(next.firstDispatchFrame, -1);
+    next.initialStock = next.initialStock < 0 ? -1 : std::clamp(next.initialStock, 0, 3);
+    next.initialStockProgressSteps = next.initialStockProgressSteps < 0
+                                         ? -1
+                                         : std::clamp(next.initialStockProgressSteps, 0, 20);
+    next.initialSpecialGauge = next.initialSpecialGauge < 0
+                                   ? -1
+                                   : std::clamp(next.initialSpecialGauge, 0,
+                                                kSpecialGaugeReady);
     const bool changed = selectedStage_ != normalized || config_.routeMode != next.routeMode ||
                          config_.setupGroup != next.setupGroup ||
                          config_.playerOption != next.playerOption || config_.subOption != next.subOption ||
                          config_.loadoutId != next.loadoutId || config_.difficulty != next.difficulty ||
                          config_.counterMode != next.counterMode || config_.optionSlots != next.optionSlots ||
                          config_.specialMode != next.specialMode ||
+                         config_.specialStageFlag != next.specialStageFlag ||
                          config_.dataWindowEnabled != next.dataWindowEnabled ||
                          config_.language != next.language ||
                          config_.bgmVolume != next.bgmVolume ||
@@ -1159,7 +1261,13 @@ bool StageRuntime::setConfig(const StageRuntimeConfig& config) {
                          config_.itemVisibility != next.itemVisibility ||
                          config_.likeStyle != next.likeStyle ||
                          config_.controlModeEnabled != next.controlModeEnabled || config_.helpMode != next.helpMode ||
-                         config_.helpAutoProgress != next.helpAutoProgress;
+                         config_.helpAutoProgress != next.helpAutoProgress ||
+                         config_.rawStartFrame != next.rawStartFrame ||
+                         config_.firstDispatchFrame != next.firstDispatchFrame ||
+                         config_.initialStock != next.initialStock ||
+                         config_.initialStockProgressSteps != next.initialStockProgressSteps ||
+                         config_.initialSpecialGauge != next.initialSpecialGauge ||
+                         next.continueRun;
     config_ = next;
     selectedStage_ = normalized;
     if (changed) {
@@ -1169,9 +1277,38 @@ bool StageRuntime::setConfig(const StageRuntimeConfig& config) {
 }
 
 void StageRuntime::reset() {
-    frame_ = 0;
+    const PlayerState previousPlayer = player_;
+    const bool continueRun = config_.continueRun;
+    config_.continueRun = false;
+    frame_ = config_.firstDispatchFrame;
     player_ = {};
-    player_.stockProgress = stockThresholdForCurrentConfig() * player_.lives;
+    if (continueRun) {
+        player_.score = previousPlayer.score;
+        player_.scoreItemBaseValue = previousPlayer.scoreItemBaseValue;
+        player_.specialGauge = previousPlayer.specialGauge;
+        player_.tokenStock = previousPlayer.tokenStock;
+        player_.graze = previousPlayer.graze;
+        player_.keyStateCount = previousPlayer.keyStateCount;
+        player_.stockProgress = previousPlayer.stockProgress;
+        player_.lives = previousPlayer.lives;
+    }
+    else {
+        if (config_.initialStock >= 0) {
+            player_.lives = config_.initialStock;
+        }
+        const int threshold = stockThresholdForCurrentConfig();
+        player_.stockProgress = threshold * player_.lives;
+        if (config_.initialStockProgressSteps >= 0) {
+            player_.stockProgress +=
+                (threshold / 20) * config_.initialStockProgressSteps;
+            if (config_.initialStockProgressSteps == 20) {
+                --player_.stockProgress;
+            }
+        }
+        if (config_.initialSpecialGauge >= 0) {
+            player_.specialGauge = config_.initialSpecialGauge;
+        }
+    }
     player_.optionX.fill(player_.x);
     player_.optionY.fill(player_.y);
     nextEntityId_ = 1;
@@ -1184,12 +1321,19 @@ void StageRuntime::reset() {
     stage02GateFlag_ = false;
     stage03GateFlag_ = false;
     stage04GateFlag_ = false;
+    stage05GateFlag_ = false;
+    stage06GateFlag_ = false;
+    stage07GateFlag_ = false;
+    stage08GateFlag_ = false;
+    stage09GateFlag_ = false;
+    stage10GateFlag_ = false;
     stage01EndVisualQueued_ = false;
     stage01EndFlushed_ = false;
     stage01BossSpawned_ = false;
     stage01BossPhaseMode_ = 0;
     stage01BossMaxHp_ = 100000;
     stage01BossCountdown_ = 0;
+    stage01BossCountdownDraw_ = 0;
     stage01BossBreaksRemaining_ = 3;
     stage01BossPhaseIndex_ = 0;
     stage01BossTargetX_ = 360.0f;
@@ -1230,7 +1374,23 @@ void StageRuntime::reset() {
     stage04ClearStarted_ = false;
     stage04ClearTransition_ = false;
     stage04ClearComplete_ = false;
-    stage04ApproachAgeDraw_ = -1;
+    earlyStageApproachAgeDraw_ = -1;
+    lateStageClearComplete_.fill(false);
+    lateStageApproachAgeDraw_ = -1;
+    lateStageClearTimer_ = 0;
+    lateStageBossPhaseMode_ = 0;
+    lateStageBossPhaseIndex_ = 0;
+    lateStageBossBreaksRemaining_ = 0;
+    lateStageBossCountdown_ = 0;
+    lateStageBossCountdownDraw_ = 0;
+    lateStageBossMaxHp_ = 100000;
+    lateStageBossTargetX_ = 360.0f;
+    lateStageBossTargetY_ = 200.0f;
+    lateStageBossSpawned_ = false;
+    lateStageClearStarted_ = false;
+    activeBossBgmIndex_ = -1;
+    stage10TransitionStarted_ = false;
+    stage10FinalBossSpawned_ = false;
     inputActions_.fill(false);
     paused_ = false;
     pauseInputHeld_ = false;
@@ -1240,17 +1400,26 @@ void StageRuntime::reset() {
     playerSideObjects_.clear();
     rewardItems_.clear();
     stageEffects_.clear();
+    lateBackgroundScroll_.fill(0.0);
+    lateBackgroundScrollFrame_ = -0x3fffffff;
+    stage09BossDefeatFrames_.fill(-1);
 
-    if (stage04BgmHandle_ != -1) {
-        StopSoundMem(stage04BgmHandle_);
+    for (const int handle : stageBgmHandles_) {
+        if (handle != -1) {
+            StopSoundMem(handle);
+        }
     }
-    if (stage04BossBgmHandle_ != -1) {
-        StopSoundMem(stage04BossBgmHandle_);
+    for (const int handle : bossBgmHandles_) {
+        if (handle != -1) {
+            StopSoundMem(handle);
+        }
     }
-    if (selectedStage_ == 4 && stage04BgmHandle_ != -1) {
-        ChangeVolumeSoundMem(static_cast<int>(config_.bgmVolume * 25.5),
-                             stage04BgmHandle_);
-        PlaySoundMem(stage04BgmHandle_, DX_PLAYTYPE_LOOP, TRUE);
+    const int stageBgm = stageBgmHandles_[static_cast<std::size_t>(selectedStage_ - 1)];
+    // Fresh Stage 10 runs start this at frame 320. Practice/Trial entries beyond
+    // that boundary arrive with the track already selected by the context init.
+    if ((selectedStage_ != 10 || config_.rawStartFrame >= 320) && stageBgm != -1) {
+        ChangeVolumeSoundMem(static_cast<int>(config_.bgmVolume * 25.5), stageBgm);
+        PlaySoundMem(stageBgm, DX_PLAYTYPE_LOOP, TRUE);
     }
 }
 
@@ -1302,7 +1471,49 @@ void StageRuntime::update() {
                        [](const StageEffect& effect) { return !effect.active; }),
         stageEffects_.end());
 
-    spawnDueEvents();
+    int stageDispatchCount = 1;
+    const bool stageGateOpen = [this]() {
+        switch (selectedStage_) {
+        case 1: return stage01GateFlag_;
+        case 2: return stage02GateFlag_;
+        case 3: return stage03GateFlag_;
+        case 4: return stage04GateFlag_;
+        case 5: return stage05GateFlag_;
+        case 6: return stage06GateFlag_;
+        case 7: return stage07GateFlag_;
+        case 8: return stage08GateFlag_;
+        case 9: return stage09GateFlag_;
+        case 10: return stage10GateFlag_;
+        default: return false;
+        }
+    }();
+    const int stageEnd = kStageEndFrames[static_cast<std::size_t>(selectedStage_)];
+    if (config_.specialStageFlag == 1 && frame_ > 230 &&
+        frame_ >= config_.rawStartFrame + 10 && frame_ < stageEnd - 360 &&
+        !stageGateOpen) {
+        int activeRadius = 0;
+        for (const StageEnemy& enemy : enemies_) {
+            if (enemy.active && enemy.targetable) {
+                activeRadius += enemy.radius;
+            }
+        }
+        if (activeRadius == 0) {
+            stageDispatchCount = 4;
+        }
+        else if (activeRadius < 70) {
+            stageDispatchCount = 3;
+        }
+        else if (activeRadius < 140) {
+            stageDispatchCount = 2;
+        }
+    }
+
+    for (int dispatch = 0; dispatch < stageDispatchCount; ++dispatch) {
+        spawnDueEvents();
+        if (dispatch + 1 < stageDispatchCount) {
+            ++frame_;
+        }
+    }
     updatePlayer();
     updatePlayerSideObjects();
     updateEnemies();
@@ -1323,15 +1534,17 @@ void StageRuntime::draw() const {
     drawStageEffects(true);
     drawRewardItems();
     drawPlayer();
-    drawStage04Approach();
+    drawStageApproach();
+    drawStage01BossHud();
     drawStage02BossHud();
     drawStage03BossHud();
     drawStage04BossHud();
+    drawLateStageBossHud();
     drawRightHudPanel();
-    drawStage04BannerPanels();
+    drawStageBannerPanels();
     drawStageEffects(true, 0x6f);
     drawOverlay();
-    drawStage04BannerText();
+    drawStageBannerText();
 }
 
 int StageRuntime::enemiesAlive() const {
@@ -1373,6 +1586,11 @@ bool StageRuntime::actionDown(InputAction action) const {
 }
 
 void StageRuntime::spawnDueEvents() {
+    updateStageBannerTextSound();
+    if (selectedStage_ >= 1 && selectedStage_ <= 3) {
+        updateEarlyStageApproachTimeline();
+    }
+
     if (selectedStage_ == 1) {
         spawnStage01OriginalSchedule();
         return;
@@ -1387,6 +1605,36 @@ void StageRuntime::spawnDueEvents() {
     }
     if (selectedStage_ == 4) {
         spawnStage04OriginalSchedule();
+        return;
+    }
+    if (selectedStage_ == 5) {
+        spawnStage05OriginalSchedule();
+        updateLateStageTimeline();
+        return;
+    }
+    if (selectedStage_ == 6) {
+        spawnStage06OriginalSchedule();
+        updateLateStageTimeline();
+        return;
+    }
+    if (selectedStage_ == 7) {
+        spawnStage07OriginalSchedule();
+        updateLateStageTimeline();
+        return;
+    }
+    if (selectedStage_ == 8) {
+        spawnStage08OriginalSchedule();
+        updateLateStageTimeline();
+        return;
+    }
+    if (selectedStage_ == 9) {
+        spawnStage09OriginalSchedule();
+        updateLateStageTimeline();
+        return;
+    }
+    if (selectedStage_ == 10) {
+        spawnStage10OriginalSchedule();
+        updateLateStageTimeline();
         return;
     }
 
@@ -1471,7 +1719,11 @@ void StageRuntime::spawnStage01OriginalSchedule() {
             spawn0cTop("S01 original line 155: gated 0x0c top burst");
         }
     }
-    if (f == 0xe10) spawn(0x0e, 7000, 0x168, 0, "S01 original line 159: later 0x0e setpiece");
+    // In FUN_140118420 this call remains inside the gate-open branch; when
+    // 0x10 is still alive, control jumps past it to LAB_140118eb4.
+    if (!stage01GateFlag_ && f == 0xe10) {
+        spawn(0x0e, 7000, 0x168, 0, "S01 original line 159: gate-open 0x0e setpiece");
+    }
     if (f >= 0xed8 && f < 0xf78 && (f - 0xed8) % 0x14 == 0) {
         spawn0bRight(500, 0xc9, 100, "S01 original line 173: later 0x0b right random entry");
     }
@@ -1500,12 +1752,8 @@ void StageRuntime::spawnStage01OriginalSchedule() {
     if (f >= stage01EndFrame_ - 0x168 && f < stage01EndFrame_ - 0xf0) {
         stage01EndFlushed_ = true;
     }
-    if (f >= stage01EndFrame_ - 300 && f <= stage01EndFrame_) {
-        enemyProjectiles_.clear();
-    }
     if (f == stage01EndFrame_) {
-        enemyProjectiles_.clear();
-        playerSideObjects_.clear();
+        flushStageForBossHandoff(0);
     }
     if (!stage01BossSpawned_ && f == stage01EndFrame_ + 0x3c) {
         spawn(0x138, 100000, 360, 200, "S01 boss handoff: endFrame + 0x3c entity 0x138");
@@ -1708,6 +1956,9 @@ void StageRuntime::spawnStage02OriginalSchedule() {
 
     // UNK_140538ad8[2] is 9700. The original creates the Stage 2 root boss
     // exactly 60 frames after the stage-length handoff.
+    if (f == 9700) {
+        flushStageForBossHandoff(0);
+    }
     if (f == 9700 + 0x3c) {
         spawn(0x139, 100000, 360, 180,
               "S02 boss handoff: endFrame + 0x3c entity 0x139");
@@ -1900,20 +2151,26 @@ void StageRuntime::spawnStage03OriginalSchedule() {
 
     // The stage length table entry for Stage 3 is 9500. The original direct
     // stage-entity call follows 60 frames later at local position (360, 200).
+    if (f == 9500) {
+        flushStageForBossHandoff(0);
+    }
     if (f == 9500 + 0x3c) {
         spawn(0x13a, 100000, 360, 200, "S03 boss handoff: endFrame + 0x3c entity 0x13a");
     }
 }
 
-void StageRuntime::updateStage04BannerTextSound() const {
-    if (selectedStage_ != 4 || config_.textDatabase == nullptr) {
+void StageRuntime::updateStageBannerTextSound() const {
+    if (config_.textDatabase == nullptr) {
         return;
     }
 
     const int language = std::clamp(config_.language, 0, 3);
     const int revealRate = language == 1 ? 1 : 2;
     const int group = std::clamp(config_.setupGroup, 0, 2);
-    for (const auto& banner : kStage04Banners) {
+    for (const auto& banner : kStageBanners) {
+        if (banner.stage != selectedStage_) {
+            continue;
+        }
         const int textStart = banner.startFrame + 16;
         const int textEnd = banner.endFrame - 16;
         if (frame_ < textStart || frame_ >= textEnd) {
@@ -1921,7 +2178,8 @@ void StageRuntime::updateStage04BannerTextSound() const {
         }
 
         const TextRecord* record = config_.textDatabase->find(
-            language, banner.textIdBase + group);
+            language, stageBannerTextId(banner, group,
+                                        config_.specialStageFlag != 0));
         if (record == nullptr) {
             continue;
         }
@@ -1931,19 +2189,58 @@ void StageRuntime::updateStage04BannerTextSound() const {
         const int totalCount = utf8CodePointCount(record->line1) + line2Count;
         const int textAge = frame_ - textStart;
         if ((textAge & 1) == 0 && textAge <= totalCount * revealRate) {
-            playPlayerSound(banner.mode == 1 ? text2SoundHandle_
-                                             : textSoundHandle_,
+            playPlayerSound(banner.mode == 0 ? textSoundHandle_
+                                             : text2SoundHandle_,
                             9);
         }
     }
 }
 
+void StageRuntime::updateEarlyStageApproachTimeline() {
+    int endFrame = 0;
+    switch (selectedStage_) {
+    case 1: endFrame = 5700; break;
+    case 2: endFrame = 9700; break;
+    case 3: endFrame = 9500; break;
+    default:
+        earlyStageApproachAgeDraw_ = -1;
+        return;
+    }
+
+    const int approachStart = endFrame - 300;
+    earlyStageApproachAgeDraw_ = frame_ >= approachStart && frame_ <= endFrame
+                                     ? frame_ - approachStart
+                                     : -1;
+
+    const int stageBgm = stageBgmHandles_[static_cast<std::size_t>(selectedStage_ - 1)];
+    if (frame_ >= endFrame - 360 && frame_ < endFrame - 240 && stageBgm != -1) {
+        const double fade = 1.0 - std::sin(
+            static_cast<double>(frame_ - (endFrame - 360)) * kPi / 240.0);
+        ChangeVolumeSoundMem(static_cast<int>(
+                                 static_cast<double>(config_.bgmVolume) * 25.5 * fade),
+                             stageBgm);
+    }
+    if (frame_ == approachStart) {
+        const int group = std::clamp(config_.setupGroup, 0, 2);
+        const int frameIndex = 5 + group * 10;
+        const int portraitHandle = frameIndex < static_cast<int>(playerFrameFrames_.size())
+                                       ? playerFrameFrames_[static_cast<std::size_t>(frameIndex)]
+                                       : -1;
+        spawnStageEffect(0x16, portraitHandle, 0, 0x6f,
+                         0.0f, 0.0f, 0, 0.0, 1.0, 1.0, 300,
+                         0xff, 0xff, 0xff, 0xff);
+    }
+    if (frame_ >= approachStart && frame_ < endFrame - 30 &&
+        (frame_ - approachStart) % 20 == 0) {
+        playPlayerSound(alertSoundHandle_, 0x14);
+    }
+}
+
 void StageRuntime::spawnStage04OriginalSchedule() {
     const int f = frame_;
-    updateStage04BannerTextSound();
-    stage04ApproachAgeDraw_ = f >= 11400 && f <= 11700
-                                  ? f - 11400
-                                  : -1;
+    earlyStageApproachAgeDraw_ = f >= 11400 && f <= 11700
+                                    ? f - 11400
+                                    : -1;
     auto spawn = [this](int type, int hitPoints, int x, int y, const char* note) {
         spawnEnemy({frame_, type, hitPoints, x, y, note});
     };
@@ -2084,45 +2381,179 @@ void StageRuntime::spawnStage04OriginalSchedule() {
                          0xff, 0xff, 0xff, 0xff);
     }
 
-    // UNK_140538ad8[4] is 11700. At the endpoint the original flushes the
-    // stage lists and selects the shared Boss2 track used by this encounter.
+    // UNK_140538ad8[4] is 11700. At the endpoint the original calls the same
+    // entity/projectile flush pair as Stages 1-3, then selects Boss2.
     if (f == 11700) {
-        const int flushHandle = effectMediumFrames_.size() > 4
-                                    ? effectMediumFrames_[4]
-                                    : -1;
-        const auto flushEnemy = [this, flushHandle](const StageEnemy& enemy) {
-            const double scale = static_cast<double>(enemy.radius) / 16.0;
-            spawnStageEffect(0x0c, flushHandle, 200, 0x3d,
-                             enemy.x, enemy.y, 0, 0.0, scale, scale, 16,
-                             0xff, 0xff, 0xff, 0xff);
-        };
-        for (const auto& enemy : enemies_) {
-            flushEnemy(enemy);
-        }
-        for (const auto& enemy : pendingEnemies_) {
-            flushEnemy(enemy);
-        }
-        for (const auto& projectile : enemyProjectiles_) {
-            spawnStageEffect(0x0c, flushHandle, 200, 0x3d,
-                             projectile.x, projectile.y, 0,
-                             0.0, 0.6, 0.6, 16,
-                             0xff, 0xff, 0xff, 0xff);
-        }
-        enemies_.clear();
-        pendingEnemies_.clear();
-        enemyProjectiles_.clear();
-        if (stage04BgmHandle_ != -1) {
-            StopSoundMem(stage04BgmHandle_);
-        }
-        if (stage04BossBgmHandle_ != -1) {
-            ChangeVolumeSoundMem(static_cast<int>(config_.bgmVolume * 25.5),
-                                 stage04BossBgmHandle_);
-            PlaySoundMem(stage04BossBgmHandle_, DX_PLAYTYPE_LOOP, TRUE);
-        }
+        flushStageForBossHandoff(1);
     }
     if (f == 11700 + 0x3c) {
         spawn(0x13b, 100000, 360, 120,
               "S04 boss handoff: endFrame + 0x3c entity 0x13b");
+    }
+}
+
+void StageRuntime::flushStageForBossHandoff(int bossBgmIndex) {
+    const int flushHandle = effectMediumFrames_.size() > 4
+                                ? effectMediumFrames_[4]
+                                : -1;
+    for (const auto& enemy : enemies_) {
+        const double scale = static_cast<double>(enemy.radius) / 16.0;
+        spawnStageEffect(0x0c, flushHandle, 200, 0x3d,
+                         enemy.x, enemy.y, 0, 0.0, scale, scale, 16,
+                         0xff, 0xff, 0xff, 0xff);
+    }
+    for (const auto& enemy : pendingEnemies_) {
+        const double scale = static_cast<double>(enemy.radius) / 16.0;
+        spawnStageEffect(0x0c, flushHandle, 200, 0x3d,
+                         enemy.x, enemy.y, 0, 0.0, scale, scale, 16,
+                         0xff, 0xff, 0xff, 0xff);
+    }
+    for (const auto& projectile : enemyProjectiles_) {
+        const double radians = fixedAngleToRadiansDouble(projectile.angle16);
+        const float effectX = projectile.x + static_cast<float>(
+            std::cos(radians) * projectile.speed);
+        const float effectY = projectile.y + static_cast<float>(
+            std::sin(radians) * projectile.speed);
+        spawnStageEffect(0x0c, flushHandle, 200, 0x3d,
+                         effectX, effectY, 0, 0.0, 0.6, 0.6, 16,
+                         0xff, 0xff, 0xff, 0xff);
+    }
+    enemies_.clear();
+    pendingEnemies_.clear();
+    enemyProjectiles_.clear();
+
+    for (const int handle : stageBgmHandles_) {
+        if (handle != -1) {
+            StopSoundMem(handle);
+        }
+    }
+    for (const int handle : bossBgmHandles_) {
+        if (handle != -1) {
+            StopSoundMem(handle);
+        }
+    }
+    if (bossBgmIndex >= 0 && bossBgmIndex < static_cast<int>(bossBgmHandles_.size())) {
+        activeBossBgmIndex_ = bossBgmIndex;
+        const int handle = bossBgmHandles_[static_cast<std::size_t>(bossBgmIndex)];
+        if (handle != -1) {
+            ChangeVolumeSoundMem(static_cast<int>(config_.bgmVolume * 25.5), handle);
+            PlaySoundMem(handle, DX_PLAYTYPE_LOOP, TRUE);
+        }
+    }
+}
+
+void StageRuntime::updateLateStageTimeline() {
+    struct EndSpec {
+        int endFrame;
+        int bossType;
+        int bossX;
+        int bossY;
+        int breaks;
+        int bossBgmIndex;
+    };
+    EndSpec spec{};
+    switch (selectedStage_) {
+    case 5: spec = {11800, 0x13c, 360, 200, 6, 1}; break;
+    case 6: spec = {12500, 0x13d, 480, 150, 5, 1}; break;
+    case 7: spec = {12500, 0x13e, 360, 250, 5, 1}; break;
+    case 8: spec = {21420, 0x13f, 360, 180, 6, 1}; break;
+    case 9: spec = {17900, 0x140, 360, 190, 4, 2}; break;
+    case 10: spec = {12000, 0x141, 360, 320, 16, 4}; break;
+    default: return;
+    }
+
+    if (lateStageClearStarted_) {
+        ++lateStageClearTimer_;
+        if (lateStageClearTimer_ >= 360 && lateStageClearTimer_ <= 480) {
+            const int fadeIndex = activeBossBgmIndex_ >= 0
+                                      ? activeBossBgmIndex_
+                                      : spec.bossBgmIndex;
+            const int handle = bossBgmHandles_[static_cast<std::size_t>(fadeIndex)];
+            if (handle != -1) {
+                const double fade = 1.0 - std::sin(
+                    static_cast<double>(lateStageClearTimer_ - 360) * kPi / 240.0);
+                ChangeVolumeSoundMem(static_cast<int>(
+                                         static_cast<double>(config_.bgmVolume) * 25.5 * fade),
+                                     handle);
+            }
+        }
+        if (lateStageClearTimer_ >= 480) {
+            lateStageClearComplete_[static_cast<std::size_t>(selectedStage_)] = true;
+        }
+    }
+
+    if (selectedStage_ == 10) {
+        lateStageApproachAgeDraw_ = frame_ >= 50 && frame_ <= 350
+                                        ? frame_ - 50
+                                        : -1;
+        if (frame_ == 1) {
+            stage10GateFlag_ = true;
+        }
+        if (frame_ == 50) {
+            const int group = std::clamp(config_.setupGroup, 0, 2);
+            const int frameIndex = 5 + group * 10;
+            const int portraitHandle = frameIndex < static_cast<int>(playerFrameFrames_.size())
+                                           ? playerFrameFrames_[static_cast<std::size_t>(frameIndex)]
+                                           : -1;
+            spawnStageEffect(0x16, portraitHandle, 0, 0x6f,
+                             0.0f, 0.0f, 0, 0.0, 1.0, 1.0, 300,
+                             0xff, 0xff, 0xff, 0xff);
+        }
+        if (frame_ >= 50 && frame_ < 320 && (frame_ - 50) % 20 == 0) {
+            playPlayerSound(alertSoundHandle_, 0x14);
+        }
+        if (frame_ == 320) {
+            const int handle = stageBgmHandles_[9];
+            if (handle != -1) {
+                ChangeVolumeSoundMem(static_cast<int>(config_.bgmVolume * 25.5), handle);
+                PlaySoundMem(handle, DX_PLAYTYPE_LOOP, TRUE);
+            }
+        }
+        if (frame_ == 350) {
+            stage10GateFlag_ = false;
+        }
+        if (frame_ == spec.endFrame && !stage10TransitionStarted_) {
+            stage10TransitionStarted_ = true;
+        }
+        return;
+    }
+
+    lateStageApproachAgeDraw_ = frame_ >= spec.endFrame - 300 && frame_ <= spec.endFrame
+                                    ? frame_ - (spec.endFrame - 300)
+                                    : -1;
+    const int stageBgm = stageBgmHandles_[static_cast<std::size_t>(selectedStage_ - 1)];
+    if (frame_ >= spec.endFrame - 360 && frame_ < spec.endFrame - 240 && stageBgm != -1) {
+        const double fade = 1.0 - std::sin(
+            static_cast<double>(frame_ - (spec.endFrame - 360)) * kPi / 240.0);
+        ChangeVolumeSoundMem(static_cast<int>(
+                                 static_cast<double>(config_.bgmVolume) * 25.5 * fade),
+                             stageBgm);
+    }
+    if (frame_ == spec.endFrame - 300) {
+        const int group = std::clamp(config_.setupGroup, 0, 2);
+        const int frameIndex = 5 + group * 10;
+        const int portraitHandle = frameIndex < static_cast<int>(playerFrameFrames_.size())
+                                       ? playerFrameFrames_[static_cast<std::size_t>(frameIndex)]
+                                       : -1;
+        spawnStageEffect(0x16, portraitHandle, 0, 0x6f,
+                         0.0f, 0.0f, 0, 0.0, 1.0, 1.0, 300,
+                         0xff, 0xff, 0xff, 0xff);
+    }
+    if (frame_ >= spec.endFrame - 300 && frame_ < spec.endFrame - 30 &&
+        (frame_ - (spec.endFrame - 300)) % 20 == 0) {
+        playPlayerSound(alertSoundHandle_, 0x14);
+    }
+    if (frame_ == spec.endFrame) {
+        flushStageForBossHandoff(spec.bossBgmIndex);
+        lateStageBossBreaksRemaining_ = spec.breaks;
+        lateStageBossPhaseIndex_ = 0;
+        lateStageBossPhaseMode_ = 0;
+        lateStageBossSpawned_ = false;
+    }
+    if (frame_ == spec.endFrame + 0x3c && !lateStageBossSpawned_) {
+        spawnEnemy({frame_, spec.bossType, 100000, spec.bossX, spec.bossY,
+                    "late-stage original boss handoff: endFrame + 0x3c"});
+        lateStageBossSpawned_ = true;
     }
 }
 
@@ -2151,6 +2582,7 @@ void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
     enemy.originX = enemy.x;
     enemy.originY = enemy.y;
     enemy.angle = aimAtPlayer(enemy.x, enemy.y);
+    const bool lateStageConfigured = configureLateStageEnemy(enemy, event);
 
     switch (event.spawnType) {
     case 0x06:
@@ -2736,10 +3168,12 @@ void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
         stage04ClearComplete_ = false;
         break;
     default:
-        enemy.hp = 12;
-        enemy.radius = 28;
-        enemy.visualFrame = 8;
-        enemy.speed = 1.2f;
+        if (!lateStageConfigured) {
+            enemy.hp = 12;
+            enemy.radius = 28;
+            enemy.visualFrame = 8;
+            enemy.speed = 1.2f;
+        }
         break;
     }
 
@@ -2754,32 +3188,40 @@ void StageRuntime::spawnEnemy(const StageSpawnEvent& event) {
 }
 
 void StageRuntime::spawnStage01Child(StageEnemy& parent, int childIndex, float offsetX, float offsetY, int hitPoints, const char* note) {
+    if (enemies_.size() + pendingEnemies_.size() >= kStageEntityCap) {
+        return;
+    }
     StageEnemy child;
     child.entityId = nextEntityId_++;
     child.spawnType = 0x11;
     child.sourceHitPoints = hitPoints;
-    child.sourceX = static_cast<int>(std::lround(parent.x + offsetX));
-    child.sourceY = static_cast<int>(std::lround(parent.y + offsetY));
+    child.sourceX = static_cast<int>(std::lround(offsetX));
+    child.sourceY = static_cast<int>(std::lround(offsetY));
     child.sourceNote = note;
     child.updateCase = stage01UpdateCaseForSpawnType(0x11);
-    child.sourceDispatchKind = stage01DispatchKindForSpawnType(0x11);
-    child.sourceDispatchField = stage01DispatchFieldForSpawnType(0x11);
+    // FUN_140080fb0 bypasses the schedule dispatcher and calls
+    // FUN_140078a00 directly with kind 0x28 and radius 0x3c.
+    child.sourceDispatchKind = 0x28;
+    child.sourceDispatchField = 0x3c;
     child.parentEntityId = parent.entityId;
     child.parentSpawnType = parent.spawnType;
     child.childIndex = childIndex;
-    child.x = parent.x + offsetX;
-    child.y = parent.y + offsetY;
+    child.x = parent.x;
+    child.y = parent.y;
     child.originX = offsetX;
     child.originY = offsetY;
     child.angle = parent.angle;
-    child.sourceAngle16 = parent.sourceAngle16;
-    child.secondaryAngle16 = parent.sourceAngle16;
+    child.sourceAngle16 = 0x4000;
+    child.secondaryAngle16 = 0x4000;
     child.hp = std::max(1, static_cast<int>(hitPoints * (config_.difficulty == 0 ? 0.8 : 1.0)));
     child.maxHp = child.hp;
-    child.radius = 22;
+    child.drawHp = child.hp;
+    child.radius = 0x3c;
+    child.rewardWeight = 0x28;
     child.visualFrame = 32 + (childIndex % 2);
     child.activationDelay = 0;
     child.helperState = 0;
+    child.targetable = false;
     pendingEnemies_.push_back(child);
 }
 
@@ -3603,6 +4045,8 @@ void StageRuntime::updateEnemies() {
         const bool stage04BossNode = stage04BossRoot || stage04BossChild;
         const bool stage04DeathNode = enemy.spawnType == 0x153 &&
                                       enemy.parentSpawnType == 0x13b;
+        const bool lateStageBoss = isLateStageBossType(enemy.spawnType);
+        const bool lateStageEnemy = isLateStageEnemyType(enemy.spawnType) && !lateStageBoss;
         const bool carrierFamily = isStage04CarrierFamily(enemy.spawnType);
         const bool stage04SimpleExact = enemy.spawnType == 0x35 || enemy.spawnType == 0x36 || enemy.spawnType == 0x37;
         const bool stage04Type38 = enemy.spawnType == 0x38;
@@ -3628,6 +4072,9 @@ void StageRuntime::updateEnemies() {
                                       enemy.parentSpawnType == 0x139;
         const bool stage02BossNode = stage02BossRoot || stage02BossChild;
         const bool postDeathCounter = enemy.spawnType == 0x137;
+        if (selectedStage_ >= 5 && enemy.hp < 1 && isLateStageGateOwner(enemy)) {
+            clearLateStageGate(selectedStage_);
+        }
         // Entity helpers own the +0x1c < 1 death branch. Collision only writes
         // HP; cleanup/rewards happen when the helper runs on the next frame.
         if (enemy.hp < 1 && !sharedType0A && !sharedType0B && !sharedType0C &&
@@ -3635,6 +4082,7 @@ void StageRuntime::updateEnemies() {
             !stage01Type10 && !stage01BossNode && !stage02BossNode && !postDeathCounter &&
             !stage03Exact && !stage03BossNode && !stage03DeathNode &&
             !stage04BossNode && !stage04DeathNode &&
+            !lateStageEnemy && !lateStageBoss &&
             !stage02Exact &&
             !carrierFamily && !stage04SimpleExact && !stage04Type38 &&
             !stage04Type3DFamily && !stage04Type3F) {
@@ -3743,6 +4191,12 @@ void StageRuntime::updateEnemies() {
         else if (stage04DeathNode) {
             updateStage03DeathNode(enemy);
         }
+        else if (lateStageBoss) {
+            updateLateStageBoss(enemy);
+        }
+        else if (lateStageEnemy) {
+            updateLateStageEnemy(enemy, activeAge);
+        }
         else if (isStage01ObservedType(enemy.spawnType)) {
             updateStage01Enemy(enemy, activeAge);
         }
@@ -3762,6 +4216,7 @@ void StageRuntime::updateEnemies() {
                                      postDeathCounter || stage02Exact ||
                                      stage03Exact || stage03BossNode || stage03DeathNode ||
                                      stage04BossNode || stage04DeathNode ||
+                                     lateStageEnemy || lateStageBoss ||
                                      stage04OwnsHelperTimer;
         if (stage04PreMovementFire) {
             // These helpers emit from the pre-movement point.
@@ -3770,6 +4225,7 @@ void StageRuntime::updateEnemies() {
 
         if (!stage01BossNode && !stage02BossNode && !stage03BossNode &&
             !stage03DeathNode && !stage04BossNode && !stage04DeathNode &&
+            !lateStageBoss &&
             !postDeathCounter && !stage02Exact) {
             enemy.x += enemy.vx;
             enemy.y += enemy.vy;
@@ -3783,7 +4239,7 @@ void StageRuntime::updateEnemies() {
             // their helper timers; no generic fallback belongs to these nodes.
         }
         else if (stage03Exact || stage03BossNode || stage03DeathNode ||
-                 stage04BossNode || stage04DeathNode) {
+                 stage04BossNode || stage04DeathNode || lateStageBoss) {
             // Stage 3 exact helpers emit internally from the original
             // pre/post-movement source coordinates. Stage 4 boss helpers follow
             // the same queue-owned update contract.
@@ -3815,8 +4271,38 @@ void StageRuntime::updateEnemies() {
         else if (isStage04FocusedType(enemy.spawnType) && !stage04PreMovementFire) {
             emitStage04Projectiles(enemy, stage04OwnsHelperTimer ? enemy.helperTimer : activeAge);
         }
+        else if (lateStageEnemy) {
+            emitLateStageProjectiles(enemy, enemy.helperTimer);
+        }
         else {
             emitGenericProjectiles(enemy, activeAge);
+        }
+        if (stage01Type10 && enemy.helperState == 1 && enemy.hp < 1) {
+            // FUN_140080fb0 performs its lethal transition after movement and
+            // firing, so the final combat tick remains visible and can shoot.
+            spawnEnemyDeathRewardBurst(enemy, 0x708);
+            spawnPlayerSideObject(0x18, enemy.x, enemy.y, 0.0, 0, 0, 0.0f);
+            const int group = std::clamp(config_.setupGroup, 0, 2);
+            const int frameIndex = 1 + group * 10;
+            const int portraitHandle = frameIndex < static_cast<int>(playerFrameFrames_.size())
+                                           ? playerFrameFrames_[static_cast<std::size_t>(frameIndex)]
+                                           : -1;
+            spawnStageEffect(0x16, portraitHandle, 0, 0x6f,
+                             0.0f, 0.0f, 0, 0.0, 1.0, 1.0, 0x78,
+                             0xff, 0xff, 0xff, 0xff);
+            enemy.helperState = 2;
+            enemy.helperTimer = 0;
+            enemy.targetable = false;
+            spawnStage02DeathExplosionChain(enemy); // state-2 timer 0
+        }
+        if (stage01Type10 && enemy.helperState == 1 && enemy.targetable) {
+            const float horizontalOrigin = projectileHorizontalOrigin(player_.x);
+            if (enemy.x < horizontalOrigin - 300.0f ||
+                enemy.x > horizontalOrigin + 900.0f ||
+                enemy.y < -300.0f || enemy.y > 1020.0f) {
+                enemy.active = false;
+                stage01GateFlag_ = false;
+            }
         }
         if (stage04Type3F && enemy.helperState == 1 && enemy.hp < 1) {
             // FUN_140095130 performs this after the active movement/projectile
@@ -3933,6 +4419,9 @@ void StageRuntime::updateEnemies() {
                 enemy.active = false;
                 stage04GateFlag_ = false;
             }
+        }
+        if (!enemy.active && selectedStage_ >= 5 && isLateStageGateOwner(enemy)) {
+            clearLateStageGate(selectedStage_);
         }
         if (ownsHelperTimer) {
             const bool stage03QueueSnapshotOwned = stage03BossRoot ||
@@ -6244,6 +6733,7 @@ void StageRuntime::updateStage03Boss(StageEnemy& enemy) {
     enemy.drawHp = enemy.hp;
     stage03BossCountdownDraw_ = stage03BossCountdown_;
     if (stage03BossPhaseMode_ == 1) {
+        updateBossCountdownAudio(enemy.hp, stage03BossCountdown_);
         --stage03BossCountdown_;
     }
 }
@@ -7313,22 +7803,17 @@ void StageRuntime::updateStage01Type0F(StageEnemy& enemy) {
 }
 
 void StageRuntime::updateStage01Setpiece(StageEnemy& enemy, int activeAge) {
-    // Remaining broad FUN_140080fb0 controller path. Types 0x0e and 0x0f use
-    // their dedicated exact helpers before this dispatcher is reached.
-    if (enemy.spawnType == 0x10 && enemy.hp < 1 && enemy.helperState < 2) {
-        spawnEnemyDeathRewardBurst(enemy, 0x708);
-        spawnPlayerSideObject(0x18, enemy.x, enemy.y, 0.0, 0, 0, 0.0f);
-        enemy.helperState = 2;
-        enemy.helperTimer = 0;
-        enemy.targetable = false;
-    }
-    if (enemy.spawnType == 0x10 && enemy.helperState == 2) {
+    (void)activeAge;
+    // FUN_140080fb0 owns Stage 1's 0x10 gate controller. Its entry lasts 120
+    // ticks; the combat state persists until death or the original bounds tail.
+    enemy.drawBodyThisFrame = true;
+    enemy.drawHp = enemy.hp;
+
+    if (enemy.helperState == 2) {
         const int timer = enemy.helperTimer;
         enemy.vx = 0.0f;
         enemy.vy = 0.0f;
         enemy.speed = 0.0f;
-        enemy.drawBodyThisFrame = true;
-        enemy.drawHp = enemy.hp;
         if (timer <= 60) {
             spawnStage02DeathExplosionChain(enemy);
         }
@@ -7340,55 +7825,72 @@ void StageRuntime::updateStage01Setpiece(StageEnemy& enemy, int activeAge) {
         }
         return;
     }
+
     if (enemy.helperState == 0) {
-        const float t = clampFloat(static_cast<float>(activeAge) / 20.0f, 0.0f, 1.0f);
-        enemy.y = enemy.originY - (1.0f - t) * 50.0f;
+        const int timer = enemy.helperTimer;
+        if (timer == 0) {
+            spawnStage01Child(enemy, 0, 160.0f, 40.0f, 7000,
+                              "S01 0x10 child 0x11 offset (+160,+40) from FUN_140080fb0");
+            spawnStage01Child(enemy, 1, -160.0f, 40.0f, 7000,
+                              "S01 0x10 child 0x11 offset (-160,+40) from FUN_140080fb0");
+            enemy.liveChildCount = 2;
+            if (selectedStage_ == 1) {
+                spawnStage01Child(enemy, 2, 270.0f, -20.0f, 7000,
+                                  "S01 0x10 child 0x11 offset (+270,-20) from FUN_140080fb0");
+                spawnStage01Child(enemy, 3, -270.0f, -20.0f, 7000,
+                                  "S01 0x10 child 0x11 offset (-270,-20) from FUN_140080fb0");
+                enemy.liveChildCount = 4;
+            }
+        }
+
         enemy.vx = 0.0f;
         enemy.vy = 0.0f;
-        if (activeAge >= 0x14) {
-            enemy.helperState = 1;
-            enemy.age = 0;
-            enemy.helperTimer = 0;
-            enemy.sourceAngle16 = radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y));
-            enemy.sourceSpeed = 0.7;
+        if (timer < 90) {
+            constexpr double kOriginalPi = 3.14159265358979323846;
+            const int entryOffset = 1000 - static_cast<int>(
+                std::sin(static_cast<double>(timer) * kOriginalPi / 180.0) * 1000.0);
+            enemy.y = enemy.originY + static_cast<float>(entryOffset);
         }
-        return;
+        else {
+            enemy.y = enemy.originY;
+        }
+        enemy.originY += 1.0f;
+
+        if (timer == 120) {
+            enemy.helperState = 1;
+            enemy.helperTimer = 0;
+            enemy.sourceSpeed = 0.7;
+            enemy.speed = 0.7f;
+            enemy.targetable = true;
+        }
+        else {
+            return;
+        }
     }
 
-    const int stateAge = enemy.age;
-    if (enemy.spawnType == 0x10) {
-        if (enemy.helperState == 1 && stateAge == 1) {
-            spawnStage01Child(enemy, 0, -42.0f, 16.0f, 920, "S01 0x10 child 0x11 left anchor from FUN_140080fb0");
-            spawnStage01Child(enemy, 1, 42.0f, 16.0f, 920, "S01 0x10 child 0x11 right anchor from FUN_140080fb0");
-        }
-        if (enemy.helperState == 1 && stateAge < 900) {
-            if (stateAge % 0x14 == 0) {
+    if (enemy.helperState == 1) {
+        const int timer = enemy.helperTimer;
+        if (timer < 900) {
+            if (timer % 20 == 0) {
                 enemy.originX = static_cast<float>(stageRandCoord(frame_, 0x141, 200));
                 enemy.originY = static_cast<float>(stageRandCoord(frame_ + 0x457, 0x29, 0xb4));
             }
-            enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, radiansToFixedAngle(std::atan2(enemy.originY - enemy.y, enemy.originX - enemy.x)), 0x200);
+            const auto target = radiansToFixedAngleTrunc(std::atan2(
+                static_cast<double>(enemy.originY - enemy.y),
+                static_cast<double>(enemy.originX - enemy.x)));
+            enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, target, 0x200);
         }
         else {
+            enemy.sourceSpeed = static_cast<double>(timer - 900) * 0.1;
             enemy.sourceAngle16 = 0xc000;
-            enemy.sourceSpeed = std::max(enemy.sourceSpeed, (stateAge - 900) / 60.0);
         }
-        if (enemy.helperState == 1 && stateAge == 900) {
-            spawnRewardItem(6, enemy.x, enemy.y, radiansToFixedAngle(-kPi * 0.5f), 2.0f, 18);
-        }
-        enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
-        enemy.vx = std::cos(enemy.angle) * static_cast<float>(enemy.sourceSpeed);
-        enemy.vy = std::sin(enemy.angle) * static_cast<float>(enemy.sourceSpeed);
+        const double radians = fixedAngleToRadiansDouble(enemy.sourceAngle16);
+        enemy.angle = static_cast<float>(radians);
+        enemy.speed = static_cast<float>(enemy.sourceSpeed);
+        enemy.vx = static_cast<float>(std::cos(radians) * enemy.sourceSpeed);
+        enemy.vy = static_cast<float>(std::sin(radians) * enemy.sourceSpeed);
         return;
     }
-
-    enemy.sourceAngle16 = approachAngle16(enemy.sourceAngle16, radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y)), 0x80);
-    if (stateAge > 300) {
-        enemy.sourceSpeed = std::max(1.2, enemy.sourceSpeed - 1.0 / 60.0);
-    }
-    enemy.angle = fixedAngleToRadians(enemy.sourceAngle16);
-    const float wobble = std::sin((stateAge + enemy.spawnType * 23) * 0.025f) * 0.9f;
-    enemy.vx = std::cos(enemy.angle) * static_cast<float>(enemy.sourceSpeed) * 0.15f + wobble;
-    enemy.vy = std::sin(enemy.angle) * static_cast<float>(enemy.sourceSpeed) * 0.12f;
 }
 
 void StageRuntime::updateStage01Marker(StageEnemy& enemy, int activeAge) {
@@ -7472,28 +7974,43 @@ void StageRuntime::updateStage01Child(StageEnemy& enemy, int activeAge) {
     }
 
     if (enemy.helperState == 0) {
-        const float t = clampFloat(static_cast<float>(activeAge) / 120.0f, 0.0f, 1.0f);
-        const float wobble = std::sin((activeAge + enemy.childIndex * 37) * 0.09f) * 10.0f * (1.0f - t);
-        enemy.x = parent->x + enemy.originX * t + wobble;
-        enemy.y = parent->y + enemy.originY * t;
+        // The dispatcher increments age before this reconstruction runs, so
+        // age 1 corresponds to the original helper's attach timer 0.
+        const int attachTimer = std::max(0, activeAge - 1);
+        constexpr double kOriginalPi = 3.14159265358979323846;
+        if (attachTimer == 0) {
+            enemy.x = parent->x;
+            enemy.y = parent->y;
+        }
+        else {
+            // FUN_140082090 moves 1/20 of the remaining distance toward the
+            // parent plus the offset calculated on the previous tick.
+            const double previousScale = std::sin(
+                static_cast<double>(attachTimer - 1) * kOriginalPi / 240.0);
+            const float targetX = parent->x + static_cast<float>(
+                static_cast<int>(previousScale * static_cast<double>(enemy.originX)));
+            const float targetY = parent->y + static_cast<float>(
+                static_cast<int>(previousScale * static_cast<double>(enemy.originY)));
+            enemy.x += (targetX - enemy.x) / 20.0f;
+            enemy.y += (targetY - enemy.y) / 20.0f;
+        }
         enemy.vx = 0.0f;
         enemy.vy = 0.0f;
-        if (activeAge >= 0x78) {
+        if (attachTimer == 0x78) {
             enemy.helperState = 1;
             enemy.age = 0;
             enemy.sourceSpeed = 1.0;
-            enemy.sourceAngle16 = radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y));
             enemy.secondaryAngle16 = enemy.sourceAngle16;
+            enemy.targetable = true;
         }
         return;
     }
 
     const int stateAge = enemy.age;
-    const float parentPull = enemy.parentSpawnType == 0x10 ? 0.018f : 0.035f;
     const float targetX = parent->x + enemy.originX;
     const float targetY = parent->y + enemy.originY;
-    enemy.vx = (targetX - enemy.x) * parentPull;
-    enemy.vy = (targetY - enemy.y) * parentPull;
+    enemy.vx = (targetX - enemy.x) / 20.0f;
+    enemy.vy = (targetY - enemy.y) / 20.0f;
     const std::uint16_t targetAngle = stateAge < 300
                                           ? radiansToFixedAngle(aimAtPlayer(enemy.x, enemy.y))
                                           : parent->sourceAngle16;
@@ -7504,6 +8021,7 @@ void StageRuntime::updateStage01Child(StageEnemy& enemy, int activeAge) {
 void StageRuntime::updateStage01Boss(StageEnemy& enemy) {
     enemy.vx = 0.0f;
     enemy.vy = 0.0f;
+    enemy.drawHp = enemy.hp;
     const auto steeringTarget = radiansToFixedAngleTrunc(
         std::atan2(static_cast<double>(stage01BossTargetY_ - enemy.y),
                    static_cast<double>(stage01BossTargetX_ - enemy.x)));
@@ -7680,7 +8198,9 @@ void StageRuntime::updateStage01Boss(StageEnemy& enemy) {
 
     // FUN_140002260 runs at the tail of the boss helper. A newly opened
     // 1800-frame bar therefore leaves its transition frame at 1799.
+    stage01BossCountdownDraw_ = stage01BossCountdown_;
     if (stage01BossPhaseMode_ == 1) {
+        updateBossCountdownAudio(enemy.hp, stage01BossCountdown_);
         --stage01BossCountdown_;
     }
 }
@@ -8227,6 +8747,7 @@ void StageRuntime::updateStage02Boss(StageEnemy& enemy) {
     // shared counter. Preserve that visible value across the later draw pass.
     stage02BossCountdownDraw_ = stage02BossCountdown_;
     if (stage02BossPhaseMode_ == 1) {
+        updateBossCountdownAudio(enemy.hp, stage02BossCountdown_);
         --stage02BossCountdown_;
     }
 }
@@ -8996,12 +9517,13 @@ void StageRuntime::emitStage01Projectiles(StageEnemy& enemy, int activeAge) {
         // so the controller remains a visible pattern source.
         if (enemy.helperState != 1) return;
         const int difficulty = std::clamp(config_.difficulty, 0, 4);
-        if (enemy.age < 0x1e || enemy.age >= 900) return;
-        const int local = (enemy.age - 0x1e) % (difficulty == 0 ? 100 : difficulty == 1 ? 0x50 : difficulty == 2 ? 0x46 : difficulty == 3 ? 0x3c : 0x32);
+        const int timer = enemy.helperTimer;
+        if (timer < 0x1e || timer >= 900) return;
+        const int local = (timer - 0x1e) % (difficulty == 0 ? 100 : difficulty == 1 ? 0x50 : difficulty == 2 ? 0x46 : difficulty == 3 ? 0x3c : 0x32);
         if (local > 0x13 || local % 3 != 0) return;
         int count = difficulty == 0 ? 5 : difficulty == 1 ? 7 : difficulty < 4 ? 9 : 0xb;
-        if (enemy.age > 0xf0) count += 2;
-        const float speed = stage01DecodedSpeedForOffsets(difficulty, selectedStage_, {0x018, 0x070, 0x0b0, 0x0f8, 0x138}, {0x088, 0x0d0, 0x0f8, 0x138, 0x138}) + enemy.age * 0.0006f;
+        if (timer > 0xf0) count += 2;
+        const float speed = stage01DecodedSpeedForOffsets(difficulty, selectedStage_, {0x018, 0x070, 0x0b0, 0x0f8, 0x138}, {0x088, 0x0d0, 0x0f8, 0x138, 0x138}) + timer * 0.0006f;
         spawnProjectileSpread(0, 0, enemy.x, enemy.y + 20.0f, aimAtPlayer(enemy.x, enemy.y), speed, 5, count, kPi * 0.75f);
         if (difficulty > 2) {
             spawnProjectileSpread(0, 0, enemy.x, enemy.y + 20.0f, aimAtPlayer(enemy.x, enemy.y), speed - 0.35f, 5, std::max(2, count - 1), kPi * 0.55f);
@@ -9362,27 +9884,7 @@ void StageRuntime::updateStage04Boss(StageEnemy& enemy) {
     enemy.drawHp = enemy.hp;
     stage04BossCountdownDraw_ = stage04BossCountdown_;
     if (stage04BossPhaseMode_ == 1) {
-        if (enemy.hp < 8001 && frame_ % 16 == 0) {
-            playPlayerSound(bossWeakenSoundHandle_, 0x10);
-        }
-        switch (stage04BossCountdown_) {
-        case 600:
-        case 540:
-        case 480:
-        case 420:
-        case 360:
-            playPlayerSound(timerSoundHandle_, 0x10);
-            break;
-        case 300:
-        case 240:
-        case 180:
-        case 120:
-        case 60:
-            playPlayerSound(timerSoundHandle_, 0x19);
-            break;
-        default:
-            break;
-        }
+        updateBossCountdownAudio(enemy.hp, stage04BossCountdown_);
         --stage04BossCountdown_;
     }
 }
@@ -12684,6 +13186,18 @@ void StageRuntime::playPlayerSound(int handle, int volumeMultiplier) const {
     PlaySoundMem(handle, DX_PLAYTYPE_BACK, TRUE);
 }
 
+void StageRuntime::updateBossCountdownAudio(int hitPoints, int countdown) const {
+    if (hitPoints < 8001 && frame_ % 16 == 0) {
+        playPlayerSound(bossWeakenSoundHandle_, 0x10);
+    }
+    if (countdown >= 360 && countdown <= 600 && countdown % 60 == 0) {
+        playPlayerSound(timerSoundHandle_, 0x10);
+    }
+    else if (countdown >= 1 && countdown <= 300 && countdown % 60 == 0) {
+        playPlayerSound(timerSoundHandle_, 0x19);
+    }
+}
+
 void StageRuntime::updatePlayerSideObjects() {
     for (std::size_t objectIndex = 0; objectIndex < playerSideObjects_.size(); ++objectIndex) {
         auto& object = playerSideObjects_[objectIndex];
@@ -13376,6 +13890,265 @@ void StageRuntime::drawBackground() const {
         DrawGraph(notes::gameplay_layout::kStageBackOrigin.x, y - 720, handle, TRUE);
         DrawGraph(notes::gameplay_layout::kStageBackOrigin.x, y, handle, TRUE);
     };
+    auto drawTall = [](int handle, int progressFrame, int duration, int alpha = 0xff) {
+        if (handle == -1) {
+            return;
+        }
+        int width = 0;
+        int height = 0;
+        if (GetGraphSize(handle, &width, &height) != 0 || height <= 0) {
+            return;
+        }
+        (void)width;
+        const int scrollRange = std::max(0, height - notes::kScreenHeight);
+        const double progress = duration > 0
+                                    ? std::clamp(static_cast<double>(progressFrame) /
+                                                     static_cast<double>(duration),
+                                                 0.0, 1.0)
+                                    : 0.0;
+        const int y = -static_cast<int>(std::lround(progress * scrollRange));
+        if (alpha != 0xff) {
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(alpha, 0, 0xff));
+        }
+        DrawGraph(notes::gameplay_layout::kStageBackOrigin.x, y, handle, TRUE);
+        if (alpha != 0xff) {
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        }
+    };
+    const bool advanceLateScroll = lateBackgroundScrollFrame_ != frame_;
+    const auto frameHandle = [](const std::vector<int>& frames, int index) {
+        return index >= 0 && index < static_cast<int>(frames.size())
+                   ? frames[static_cast<std::size_t>(index)]
+                   : -1;
+    };
+    const auto drawScrolledTall = [this, advanceLateScroll](
+                                      int slot, int handle, float x,
+                                      int red, int green, int blue, int alpha,
+                                      double speed) {
+        if (slot < 0 || slot >= static_cast<int>(lateBackgroundScroll_.size())) {
+            return;
+        }
+        if (advanceLateScroll) {
+            lateBackgroundScroll_[static_cast<std::size_t>(slot)] += speed;
+        }
+        if (handle == -1 || alpha <= 0) {
+            return;
+        }
+        int width = 0;
+        int height = 0;
+        if (GetGraphSize(handle, &width, &height) != 0 || width <= 0 || height <= 0) {
+            return;
+        }
+        double scroll = std::fmod(lateBackgroundScroll_[static_cast<std::size_t>(slot)],
+                                  static_cast<double>(height));
+        if (scroll < 0.0) scroll += static_cast<double>(height);
+        SetDrawBright(std::clamp(red, 0, 255), std::clamp(green, 0, 255),
+                      std::clamp(blue, 0, 255));
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(alpha, 0, 255));
+        for (const int offset : {0, height, -height}) {
+            DrawRotaGraph3F(x, static_cast<float>(scroll + offset),
+                            static_cast<float>(width) * 0.5f,
+                            static_cast<float>(height) * 0.5f,
+                            1.005, 1.0, 0.0, handle, TRUE);
+        }
+        SetDrawBright(255, 255, 255);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    };
+
+    bool useSharedStage1Composition = selectedStage_ == 1 || selectedStage_ == 4 ||
+                                      selectedStage_ == 5;
+    if (selectedStage_ == 2) {
+        if (frame_ > 0x2ed) {
+            drawTall(stage2BackHandle_, frame_ - 0x2ee, 9700 - 0x2ee);
+        }
+        else {
+            useSharedStage1Composition = true;
+        }
+    }
+    else if (selectedStage_ == 3) {
+        if (frame_ >= 0x5dc) {
+            drawTall(stage3BackHandle_, frame_ - 0x5dc, 9500 - 0x5dc);
+        }
+        else {
+            useSharedStage1Composition = true;
+        }
+    }
+    else if (selectedStage_ == 6) {
+        // Original case 6 exposes Stage6Back after frame 0x419 and advances its
+        // texture coordinate from frame-0x44c through the boss lead-out.
+        if (frame_ > 0x419) {
+            drawTall(stage6BackHandle_, std::max(0, frame_ - 0x44c), 12500 - 0x44c);
+        }
+        else {
+            useSharedStage1Composition = true;
+        }
+    }
+    else if (selectedStage_ == 7) {
+        constexpr std::array<std::array<int, 3>, 7> kPalette{{
+            {{255, 120, 120}}, {{255, 200, 110}}, {{255, 255, 120}},
+            {{120, 255, 120}}, {{120, 255, 255}}, {{120, 120, 255}},
+            {{220, 120, 255}},
+        }};
+        const int animationFrame = std::max(frame_, 0);
+        const int paletteIndex = (animationFrame / 300) % static_cast<int>(kPalette.size());
+        const int paletteNext = (paletteIndex + 1) % static_cast<int>(kPalette.size());
+        const int paletteLocal = animationFrame % 300;
+        std::array<int, 3> color{};
+        for (std::size_t channel = 0; channel < color.size(); ++channel) {
+            color[channel] = (kPalette[static_cast<std::size_t>(paletteIndex)][channel] *
+                                  (300 - paletteLocal) +
+                              kPalette[static_cast<std::size_t>(paletteNext)][channel] *
+                                  paletteLocal) /
+                             300;
+        }
+        drawScrolledTall(0, frameHandle(stageBack1cFrames_, 0), 360.0f,
+                         color[0], color[1], color[2], 255, 8.0);
+        drawScrolledTall(1, frameHandle(stageBack1cFrames_, 1), 360.0f,
+                         color[0] / 3, color[1] / 3, color[2] / 3, 255, 4.8);
+        drawScrolledTall(2, frameHandle(stageBack1Frames_, 3), 360.0f,
+                         128, 128, 128, 192, 12.8);
+        if (frame_ < 12500 - 480) {
+            const int fade = frame_ < 0
+                                 ? 0
+                                 : (frame_ < 300
+                                        ? static_cast<int>(255.0 * std::sin(
+                                              static_cast<double>(frame_) * kPi / 600.0))
+                                        : 255);
+            const float x = 360.0f + 80.0f * static_cast<float>(
+                std::sin(static_cast<double>(frame_) * kTau / 3300.0));
+            drawScrolledTall(2, frameHandle(stageBack1cFrames_, 2), x,
+                             fade, fade, fade, 255, 16.0);
+        }
+        if (frame_ >= 12500 - 600 && frame_ < 12500 - 300) {
+            const int local = frame_ - (12500 - 600);
+            const double envelope = local < 120
+                                        ? std::sin(static_cast<double>(local) * kPi / 240.0)
+                                        : std::sin(static_cast<double>(300 - local) * kPi / 360.0);
+            drawScrolledTall(3, frameHandle(stageBack1Frames_, 2), 360.0f,
+                             128, 128, 128,
+                             static_cast<int>(255.0 * std::max(0.0, envelope)), 32.0);
+        }
+    }
+    else if (selectedStage_ == 8) {
+        if (frame_ >= 400 && frame_ <= 0x1af4) {
+            drawTall(stage8Back1Handle_, frame_ - 400, 0x1af4 - 400);
+        }
+        else if (frame_ >= 0x2a30) {
+            drawTall(stage8Back2Handle_, frame_ - 0x2a30, 21420 - 0x2a30);
+        }
+        else {
+            useSharedStage1Composition = true;
+        }
+    }
+    else if (selectedStage_ == 9) {
+        constexpr int kEndFrame = 17900;
+        constexpr std::array<int, 3> kBase{{192, 64, 64}};
+        constexpr std::array<int, 6> kColorStart{{1350, 4100, 6200, 9000, 11860, 13900}};
+        constexpr std::array<std::array<int, 3>, 6> kTargets{{
+            {{64, 192, 192}}, {{192, 128, 64}}, {{64, 192, 64}},
+            {{64, 64, 192}}, {{64, 64, 64}}, {{128, 64, 192}},
+        }};
+        std::array<int, 3> color = kBase;
+        int colorIndex = -1;
+        for (std::size_t i = 0; i < kColorStart.size(); ++i) {
+            if (frame_ >= kColorStart[i]) colorIndex = static_cast<int>(i);
+        }
+        if (colorIndex >= 0 && frame_ < 16099) {
+            const auto& target = kTargets[static_cast<std::size_t>(colorIndex)];
+            const int defeatFrame = stage09BossDefeatFrames_[static_cast<std::size_t>(colorIndex)];
+            const bool returning = defeatFrame >= 0 && frame_ >= defeatFrame;
+            const int local = returning ? frame_ - defeatFrame
+                                        : frame_ - kColorStart[static_cast<std::size_t>(colorIndex)];
+            const int amount = std::clamp(local, 0, 180);
+            for (std::size_t channel = 0; channel < color.size(); ++channel) {
+                const int from = returning ? target[channel] : kBase[channel];
+                const int to = returning ? kBase[channel] : target[channel];
+                color[channel] = (from * (180 - amount) + to * amount) / 180;
+            }
+        }
+
+        if (frame_ < kEndFrame - 480) {
+            int alpha = 0;
+            if (frame_ >= 300 && frame_ < 1500) {
+                alpha = static_cast<int>(255.0 * std::sin(
+                    static_cast<double>(frame_ - 300) * kPi / 2400.0));
+            }
+            else if (frame_ >= 1500 && frame_ < kEndFrame - 600) {
+                alpha = 255;
+            }
+            else if (frame_ >= kEndFrame - 600) {
+                alpha = static_cast<int>(255.0 * std::sin(
+                    static_cast<double>(frame_ - (kEndFrame - 720)) * kPi / 240.0));
+            }
+            drawScrolledTall(0, frameHandle(stageBack1dFrames_, 0), 360.0f,
+                             color[0], color[1], color[2], alpha, 3.0);
+            drawScrolledTall(1, frameHandle(stageBack1dFrames_, 1), 360.0f,
+                             color[0], color[1], color[2], alpha, 7.0);
+            drawScrolledTall(2, frameHandle(stageBack1dFrames_, 2), 360.0f,
+                             color[0], color[1], color[2], alpha, 10.0);
+        }
+        else {
+            const auto boss = std::find_if(enemies_.begin(), enemies_.end(),
+                                           [](const StageEnemy& enemy) {
+                                               return enemy.active && enemy.spawnType == 0x140;
+                                           });
+            if (boss != enemies_.end() && boss->helperState >= 11) {
+                double speed = 16.0;
+                if ((boss->helperState == 11 || boss->helperState == 111) &&
+                    boss->helperTimer < 300) {
+                    speed = 16.0 * std::sin(
+                                       static_cast<double>(std::max(0, boss->helperTimer)) *
+                                       kPi / 600.0);
+                }
+                drawScrolledTall(0, frameHandle(stageBack1dFrames_, 0), 360.0f,
+                                 kBase[0], kBase[1], kBase[2], 255, 0.3 * speed);
+                drawScrolledTall(1, frameHandle(stageBack1cFrames_, 7), 360.0f,
+                                 static_cast<int>(kBase[0] * 0.3),
+                                 static_cast<int>(kBase[1] * 0.3),
+                                 static_cast<int>(kBase[2] * 0.3), 255, 0.5 * speed);
+                drawScrolledTall(2, frameHandle(stageBack1cFrames_, 8), 360.0f,
+                                 static_cast<int>(kBase[0] * 0.55),
+                                 static_cast<int>(kBase[1] * 0.55),
+                                 static_cast<int>(kBase[2] * 0.55), 255, 0.8 * speed);
+                drawScrolledTall(3, frameHandle(stageBack1cFrames_, 9), 360.0f,
+                                 static_cast<int>(kBase[0] * 0.8),
+                                 static_cast<int>(kBase[1] * 0.8),
+                                 static_cast<int>(kBase[2] * 0.8), 255, 1.2 * speed);
+            }
+        }
+
+        const int particle = frameHandle(effectLargeFrames_, 5);
+        if (particle != -1) {
+            SetDrawBright(color[0], color[1], color[2]);
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 48);
+            for (int i = 0; i < 7; ++i) {
+                const float edge = static_cast<float>((std::max(frame_, 0) * 2) % 150 + i * 150);
+                const float top = static_cast<float>((std::max(frame_, 0) * 15) % 200 + i * 200);
+                DrawRotaGraph3F(edge, 360.0f, 300.0f, 300.0f,
+                                2.0, 1.0, 0.0, particle, TRUE);
+                DrawRotaGraph3F(720.0f - edge, 360.0f, 300.0f, 300.0f,
+                                2.0, 1.0, 0.0, particle, TRUE);
+                DrawRotaGraph3F(360.0f, top, 300.0f, 300.0f,
+                                2.0, 1.0, 0.0, particle, TRUE);
+            }
+            SetDrawBright(255, 255, 255);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        }
+    }
+    else if (selectedStage_ == 10) {
+        const double speed = frame_ < 0
+                                 ? 10.0
+                                 : (frame_ < 480
+                                        ? 10.0 - 8.0 * std::sin(
+                                              static_cast<double>(frame_) * kPi / 960.0)
+                                        : 2.0);
+        drawScrolledTall(0, frameHandle(stageBack1dFrames_, 3), 360.0f,
+                         255, 255, 255, 255, speed * 0.4);
+        drawScrolledTall(1, frameHandle(stageBack1dFrames_, 4), 360.0f,
+                         255, 255, 255, 255, speed);
+        drawScrolledTall(2, frameHandle(stageBack1dFrames_, 5), 360.0f,
+                         255, 255, 255, 255, 16.0);
+    }
 
     // Original primary resources load four 720x2560 StageBack1 variants plus
     // StageBack2. FUN_1400be7a0 layers them by stage segment: StageBack1 is the
@@ -13385,17 +14158,19 @@ void StageRuntime::drawBackground() const {
     // window instead of flattening everything to StageBack1.front().
     const int fastScroll = frame_ % 720;
     const int slowScroll = (frame_ / 2) % 720;
-    drawTiled(stageBack2Frames_, 0, fastScroll);
-    drawTiled(stageBack1Frames_, 0, slowScroll);
+    if (useSharedStage1Composition) {
+        drawTiled(stageBack2Frames_, 0, fastScroll);
+        drawTiled(stageBack1Frames_, 0, slowScroll);
+    }
 
-    if (!stageBack1bFrames_.empty() && frame_ >= 300) {
+    if (useSharedStage1Composition && !stageBack1bFrames_.empty() && frame_ >= 300) {
         const int alpha = std::min(255, (frame_ - 300) * 3);
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
         drawTiled(stageBack1bFrames_, 0, (slowScroll + 120) % 720);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     }
 
-    if (!stageBack1cFrames_.empty() && frame_ >= 840) {
+    if (useSharedStage1Composition && !stageBack1cFrames_.empty() && frame_ >= 840) {
         const int frameIndex = (frame_ / 6) % static_cast<int>(stageBack1cFrames_.size());
         const int alpha = std::min(220, 80 + std::max(0, frame_ - 840) / 3);
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
@@ -13403,12 +14178,14 @@ void StageRuntime::drawBackground() const {
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     }
 
-    if (!stageBack1dFrames_.empty() && frame_ >= 1560) {
+    if (useSharedStage1Composition && !stageBack1dFrames_.empty() && frame_ >= 1560) {
         const int alpha = std::min(210, (frame_ - 1560) * 2);
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
         drawTiled(stageBack1dFrames_, 0, (slowScroll + 360) % 720);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     }
+
+    lateBackgroundScrollFrame_ = frame_;
 
     if (!stageFrameFrames_.empty() && stageFrameFrames_.front() != -1) {
         const int frameIndex = (config_.routeMode == 2 && stageFrameFrames_.size() > 1) ? 1 : 0;
@@ -13660,6 +14437,9 @@ void StageRuntime::drawEnemies() const {
         if (drawStage04BossExact(enemy, x, y)) {
             continue;
         }
+        if (drawLateStageBoss(enemy, x, y)) {
+            continue;
+        }
         if (drawType0AExact(enemy, x, y)) {
             continue;
         }
@@ -13670,6 +14450,9 @@ void StageRuntime::drawEnemies() const {
             continue;
         }
         if (drawStage01SmallEnemyExact(enemy, x, y)) {
+            continue;
+        }
+        if (drawLateStageEnemy(enemy, x, y)) {
             continue;
         }
         const auto& frames = (enemy.spawnType >= 0x138 && enemy.spawnType <= 0x13b)
@@ -13993,6 +14776,286 @@ bool StageRuntime::drawStage02BossExact(const StageEnemy& enemy, float x, float 
     }
     drawNode(handleAt(bossFrames_, bossFrame), x, y, 0, scale, scale);
     return true;
+}
+
+void StageRuntime::drawSharedBossHud(const StageEnemy& boss, int phaseMode,
+                                     int maxHp, int countdown,
+                                     int breaksRemaining,
+                                     int bossNameIndex) const {
+    if (bossGaugeFrames_.empty()) {
+        return;
+    }
+
+    const int timer = boss.drawHelperTimer;
+    int playerAlpha = 255;
+    if (player_.y < 150.0f) {
+        playerAlpha = 55;
+    }
+    else if (player_.y < 200.0f) {
+        playerAlpha = static_cast<int>(player_.y - 150.0f) * 4 + 55;
+    }
+
+    int baseAlpha = playerAlpha;
+    int overlayAlpha = 0;
+    int fillRed = 64;
+    int fillGreen = 64;
+    int fillBlue = 64;
+    double fill = 0.0;
+    switch (phaseMode) {
+    case 0:
+    case 6:
+        baseAlpha = timer < 0
+                        ? 0
+                        : (timer < 8
+                               ? static_cast<int>(std::sin(
+                                     static_cast<double>(timer) * kPi / 16.0) *
+                                                   255.0)
+                               : 255);
+        fill = timer >= 50 ? 1.0 : std::max(0, timer) * 0.02;
+        if (phaseMode == 0) {
+            fillRed = 0;
+            fillGreen = 255;
+            fillBlue = 255;
+        }
+        break;
+    case 1:
+        fill = maxHp > 0
+                   ? std::clamp(static_cast<double>(boss.drawHp) /
+                                    static_cast<double>(maxHp),
+                                0.0, 1.0)
+                   : 0.0;
+        if (fill <= 0.5) {
+            fillRed = static_cast<int>(255.0 - fill * 511.0);
+            fillGreen = static_cast<int>(fill * 511.0);
+            fillBlue = 0;
+        }
+        else {
+            fillRed = 0;
+            fillGreen = 255;
+            fillBlue = static_cast<int>((fill - 0.5) * 511.0);
+        }
+        break;
+    case 2:
+        fill = timer < 40 ? 0.0 : (timer < 70 ? (timer - 40) / 30.0 : 1.0);
+        fillRed = 0;
+        fillGreen = 255;
+        fillBlue = 255;
+        break;
+    case 3:
+        fill = 0.0;
+        break;
+    case 4:
+        fill = timer < 40 ? 0.0 : (timer < 70 ? (timer - 40) / 30.0 : 1.0);
+        break;
+    case 5:
+        fill = maxHp > 0
+                   ? std::clamp(static_cast<double>(countdown) /
+                                    static_cast<double>(maxHp),
+                                0.0, 1.0)
+                   : 0.0;
+        break;
+    case -1:
+        overlayAlpha = timer >= 0 && timer < 64
+                           ? static_cast<int>(std::sin(
+                                 static_cast<double>(timer) * kPi / 64.0) *
+                                               255.0)
+                           : 0;
+        if (timer >= 32) {
+            baseAlpha = 0;
+        }
+        break;
+    default:
+        break;
+    }
+
+    const auto frameHandle = [this](int index) {
+        return index >= 0 && index < static_cast<int>(bossGaugeFrames_.size())
+                   ? bossGaugeFrames_[static_cast<std::size_t>(index)]
+                   : -1;
+    };
+    const auto drawTopLeft = [](int handle, float x, float y,
+                                double scaleX = 1.0, double scaleY = 1.0) {
+        if (handle != -1) {
+            DrawRotaGraph3F(x, y, 0.0f, 0.0f, scaleX, scaleY,
+                            0.0, handle, TRUE);
+        }
+    };
+
+    const int gauge0 = frameHandle(0);
+    const int gauge1 = frameHandle(1);
+    SetDrawBright(255, 255, 255);
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(baseAlpha, 0, 255));
+    drawTopLeft(gauge0, 378.0f, 30.0f);
+    drawTopLeft(gauge1, 402.0f, 30.0f);
+
+    SetDrawBlendMode(DX_BLENDMODE_ADD, std::clamp(overlayAlpha, 0, 255));
+    drawTopLeft(gauge0, 378.0f, 30.0f);
+    drawTopLeft(gauge1, 402.0f, 30.0f);
+
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(baseAlpha, 0, 255));
+    drawTopLeft(frameHandle(2), 390.0f, 30.0f, fill, 1.0);
+    SetDrawBright(std::clamp(fillRed, 0, 255),
+                  std::clamp(fillGreen, 0, 255),
+                  std::clamp(fillBlue, 0, 255));
+    SetDrawBlendMode(DX_BLENDMODE_ADD, std::clamp(baseAlpha, 0, 255));
+    drawTopLeft(frameHandle(3), 390.0f, 30.0f, fill, 1.0);
+
+    SetDrawBright(255, 255, 255);
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(baseAlpha, 0, 255));
+    if (bossNameIndex >= 0 &&
+        bossNameIndex < static_cast<int>(bossNameFrames_.size()) &&
+        bossNameFrames_[static_cast<std::size_t>(bossNameIndex)] != -1) {
+        drawTopLeft(bossNameFrames_[static_cast<std::size_t>(bossNameIndex)],
+                    372.0f, 0.0f);
+    }
+
+    const int breakHandle = frameHandle(7);
+    if (breakHandle != -1) {
+        for (int i = 0; i < std::max(0, breaksRemaining); ++i) {
+            int breakAlpha = baseAlpha;
+            double breakScale = 1.0;
+            if (phaseMode == 0) {
+                const int start = i * 6;
+                if (timer < start) {
+                    breakAlpha = 0;
+                }
+                else if (timer < start + 20) {
+                    const double entrance = std::sin(
+                        static_cast<double>(timer - start) * kPi / 40.0);
+                    breakAlpha = static_cast<int>(entrance * 255.0);
+                    breakScale = 3.0 - entrance * 2.0;
+                }
+            }
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA,
+                             std::clamp(breakAlpha, 0, 255));
+            DrawRotaGraphF(400.0f + static_cast<float>(i * 20), 74.0f,
+                           breakScale, 0.0, breakHandle, TRUE);
+        }
+    }
+
+    if (phaseMode == 1 || phaseMode == 5) {
+        const int clampedCountdown = std::max(0, countdown);
+        const int display = std::min(clampedCountdown, 5999);
+        const int frames = display % 60;
+        const int seconds = display / 60;
+        const int tint = std::min(clampedCountdown, 255);
+        SetDrawBright(255, tint, tint);
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(baseAlpha, 0, 255));
+        const auto drawDigit = [this](int digit, float x, float y,
+                                      double scale) {
+            if (digit >= 0 && digit < static_cast<int>(numSmallFrames_.size())) {
+                const int handle = numSmallFrames_[static_cast<std::size_t>(digit)];
+                if (handle != -1) {
+                    DrawRotaGraphF(x, y, scale, 0.0, handle, TRUE);
+                }
+            }
+        };
+        drawDigit(seconds / 10, 854.0f, 16.0f, 1.0);
+        drawDigit(seconds % 10, 870.0f, 16.0f, 1.0);
+        drawDigit(frames / 10, 885.0f, 20.0f, 0.6);
+        drawDigit(frames % 10, 895.0f, 20.0f, 0.6);
+    }
+
+    SetDrawBright(255, 255, 255);
+    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+}
+
+void StageRuntime::drawStage01BossHud() const {
+    const auto boss = std::find_if(enemies_.begin(), enemies_.end(),
+                                   [](const StageEnemy& enemy) {
+                                       return enemy.spawnType == 0x138 &&
+                                              (enemy.active ||
+                                               enemy.drawBodyThisFrame);
+                                   });
+    if (boss == enemies_.end()) {
+        return;
+    }
+    drawSharedBossHud(*boss, stage01BossPhaseMode_, stage01BossMaxHp_,
+                      stage01BossCountdownDraw_, stage01BossBreaksRemaining_, 0);
+}
+
+void StageRuntime::drawLateStageBossHud() const {
+    if (selectedStage_ < 5 || selectedStage_ > 10) {
+        return;
+    }
+
+    const StageEnemy* boss = nullptr;
+    for (const StageEnemy& enemy : enemies_) {
+        // Internal apparatus nodes share the late-boss update route, but the
+        // original HUD always reads the root 0x13c..0x14c entity.
+        if (enemy.spawnType >= 0x13c && enemy.spawnType <= 0x14c &&
+            (enemy.active || enemy.drawBodyThisFrame)) {
+            boss = &enemy;
+        }
+    }
+    if (boss == nullptr ||
+        (boss->spawnType == 0x14c && boss->drawHelperState == 0)) {
+        return;
+    }
+
+    const bool sharedPhaseState = isLateStageFinalBossType(boss->spawnType) ||
+                                  boss->spawnType == 0x14c;
+    const int phaseMode = sharedPhaseState
+                              ? lateStageBossPhaseMode_
+                              : (boss->drawHelperState == 0
+                                     ? 0
+                                     : (boss->targetable ? 1 : -1));
+    const int maxHp = sharedPhaseState ? lateStageBossMaxHp_
+                                       : std::max(1, boss->maxHp);
+    const int breaks = sharedPhaseState ? lateStageBossBreaksRemaining_ : 1;
+    int bossNameIndex = 5;
+    switch (boss->spawnType) {
+    case 0x13c:
+        bossNameIndex = 4;
+        break;
+    case 0x13d:
+        bossNameIndex = 6;
+        break;
+    case 0x13e: {
+        const int state = boss->drawHelperState;
+        bossNameIndex = 9;
+        if ((state >= 0x15 && state <= 0x27) || state == 0x3b) {
+            bossNameIndex = 7;
+        }
+        if ((state >= 0x29 && state <= 0x3a) || state == 0x3c) {
+            bossNameIndex = 8;
+        }
+        break;
+    }
+    case 0x13f:
+        bossNameIndex = 10;
+        break;
+    case 0x140:
+        bossNameIndex = boss->drawHelperState > 10
+                            ? (config_.difficulty > 3 ? 18 : 17)
+                            : 10;
+        break;
+    case 0x141:
+    case 0x14c:
+        bossNameIndex = 19;
+        break;
+    case 0x143:
+        bossNameIndex = 5;
+        break;
+    case 0x144:
+        bossNameIndex = 7;
+        break;
+    case 0x145:
+        bossNameIndex = 8;
+        break;
+    case 0x146:
+    case 0x147:
+    case 0x148:
+    case 0x149:
+    case 0x14a:
+    case 0x14b:
+        bossNameIndex = 11 + boss->spawnType - 0x146;
+        break;
+    default:
+        break;
+    }
+    drawSharedBossHud(*boss, phaseMode, maxHp, lateStageBossCountdownDraw_,
+                      breaks, bossNameIndex);
 }
 
 void StageRuntime::drawStage02BossHud() const {
@@ -14672,10 +15735,13 @@ void StageRuntime::drawStage04BossHud() const {
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 }
 
-void StageRuntime::drawStage04Approach() const {
-    const int age = stage04ApproachAgeDraw_;
+void StageRuntime::drawStageApproach() const {
+    const bool earlyStageApproach = selectedStage_ >= 1 && selectedStage_ <= 4;
+    const bool lateStageApproach = selectedStage_ >= 5 && selectedStage_ <= 10;
+    const int age = earlyStageApproach ? earlyStageApproachAgeDraw_
+                                       : lateStageApproachAgeDraw_;
     const auto& approachFrames = localizedBossApproach1Frames();
-    if (selectedStage_ != 4 || age < 0 || age > 300 ||
+    if ((!earlyStageApproach && !lateStageApproach) || age < 0 || age > 300 ||
         bossApproach2Handle_ == -1 || approachFrames.empty() ||
         approachFrames.front() == -1) {
         return;
@@ -14715,7 +15781,7 @@ void StageRuntime::drawStage04Approach() const {
     const int stripHandle = approachFrames.front();
     const double gridAngleA = 5.862874571298915;
     const double gridAngleB = 4.904136578870390;
-    const int sourceFrame = age + 11400;
+    const int sourceFrame = frame_ > 0 ? frame_ - 1 : frame_;
     const int gridPhase = (sourceFrame % 210) * 2;
     const int gridAlpha = std::clamp(
         20 + static_cast<int>(20.0 * std::sin(
@@ -14756,8 +15822,8 @@ void StageRuntime::drawStage04Approach() const {
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 }
 
-void StageRuntime::drawStage04BannerPanels() const {
-    if (selectedStage_ != 4) {
+void StageRuntime::drawStageBannerPanels() const {
+    if (selectedStage_ < 1 || selectedStage_ > 10) {
         return;
     }
 
@@ -14765,7 +15831,10 @@ void StageRuntime::drawStage04BannerPanels() const {
     const int group = std::clamp(config_.setupGroup, 0, 2);
     SetDrawBright(0xff, 0xff, 0xff);
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0xff);
-    for (const auto& banner : kStage04Banners) {
+    for (const auto& banner : kStageBanners) {
+        if (banner.stage != selectedStage_) {
+            continue;
+        }
         if (sourceFrame < banner.startFrame || sourceFrame >= banner.endFrame) {
             continue;
         }
@@ -14782,7 +15851,9 @@ void StageRuntime::drawStage04BannerPanels() const {
         }
 
         const int panelIndex = banner.mode == 0 ? 0 : 1;
-        const float centerY = banner.mode == 0 ? 660.0f : 60.0f;
+        const float centerY = banner.mode == 0
+                                  ? 660.0f
+                                  : (banner.mode == 2 ? 160.0f : 60.0f);
         if (panelIndex < static_cast<int>(textBoxFrames_.size())) {
             const int handle = textBoxFrames_[static_cast<std::size_t>(panelIndex)];
             if (handle != -1) {
@@ -14803,8 +15874,8 @@ void StageRuntime::drawStage04BannerPanels() const {
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 }
 
-void StageRuntime::drawStage04BannerText() const {
-    if (selectedStage_ != 4 || config_.textDatabase == nullptr) {
+void StageRuntime::drawStageBannerText() const {
+    if (config_.textDatabase == nullptr) {
         return;
     }
 
@@ -14819,7 +15890,10 @@ void StageRuntime::drawStage04BannerText() const {
 
     const int group = std::clamp(config_.setupGroup, 0, 2);
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0xff);
-    for (const auto& banner : kStage04Banners) {
+    for (const auto& banner : kStageBanners) {
+        if (banner.stage != selectedStage_) {
+            continue;
+        }
         const int textStart = banner.startFrame + 16;
         const int textEnd = banner.endFrame - 16;
         if (sourceFrame < textStart || sourceFrame >= textEnd) {
@@ -14827,7 +15901,8 @@ void StageRuntime::drawStage04BannerText() const {
         }
 
         const TextRecord* record = config_.textDatabase->find(
-            language, banner.textIdBase + group);
+            language, stageBannerTextId(banner, group,
+                                        config_.specialStageFlag != 0));
         if (record == nullptr) {
             continue;
         }
@@ -14838,7 +15913,9 @@ void StageRuntime::drawStage04BannerText() const {
         int remaining = std::min(line1Count + line2Count,
                                  textAge / revealRate + 1);
         int characterOrdinal = 0;
-        const int baseY = banner.mode == 0 ? 635 : 35;
+        const int baseY = banner.mode == 0
+                              ? 635
+                              : (banner.mode == 2 ? 135 : 35);
         const unsigned int color = banner.mode == 0
                                        ? GetColor(0x40, 0x40, 0x80)
                                        : GetColor(0xff, 0xff, 0xff);
