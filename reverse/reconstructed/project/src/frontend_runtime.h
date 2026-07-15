@@ -48,6 +48,8 @@ public:
         int counterMode = 0;
         int specialMode = 0;
         int dataWindowEnabled = 1;
+        int language = 0;
+        int bgmVolume = 10;
         int soundEffectVolume = 10;
         int itemVisibility = 0;
         int likeStyle = 0;
@@ -168,6 +170,7 @@ private:
     void playSound(ResourceManager& resources, const char* id) const;
     void ensureTitleBgm(ResourceManager& resources);
     void stopTitleBgm(ResourceManager& resources);
+    void stopAllBgm(ResourceManager& resources);
     void startResultBgm(ResourceManager& resources);
     void stopResultBgm(ResourceManager& resources);
     void beginConfirmTransition(MainState target);

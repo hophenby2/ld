@@ -79,7 +79,7 @@ const std::vector<StageResourceHint>& stageResourceHints() {
         {1, "Stage group 1", "StageBack1/1b/1c/1d + StageBack2", "Stage1.ogg", "Boss1.ogg", "1400ced90 resource table + replay checkpoint defaults"},
         {2, "Stage 2", "Stage2Back", "Stage2.ogg", "Boss2.ogg", "1400ced90 single graph and BGM table"},
         {3, "Stage 3", "Stage3Back", "Stage3.ogg", "Boss3.ogg", "1400ced90 single graph and BGM table"},
-        {4, "Stage 4", "background unknown from current string evidence", "Stage4.ogg", "Boss4.ogg", "BGM table only so far"},
+        {4, "Stage 4", "background unknown from current string evidence", "Stage4.ogg", "Boss2.ogg", "FUN_14011cdd0 selects the shared Boss2 handle"},
         {5, "Stage 5", "background unknown from current string evidence", "Stage5.ogg", "Boss5.ogg", "BGM table only so far"},
         {6, "Stage 6", "Stage6Back", "Stage6.ogg", "unknown", "1400ced90 single graph and BGM table"},
         {8, "Stage 8", "Stage8Back1 + Stage8Back2", "Stage8.ogg", "unknown", "1400ced90 single graph and BGM table"},

@@ -24,6 +24,7 @@ struct LoadedTextFile {
     bool loaded = false;
     std::size_t rowCount = 0;
     std::string error;
+    std::vector<TextRecord> records;
     std::vector<TextRecord> sampleRecords;
 };
 
@@ -32,6 +33,7 @@ public:
     bool load(std::span<const TextResourceSpec> specs, const std::filesystem::path& assetRoot, ResourceMode mode);
 
     const std::vector<LoadedTextFile>& files() const { return files_; }
+    const TextRecord* find(int language, int id) const;
     int attempted() const { return attempted_; }
     int succeeded() const { return succeeded_; }
     int failed() const { return attempted_ - succeeded_; }

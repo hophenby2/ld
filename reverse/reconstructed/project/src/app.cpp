@@ -214,7 +214,9 @@ int App::runSmokeTestLoop() {
         else if (diagnosticsChord && CheckHitKey(KEY_INPUT_F6) != 0) {
             diagnosticsPage_ = 6;
             if (resources_ && !stageRuntime_.initialized()) {
-                stageRuntime_.initialize(*resources_);
+                StageRuntime::StageRuntimeConfig config;
+                config.textDatabase = &textDatabase_;
+                stageRuntime_.initialize(*resources_, config);
             }
         }
         else if (diagnosticsPage_ == 6 && CheckHitKey(KEY_INPUT_1) != 0) {
@@ -242,6 +244,8 @@ int App::runSmokeTestLoop() {
                 config.counterMode = request.counterMode;
                 config.specialMode = request.specialMode;
                 config.dataWindowEnabled = request.dataWindowEnabled;
+                config.language = request.language;
+                config.bgmVolume = request.bgmVolume;
                 config.soundEffectVolume = request.soundEffectVolume;
                 config.itemVisibility = request.itemVisibility;
                 config.likeStyle = request.likeStyle;
@@ -252,6 +256,7 @@ int App::runSmokeTestLoop() {
                 config.controlModeEnabled = request.controlModeEnabled;
                 config.helpMode = request.helpMode;
                 config.helpAutoProgress = request.helpAutoProgress;
+                config.textDatabase = &textDatabase_;
                 if (!stageRuntime_.initialized()) {
                     stageRuntime_.initialize(*resources_, config);
                 }

@@ -1,9 +1,10 @@
 # Stage 04 Type `0x3f` Exact-Port Notes
 
 Status: the entity constructor, movement states, all three active projectile
-families, multipart body, gauge, reward/death timing, and bounds are ported to
-`StageRuntime`. The original transient effect-list calls made during the 60-frame
-death animation remain outside the runtime's current effect-node subsystem.
+families, multipart body, gauge, schedule gate, reward/death timing, bounds,
+and the death-entry type-`0x16` portrait are ported to `StageRuntime`. The
+remaining transient effect-list calls made during the 60-frame death animation
+are still outside the runtime's current effect-node subsystem.
 
 Primary evidence:
 
@@ -27,6 +28,11 @@ existing Easy `0.8` scale.
 Both Stage 04 schedule sites are preserved: frame `0xe10`, HP `48000`, x `0x167`;
 and frame `0x2648`, HP `44000`, x `0x169`. Their x values straddle the state-0
 mirror test at `360`.
+
+Both sites set `DAT_140e418cc = 1`. While it remains set, the paired type-`0x35`
+windows after the first controller and the random type-`0x38` window after the
+second controller are suppressed. The helper clears the flag only when type
+`0x3f` completes its death state or exits its targetable bounds.
 
 ## State 0: mirrored entrance
 
@@ -130,10 +136,14 @@ The helper appends the following body nodes every frame, in order:
 
 State 1 still moves and fires on the first frame whose HP is non-positive. It
 then calls the reward helper with window `0x708` and effect parameter `0x1e`,
-enters state 2, becomes untargetable, and resets the helper timer. State 2 adds
-`timer*0.06` to y each frame and clears the entity at timer `60`.
+creates player-side object `0x18`, and allocates effect-list type `0x16` with
+`PlayerFrame[1 + setupGroup*10]`, layer `0x6f`, and lifetime `0x78`. It enters
+state 2, becomes untargetable, and resets the helper timer. State 2 adds
+`timer*0.06` to y each frame and clears both the entity and schedule gate at
+timer `60`.
 
 While targetable, the final bounds test is x in
 `[playerX/6-400, playerX/6+1000]` and y in `[-400,1120]`. It runs after body and
-gauge nodes are queued in the original; the reconstruction retains the terminal
-frame for drawing before unlinking the inactive entity on the next update.
+gauge nodes are queued in the original; an out-of-bounds exit also clears the
+schedule gate. The reconstruction retains the terminal frame for drawing before
+unlinking the inactive entity on the next update.

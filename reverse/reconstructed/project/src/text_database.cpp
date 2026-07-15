@@ -102,6 +102,21 @@ bool TextDatabase::load(std::span<const TextResourceSpec> specs, const std::file
     return failed() == 0;
 }
 
+const TextRecord* TextDatabase::find(int language, int id) const {
+    if (language < 0 || language > 3 ||
+        static_cast<std::size_t>(language) >= files_.size()) {
+        return nullptr;
+    }
+
+    const auto& records = files_[static_cast<std::size_t>(language)].records;
+    for (const auto& record : records) {
+        if (record.id == id) {
+            return &record;
+        }
+    }
+    return nullptr;
+}
+
 LoadedTextFile TextDatabase::loadOne(const TextResourceSpec& spec, const std::filesystem::path& assetRoot, ResourceMode mode) const {
     LoadedTextFile result;
     result.id = spec.id;
@@ -137,10 +152,12 @@ LoadedTextFile TextDatabase::loadOne(const TextResourceSpec& spec, const std::fi
         if (fields.size() != 4) {
             continue;
         }
+        TextRecord record{toInt(fields[0]), fields[1], fields[2], toInt(fields[3])};
         ++result.rowCount;
         if (result.sampleRecords.size() < 4) {
-            result.sampleRecords.push_back({toInt(fields[0]), fields[1], fields[2], toInt(fields[3])});
+            result.sampleRecords.push_back(record);
         }
+        result.records.push_back(std::move(record));
     }
 
     result.loaded = result.rowCount > 0;

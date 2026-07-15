@@ -1,6 +1,7 @@
 #pragma once
 
 #include "resource_manager.h"
+#include "text_database.h"
 
 #include <array>
 #include <cstdint>
@@ -22,6 +23,8 @@ public:
         int counterMode = 0;
         int specialMode = 0;
         int dataWindowEnabled = 1;
+        int language = 0;
+        int bgmVolume = 10;
         int soundEffectVolume = 10;
         int itemVisibility = 0;
         int likeStyle = 0;
@@ -36,6 +39,7 @@ public:
         int controlModeEnabled = 1;
         int helpMode = 6;
         int helpAutoProgress = 0;
+        const TextDatabase* textDatabase = nullptr;
     };
 
     struct StageSpawnEvent {
@@ -65,6 +69,7 @@ public:
         if (selectedStage_ == 1) return stage01ClearComplete_;
         if (selectedStage_ == 2) return stage02ClearComplete_;
         if (selectedStage_ == 3) return stage03ClearComplete_;
+        if (selectedStage_ == 4) return stage04ClearComplete_;
         return false;
     }
 
@@ -233,6 +238,7 @@ private:
         int colorG = 0xff;
         int colorB = 0xff;
         int alpha = 0xff;
+        int ownerEntityId = 0;
         std::uint32_t randomSeed = 0;
         bool drawQueuedThisFrame = false;
         float drawX = 0.0f;
@@ -251,6 +257,7 @@ private:
     void spawnStage02OriginalSchedule();
     void spawnStage03OriginalSchedule();
     void spawnStage04OriginalSchedule();
+    void updateStage04BannerTextSound() const;
     void spawnEnemy(const StageSpawnEvent& event);
     void spawnStage01Child(StageEnemy& parent, int childIndex, float offsetX, float offsetY, int hitPoints, const char* note);
     bool spawnStage01BossChild(StageEnemy& parent, int spawnType, int childIndex,
@@ -268,6 +275,12 @@ private:
                                int hitPoints, int kind, double speed, int radius,
                                std::uint16_t angle16, const char* note);
     void spawnStage03DeathNode(const StageEnemy& enemy, int hitPoints,
+                               int ownerEntityId);
+    bool spawnStage04BossChild(StageEnemy& parent, int spawnType, int childIndex,
+                               float offsetX, float offsetY, int hitPoints,
+                               int kind, double speed, int radius,
+                               std::uint16_t angle16, const char* note);
+    void spawnStage04DeathNode(const StageEnemy& enemy, int hitPoints,
                                int ownerEntityId);
     void spawnStage04CarrierChild(const StageEnemy& parent, int spawnType);
     void spawnStage04Type3DChild(const StageEnemy& parent, int childIndex, float offsetX, float offsetY);
@@ -308,7 +321,8 @@ private:
     void spawnStageEffect(int type, int graphHandle, int graphExtent, int drawLayer,
                           float x, float y, std::uint16_t angle16,
                           double scale0, double scaleX, double scaleY,
-                          int lifetime, int colorR, int colorG, int colorB, int alpha);
+                          int lifetime, int colorR, int colorG, int colorB, int alpha,
+                          int ownerEntityId = 0);
     void updateStageEffects();
     void updateStage03Enemy(StageEnemy& enemy);
     void updateStage03Type25(StageEnemy& enemy);
@@ -331,6 +345,12 @@ private:
     void updateStage04Enemy(StageEnemy& enemy, int activeAge);
     void emitStage04Projectiles(StageEnemy& enemy, int activeAge);
     void finishStage04CarrierSharedHp(StageEnemy& enemy);
+    void updateStage04Boss(StageEnemy& enemy);
+    void emitStage04BossProjectiles(StageEnemy& enemy);
+    void updateStage04BossChild(StageEnemy& enemy);
+    void updateStage04Type40(StageEnemy& enemy, StageEnemy& parent);
+    void updateStage04Type41(StageEnemy& enemy, StageEnemy& parent);
+    void updateStage04Type42Or43(StageEnemy& enemy, StageEnemy& parent);
     void updateGenericEnemy(StageEnemy& enemy, int activeAge);
     void emitGenericProjectiles(StageEnemy& enemy, int activeAge);
     void updateProjectiles();
@@ -349,7 +369,8 @@ private:
     void collectRewardItem(const RewardItem& item);
     void processStockProgressAfterGain(int progressGain);
     void spawnEnemyDeathRewardBurst(const StageEnemy& enemy, int payoutWindow = 0);
-    void spawnEnemyDeathEffects(const StageEnemy& enemy, int mode);
+    void spawnEnemyDeathEffects(const StageEnemy& enemy, int mode,
+                                bool playSound = true);
     void spawnPostDeathCounterEntity(const StageEnemy& enemy, double lifetime);
     void updateSpecialGaugeAction();
     void updateSpecialGaugeState();
@@ -399,9 +420,15 @@ private:
     void drawEnemyGaugeExact(const StageEnemy& enemy, int mode, float x, float y) const;
     bool drawStage03EnemyExact(const StageEnemy& enemy, float x, float y) const;
     void drawStage03BossHud() const;
+    bool drawStage04BossExact(const StageEnemy& enemy, float x, float y) const;
+    void drawStage04BossHud() const;
+    void drawStage04Approach() const;
+    void drawStage04BannerPanels() const;
+    void drawStage04BannerText() const;
+    const std::vector<int>& localizedBossApproach1Frames() const;
     bool drawStage04EnemyExact(const StageEnemy& enemy, float x, float y) const;
     void drawOriginalMode7Node(int handle, float x, float y, std::uint16_t angle16, double scaleX, double scaleY, bool reverseX) const;
-    void drawStageEffects(bool foreground) const;
+    void drawStageEffects(bool foreground, int exactLayer = -1) const;
     void drawProjectiles() const;
     void drawRewardItems() const;
     void drawOverlay() const;
@@ -448,9 +475,34 @@ private:
     int enemyDown1SoundHandle_ = -1;
     int enemyDown2SoundHandle_ = -1;
     int enemyDown3SoundHandle_ = -1;
+    int alertSoundHandle_ = -1;
+    int blast2SoundHandle_ = -1;
+    int bullet1SoundHandle_ = -1;
+    int bullet2SoundHandle_ = -1;
+    int bossLifeSoundHandle_ = -1;
+    int bossApproachSoundHandle_ = -1;
+    int bossWeakenSoundHandle_ = -1;
+    int timerSoundHandle_ = -1;
+    int bossSe1SoundHandle_ = -1;
+    int bossSe2SecondSoundHandle_ = -1;
+    int bossSe3SoundHandle_ = -1;
+    int bossSe4SecondSoundHandle_ = -1;
+    int bossSe5SoundHandle_ = -1;
+    int bossSe6SoundHandle_ = -1;
+    int bossSe8SoundHandle_ = -1;
+    int stage04BgmHandle_ = -1;
+    int stage04BossBgmHandle_ = -1;
+    int textSoundHandle_ = -1;
+    int text2SoundHandle_ = -1;
+    std::array<int, 2> bannerFontHandles_{{-1, -1}};
     std::vector<int> enemyGaugeFrames_;
     int enemyGaugeFillHandle_ = -1;
     std::vector<int> bossFrames_;
+    std::vector<int> bossApproach1Frames_;
+    std::vector<int> bossApproach1Ch1Frames_;
+    std::vector<int> bossApproach1Ch2Frames_;
+    int bossApproach2Handle_ = -1;
+    int stage04PhaseTitleStandHandle_ = -1;
     std::vector<int> bossGaugeFrames_;
     std::vector<int> bossNameFrames_;
     std::vector<int> textBoxFrames_;
@@ -485,6 +537,7 @@ private:
     bool stage01GateFlag_ = false;
     bool stage02GateFlag_ = false;
     bool stage03GateFlag_ = false;
+    bool stage04GateFlag_ = false;
     bool stage01EndVisualQueued_ = false;
     bool stage01EndFlushed_ = false;
     bool stage01BossSpawned_ = false;
@@ -520,6 +573,18 @@ private:
     bool stage03ClearStarted_ = false;
     bool stage03ClearTransition_ = false;
     bool stage03ClearComplete_ = false;
+    int stage04BossPhaseMode_ = 0;
+    int stage04BossMaxHp_ = 100000;
+    int stage04BossCountdown_ = 0;
+    int stage04BossCountdownDraw_ = 0;
+    int stage04BossBreaksRemaining_ = 4;
+    int stage04BossPhaseIndex_ = 0;
+    float stage04BossTargetX_ = 360.0f;
+    float stage04BossTargetY_ = 200.0f;
+    bool stage04ClearStarted_ = false;
+    bool stage04ClearTransition_ = false;
+    bool stage04ClearComplete_ = false;
+    int stage04ApproachAgeDraw_ = -1;
     int stage01EndFrame_ = 5700;
     int nextEntityId_ = 1;
 };

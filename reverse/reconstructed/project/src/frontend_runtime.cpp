@@ -836,7 +836,7 @@ void FrontendRuntime::completeGameplay(ResourceManager& resources, int score, in
         }
     }
     ensureResultGraphs(resources);
-    stopTitleBgm(resources);
+    stopAllBgm(resources);
 
     // FUN_1400c6e10 routes Practice directly to 0x23. Early Trial stages use
     // 0x22 to choose the next stage; completed normal runs pass through 0x20.
@@ -2317,6 +2317,8 @@ void FrontendRuntime::updateTransition(ResourceManager& resources) {
         gameplayRequest_.counterMode = counterMode_;
         gameplayRequest_.specialMode = feverMode_;
         gameplayRequest_.dataWindowEnabled = dataWindowEnabled_;
+        gameplayRequest_.language = language_;
+        gameplayRequest_.bgmVolume = bgmVolume_;
         gameplayRequest_.soundEffectVolume = seVolume_;
         gameplayRequest_.itemVisibility = systemConfig_[3];
         gameplayRequest_.likeStyle = systemConfig_[5];
@@ -3685,6 +3687,16 @@ void FrontendRuntime::stopTitleBgm(ResourceManager& resources) {
         StopSoundMem(handle);
     }
     titleBgmStarted_ = false;
+}
+
+void FrontendRuntime::stopAllBgm(ResourceManager& resources) {
+    for (const auto& sound : resources.sounds()) {
+        if (sound.kind == SoundKind::Bgm && sound.handle != -1) {
+            StopSoundMem(sound.handle);
+        }
+    }
+    titleBgmStarted_ = false;
+    resultBgmStarted_ = false;
 }
 
 void FrontendRuntime::startResultBgm(ResourceManager& resources) {
