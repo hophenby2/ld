@@ -145,6 +145,7 @@ constexpr std::array<SoundResourceSpec, 70> kSounds{{
     {"SE_se_Shothit", "media\\se\\Shothit.wav", SoundKind::Se, 3},
     {"SE_se_Shothit2", "media\\se\\Shothit2.wav", SoundKind::Se, 3},
     {"SE_se_Item1", "media\\se\\Item1.wav", SoundKind::Se, 3},
+    {"SE_se_Item2", "media\\se\\Item2.wav", SoundKind::Se, 3},
     {"SE_se_Bonus", "media\\se\\Bonus.wav", SoundKind::Se, 3},
     {"SE_se_BossApproach", "media\\se\\BossApproach.wav", SoundKind::Se, 3},
     {"SE_se_BossLife", "media\\se\\BossLife.wav", SoundKind::Se, 3},
@@ -180,6 +181,15 @@ constexpr std::array<SoundResourceSpec, 70> kSounds{{
     {"SE_se_Fever3", "media\\se\\Fever3.wav", SoundKind::Se, 3},
     {"SE_se_Fever4", "media\\se\\Fever4.wav", SoundKind::Se, 3},
 }};
+
+static_assert([] {
+    for (const auto& sound : kSounds) {
+        if (sound.id == nullptr || sound.logicalPath == nullptr) {
+            return false;
+        }
+    }
+    return true;
+}(), "Sound resource entries must have non-null IDs and paths");
 
 constexpr std::array<TextResourceSpec, 4> kTexts{{
     {"text01_japanese", "media\\text\\text01.csv", 932, false},
