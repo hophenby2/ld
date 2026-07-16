@@ -332,10 +332,15 @@ and `Enemy_m` frames `68..71` are implemented. Marker rendering now uses
 `Effect_m` frame `4` (`DAT_140e41a50`) instead of a scaled enemy-body stand-in.
 
 The scalar values used by this port were exported read-only from the original
-PE to `reverse/ghidra-or-ida/exports/stage04-carrier-scalars.tsv`. The remaining
-known approximation in this family is the spatial distribution of reward items:
-the payout decomposition and timing follow `FUN_14007b010`, while its exact RNG
-coordinate helper and transient death-effect nodes are not yet represented.
+PE to `reverse/ghidra-or-ida/exports/stage04-carrier-scalars.tsv`. The payout
+decomposition, frame-offset angle/speed RNG, fixed entity x/y spawn point, and
+transient death-effect nodes now follow `FUN_14007b010`/`FUN_140079e20`.
+
+The shared Stage 4 background path also creates effect type `0x3b` when
+`frame % 40 == 5` and type `0x3c` when `frame % 63 == 5`. Their exact
+constructors, `FUN_140076ec0`/`FUN_140077830` motion, cumulative scale growth,
+alpha envelopes, layers, and end-frame removal are represented in
+`spawnBackgroundEffects()` and `updateStageEffects()`.
 
 ## Recommended integration order
 

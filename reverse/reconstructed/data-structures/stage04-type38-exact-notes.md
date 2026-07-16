@@ -7,10 +7,10 @@ current sinusoidal placeholder without requiring another interpretation pass.
 
 Implementation status: ported into `stage_runtime.cpp`, including constructor
 overrides, helper/targetable timer ordering, both projectile families, multipart
-frames `63..66`, type-1 HP gauge, reward window, and strict bounds. The death
-effect-node visuals called by `FUN_140079e20` remain outside the current runtime;
-reward item types/counts use the original payout decomposition, while their
-exact RNG positions are still approximated.
+frames `63..66`, type-1 HP gauge, reward window, strict bounds, and the shared
+death-effect nodes. The reward helper keeps the entity x/y in `xmm1/xmm2`; its
+frame-offset RNG controls item angle and speed rather than spawn position, and
+that call contract is now represented directly.
 
 Primary evidence:
 

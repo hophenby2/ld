@@ -109,7 +109,7 @@ constexpr std::array<GraphResourceSpec, 65> kExpandedGraphs{{
     {"GFX_gallery_GalleryPic_ch2", "media\\gallery\\GalleryPic_ch2.png", GraphLoadKind::Div, 0x14, 5, 4, 0, 0, ResourceSource::Secondary},
 }};
 
-constexpr std::array<SoundResourceSpec, 67> kSounds{{
+constexpr std::array<SoundResourceSpec, 70> kSounds{{
     {"BGM_bgm_Opening", "media\\bgm\\Opening.ogg", SoundKind::Bgm, 3},
     {"BGM_bgm_Title", "media\\bgm\\Title.ogg", SoundKind::Bgm, 3},
     {"BGM_bgm_Tutorial", "media\\bgm\\Tutorial.ogg", SoundKind::Bgm, 3},
@@ -140,10 +140,12 @@ constexpr std::array<SoundResourceSpec, 67> kSounds{{
     {"SE_se_Text", "media\\se\\Text.wav", SoundKind::Se, 3},
     {"SE_se_Text2", "media\\se\\Text2.wav", SoundKind::Se, 3},
     {"SE_se_Miss", "media\\se\\Miss.wav", SoundKind::Se, 3},
+    {"SE_se_Miss2", "media\\se\\Miss2.wav", SoundKind::Se, 3},
     {"SE_se_Shot1", "media\\se\\Shot1.wav", SoundKind::Se, 3},
     {"SE_se_Shothit", "media\\se\\Shothit.wav", SoundKind::Se, 3},
     {"SE_se_Shothit2", "media\\se\\Shothit2.wav", SoundKind::Se, 3},
     {"SE_se_Item1", "media\\se\\Item1.wav", SoundKind::Se, 3},
+    {"SE_se_Bonus", "media\\se\\Bonus.wav", SoundKind::Se, 3},
     {"SE_se_BossApproach", "media\\se\\BossApproach.wav", SoundKind::Se, 3},
     {"SE_se_BossLife", "media\\se\\BossLife.wav", SoundKind::Se, 3},
     {"SE_se_BossWeaken", "media\\se\\BossWeaken.wav", SoundKind::Se, 3},

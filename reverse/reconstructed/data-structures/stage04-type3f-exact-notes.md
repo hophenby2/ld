@@ -2,9 +2,9 @@
 
 Status: the entity constructor, movement states, all three active projectile
 families, multipart body, gauge, schedule gate, reward/death timing, bounds,
-and the death-entry type-`0x16` portrait are ported to `StageRuntime`. The
-remaining transient effect-list calls made during the 60-frame death animation
-are still outside the runtime's current effect-node subsystem.
+the death-entry type-`0x16` portrait, the timer-`0..60` `FUN_14007ac00`
+explosion chain, and the terminal mode-2 center flash are ported to
+`StageRuntime`.
 
 Primary evidence:
 
@@ -138,9 +138,10 @@ State 1 still moves and fires on the first frame whose HP is non-positive. It
 then calls the reward helper with window `0x708` and effect parameter `0x1e`,
 creates player-side object `0x18`, and allocates effect-list type `0x16` with
 `PlayerFrame[1 + setupGroup*10]`, layer `0x6f`, and lifetime `0x78`. It enters
-state 2, becomes untargetable, and resets the helper timer. State 2 adds
-`timer*0.06` to y each frame and clears both the entity and schedule gate at
-timer `60`.
+state 2, becomes untargetable, and resets the helper timer. State 2 calls
+`FUN_14007ac00` for timers `0..60`, adds `timer*0.06` to y each frame, and
+clears both the entity and schedule gate at timer `60`. The terminal call emits
+the shared mode-2 particles and `Effect_l[0]` center flash.
 
 While targetable, the final bounds test is x in
 `[playerX/6-400, playerX/6+1000]` and y in `[-400,1120]`. It runs after body and

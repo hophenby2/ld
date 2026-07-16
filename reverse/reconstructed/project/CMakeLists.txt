@@ -54,7 +54,20 @@ add_executable(LikeDreamerRe WIN32
     src/save_config.cpp
     src/stage_probe.cpp
     src/stage_runtime.cpp
+    src/stage_runtime_boss07.cpp
+    src/stage_runtime_boss08.cpp
+    src/stage_runtime_boss09.cpp
+    src/stage_runtime_boss10_aux.cpp
+    src/stage_runtime_scene10.cpp
+    src/stage_runtime_enemy06.cpp
+    src/stage_runtime_enemy07.cpp
+    src/stage_runtime_enemy08.cpp
+    src/stage_runtime_enemy10.cpp
     src/stage_runtime_late.cpp
+    src/stage_runtime_midboss06.cpp
+    src/stage_runtime_midboss07.cpp
+    src/stage_runtime_midboss09.cpp
+    src/stage_runtime_midboss09_tail.cpp
     src/stage_runtime_stage05_07.cpp
     src/stage_runtime_stage08_10.cpp
     src/steam_stub.cpp

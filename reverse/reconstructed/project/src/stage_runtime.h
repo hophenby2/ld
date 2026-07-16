@@ -165,6 +165,7 @@ private:
         int rewardWeight = 1;
         bool drawBodyThisFrame = false;
         bool drawMarkerThisFrame = false;
+        bool guardSpawnLatched = false;
         int markerDrawTimer = 0;
         float markerDrawX = 0.0f;
         float markerDrawY = 0.0f;
@@ -276,6 +277,9 @@ private:
     void updateStageBannerTextSound() const;
     void updateEarlyStageApproachTimeline();
     void updateLateStageTimeline();
+    void spawnBackgroundEffects();
+    void flushEnemyProjectilesToEffects();
+    void spawnBossPhaseBreakFeedback(const StageEnemy& enemy, int countdown);
     void flushStageForBossHandoff(int bossBgmIndex);
     void spawnEnemy(const StageSpawnEvent& event);
     bool configureLateStageEnemy(StageEnemy& enemy, const StageSpawnEvent& event);
@@ -294,6 +298,8 @@ private:
                                float offsetOrTargetX, float offsetOrTargetY,
                                int hitPoints, int kind, double speed, int radius,
                                std::uint16_t angle16, const char* note);
+    void spawnDelayedOwnerDamageNode(int hitPoints, int ownerEntityId,
+                                     int ownerSpawnType, const char* note);
     void spawnStage03DeathNode(const StageEnemy& enemy, int hitPoints,
                                int ownerEntityId);
     bool spawnStage04BossChild(StageEnemy& parent, int spawnType, int childIndex,
@@ -320,7 +326,11 @@ private:
     void updateStage01MarkerSatellite(StageEnemy& enemy, int activeAge);
     void updateStage01Child(StageEnemy& enemy, int activeAge);
     void updateStage01Boss(StageEnemy& enemy);
+    void updateStage01BossDecoration(StageEnemy& enemy);
     void updateStage01BossChild(StageEnemy& enemy);
+    bool spawnStage01BossDecoration(StageEnemy& parent, int spawnType,
+                                    float offsetX, float offsetY,
+                                    const char* note);
     void emitStage01BossProjectiles(StageEnemy& enemy);
     void emitStage01BossChildProjectiles(StageEnemy& enemy, const StageEnemy& parent);
     void emitStage01Projectiles(StageEnemy& enemy, int activeAge);
@@ -374,6 +384,15 @@ private:
     bool isLateStageEnemyType(int spawnType) const;
     bool isLateStageBossType(int spawnType) const;
     bool isLateStageFinalBossType(int spawnType) const;
+    bool isStage06MidbossNodeType(int spawnType) const;
+    bool isStage07MidbossType(int spawnType) const;
+    bool isStage07MidbossNodeType(int spawnType) const;
+    bool isStage07BossNodeType(int spawnType) const;
+    bool isStage08BossNodeType(int spawnType) const;
+    bool isStage09BossNodeType(int spawnType) const;
+    bool isStage09MidbossType(int spawnType) const;
+    bool isStage09MidbossNodeType(int spawnType) const;
+    bool isStage08EnemyType(int spawnType) const;
     bool isStage10FinalBossNodeType(int spawnType) const;
     bool isLateStageGateOwner(const StageEnemy& enemy) const;
     void clearLateStageGate(int stage);
@@ -393,10 +412,112 @@ private:
     bool spawnStage06BossNode(StageEnemy& parent, int spawnType,
                               int childIndex, float offsetX, float offsetY,
                               std::uint16_t angle16, int radius);
+    void updateStage06Midboss(StageEnemy& enemy);
+    void updateStage06MidbossNode(StageEnemy& enemy);
+    bool spawnStage06MidbossNode(StageEnemy& parent, int spawnType,
+                                 int childIndex, float initialRadius,
+                                 std::uint16_t angle16, double spinAmplitude);
+    bool drawStage06Midboss(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage06MidbossNode(const StageEnemy& enemy, float x, float y) const;
+    bool isStage06EnemyType(int spawnType) const;
+    void updateStage06Enemy(StageEnemy& enemy);
+    void emitStage06EnemyProjectiles(StageEnemy& enemy);
+    bool spawnStage06EnemyNode(StageEnemy& parent, int childIndex,
+                               std::uint16_t angle16);
+    bool drawStage06Enemy(const StageEnemy& enemy, float x, float y) const;
+    void updateStage07Midboss(StageEnemy& enemy);
+    void updateStage07MidbossNode(StageEnemy& enemy);
+    bool spawnStage07MidbossNode(StageEnemy& parent, int spawnType,
+                                 int childIndex, float xOrOffset,
+                                 float yOrOffset, std::uint16_t angle16,
+                                 double speed, int hitPoints, int radius,
+                                 bool attached, int kind,
+                                 bool countsForPhase);
+    bool drawStage07Midboss(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage07MidbossNode(const StageEnemy& enemy, float x,
+                                float y) const;
+    void updateStage07Enemy(StageEnemy& enemy);
+    void emitStage07EnemyProjectiles(StageEnemy& enemy);
+    bool spawnStage07EnemyChild(StageEnemy& parent, float offsetX,
+                                float offsetY, int childIndex);
+    bool drawStage07Enemy(const StageEnemy& enemy, float x, float y) const;
+    void updateStage08Enemy(StageEnemy& enemy);
+    bool spawnStage08EnemyChild(StageEnemy& parent, int spawnType,
+                                int childIndex, float offsetX, float offsetY,
+                                std::uint16_t angle16, int kind, int radius,
+                                bool targetable);
+    bool drawStage08Enemy(const StageEnemy& enemy, float x, float y) const;
+    void updateStage07Boss(StageEnemy& enemy);
+    void updateStage07BossNode(StageEnemy& enemy);
+    bool spawnStage07BossNode(StageEnemy& parent, int spawnType,
+                              int childIndex, float offsetX, float offsetY,
+                              std::uint16_t angle16, double speed,
+                              int radius, int hitPoints);
+    void updateStage08Boss(StageEnemy& enemy);
+    void emitStage08BossProjectiles(StageEnemy& enemy);
+    void updateStage08BossNode(StageEnemy& enemy);
+    bool spawnStage08BossNode(StageEnemy& parent, int spawnType,
+                              int childIndex, float offsetX, float offsetY,
+                              std::uint16_t angle16, double speed,
+                              int hitPoints, int radius, bool attached);
+    bool drawStage08Boss(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage08BossNode(const StageEnemy& enemy, float x, float y) const;
+    void updateStage09Boss(StageEnemy& enemy);
+    void emitStage09BossProjectiles(StageEnemy& enemy);
+    void updateStage09BossNode(StageEnemy& enemy);
+    bool spawnStage09BossNode(StageEnemy& parent, int spawnType,
+                              int childIndex, float offsetX, float offsetY,
+                              std::uint16_t angle16, double speed,
+                              int radius, bool attached);
+    bool drawStage09Boss(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage09BossNode(const StageEnemy& enemy, float x, float y) const;
+    void updateStage09Midboss(StageEnemy& enemy);
+    void updateStage09MidbossNode(StageEnemy& enemy);
+    void emitStage09Midboss146Projectiles(StageEnemy& enemy);
+    void emitStage09Midboss148Projectiles(StageEnemy& enemy);
+    void updateStage09TailMidboss(StageEnemy& enemy);
+    void updateStage09TailMidbossNode(StageEnemy& enemy);
+    void emitStage09Midboss149Projectiles(StageEnemy& enemy);
+    void emitStage09Midboss14AProjectiles(StageEnemy& enemy);
+    bool spawnStage09MidbossNode(StageEnemy& parent, int spawnType,
+                                 int childIndex, float offsetX, float offsetY,
+                                 std::uint16_t angle16, double speed,
+                                 int hitPoints, int radius, bool attached);
+    bool drawStage09Midboss(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage09MidbossNode(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage09TailMidboss(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage09TailMidbossNode(const StageEnemy& enemy, float x, float y) const;
+    void updateStage10Enemy(StageEnemy& enemy);
+    void emitStage10EnemyProjectiles(StageEnemy& enemy);
+    bool drawStage10Enemy(const StageEnemy& enemy, float x, float y) const;
+    bool isStage10SceneNodeType(int spawnType) const;
+    bool isSharedHitboxProxyType(int spawnType) const;
+    bool isStage10GuardNodeType(int spawnType) const;
+    void ensureStage10SceneRootNode(StageEnemy& parent);
+    bool spawnStage10SceneNode(StageEnemy& parent, int spawnType,
+                               int childIndex, float offsetX, float offsetY,
+                               std::uint16_t angle16, double speed,
+                               int hitPoints, int kind, int radius);
+    void updateStage10SceneNode(StageEnemy& enemy);
+    bool drawStage10SceneNode(const StageEnemy& enemy, float x,
+                              float y) const;
+    bool spawnSharedHitboxProxy(StageEnemy& parent, int spawnType,
+                                float offsetX, float offsetY, int radius);
+    void updateSharedHitboxProxy(StageEnemy& enemy);
+    void maybeSpawnStage10GuardNode(StageEnemy& owner);
+    void updateStage10GuardNode(StageEnemy& enemy);
+    bool drawStage10GuardNode(const StageEnemy& enemy, float x,
+                              float y) const;
+    bool isStage10FinalBossEmitterType(int spawnType) const;
+    bool spawnStage10FinalBossEmitter(StageEnemy& parent, int spawnType,
+                                      float targetX, float targetY,
+                                      std::uint16_t angle16, double speed,
+                                      int childIndex = 0);
+    void updateStage10FinalBossEmitter(StageEnemy& enemy);
+    bool drawStage10FinalBossEmitter(const StageEnemy& enemy, float x,
+                                     float y) const;
     void updateStage10FinalBossNode(StageEnemy& enemy);
     bool spawnStage10FinalBossNode(StageEnemy& parent, int spawnType);
-    void updateGenericEnemy(StageEnemy& enemy, int activeAge);
-    void emitGenericProjectiles(StageEnemy& enemy, int activeAge);
     void updateProjectiles();
     void updateProjectileCommonMotion(StageProjectile& projectile);
     void updateProjectileReflectOnBoundary(StageProjectile& projectile);
@@ -404,6 +525,7 @@ private:
     void updateProjectileScriptedEmitter(StageProjectile& projectile);
     void updateProjectileOrbitArcPair(StageProjectile& projectile);
     void updateProjectileExpandingSpiralPair(StageProjectile& projectile);
+    void spawnProjectileTerminalEffect(float x, float y);
     static void updateProjectileVelocity(StageProjectile& projectile);
     void updateRewardItems();
     int effectiveHelpLevel() const;
@@ -412,7 +534,8 @@ private:
     void addSpecialGauge(int amount);
     void collectRewardItem(const RewardItem& item);
     void processStockProgressAfterGain(int progressGain);
-    void spawnEnemyDeathRewardBurst(const StageEnemy& enemy, int payoutWindow = 0);
+    void spawnEnemyDeathRewardBurst(const StageEnemy& enemy, int payoutWindow = 0,
+                                    bool spawnImmediateEffect = true);
     void spawnEnemyDeathEffects(const StageEnemy& enemy, int mode,
                                 bool playSound = true);
     void spawnPostDeathCounterEntity(const StageEnemy& enemy, double lifetime);
@@ -448,9 +571,11 @@ private:
     void drawPlayer() const;
     void drawEnemies() const;
     bool drawStage01BossExact(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage01MarkerExact(const StageEnemy& enemy, float x, float y) const;
     bool drawType0AExact(const StageEnemy& enemy, float x, float y) const;
     bool drawStage01Type0EExact(const StageEnemy& enemy, float x, float y) const;
     bool drawStage01Type0FExact(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage01Type10Or11Exact(const StageEnemy& enemy, float x, float y) const;
     bool drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, float y) const;
     bool drawStage02Type19Exact(const StageEnemy& enemy, float x, float y) const;
     bool drawStage02Type1AExact(const StageEnemy& enemy, float x, float y) const;
@@ -478,6 +603,7 @@ private:
     const std::vector<int>& localizedBossApproach1Frames() const;
     bool drawStage04EnemyExact(const StageEnemy& enemy, float x, float y) const;
     bool drawLateStageBoss(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage07BossNode(const StageEnemy& enemy, float x, float y) const;
     bool drawStage10FinalBossNode(const StageEnemy& enemy, float x, float y) const;
     bool drawLateStageEnemy(const StageEnemy& enemy, float x, float y) const;
     void drawOriginalMode7Node(int handle, float x, float y, std::uint16_t angle16, double scaleX, double scaleY, bool reverseX) const;
@@ -520,9 +646,11 @@ private:
     std::array<int, 8> bombSoundHandles_{{-1, -1, -1, -1, -1, -1, -1, -1}};
     std::array<int, 4> feverSoundHandles_{{-1, -1, -1, -1}};
     int normalShotSoundHandle_ = -1;
+    int miss2SoundHandle_ = -1;
     int shotHitSoundHandle_ = -1;
     int shotHit2SoundHandle_ = -1;
     int item1SoundHandle_ = -1;
+    int item2SoundHandle_ = -1;
     int item3SoundHandle_ = -1;
     int extendSoundHandle_ = -1;
     int blast1SoundHandle_ = -1;
@@ -534,6 +662,7 @@ private:
     int bullet1SoundHandle_ = -1;
     int bullet2SoundHandle_ = -1;
     int bossLifeSoundHandle_ = -1;
+    int bonusSoundHandle_ = -1;
     int bossApproachSoundHandle_ = -1;
     int bossWeakenSoundHandle_ = -1;
     int timerSoundHandle_ = -1;
@@ -546,6 +675,8 @@ private:
     int bossSe7SoundHandle_ = -1;
     int bossSe8SoundHandle_ = -1;
     int bossSe9SoundHandle_ = -1;
+    int bossSe14SoundHandle_ = -1;
+    int bossSe15SoundHandle_ = -1;
     std::array<int, 10> stageBgmHandles_{{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
     std::array<int, 5> bossBgmHandles_{{-1, -1, -1, -1, -1}};
     int stage04BgmHandle_ = -1;
@@ -576,7 +707,7 @@ private:
     int stage6BackHandle_ = -1;
     int stage8Back1Handle_ = -1;
     int stage8Back2Handle_ = -1;
-    mutable std::array<double, 4> lateBackgroundScroll_{};
+    mutable std::array<float, 4> lateBackgroundScroll_{};
     mutable int lateBackgroundScrollFrame_ = -0x3fffffff;
     std::array<int, 6> stage09BossDefeatFrames_{{-1, -1, -1, -1, -1, -1}};
     std::vector<int> stageFrameFrames_;
@@ -669,6 +800,8 @@ private:
     int lateStageBossMaxHp_ = 100000;
     float lateStageBossTargetX_ = 360.0f;
     float lateStageBossTargetY_ = 200.0f;
+    int bossPhaseRewardIndex_ = 0;
+    int observedBossPhaseMode_ = 0;
     bool lateStageBossSpawned_ = false;
     bool lateStageClearStarted_ = false;
     int activeBossBgmIndex_ = -1;
