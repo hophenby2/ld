@@ -385,6 +385,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\save_config.cpp" />
     <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\stage_probe.cpp" />
     <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\stage_runtime.cpp" />
+    <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\stage_runtime_pause.cpp" />
     <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\stage_runtime_boss07.cpp" />
     <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\stage_runtime_boss08.cpp" />
     <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\stage_runtime_boss09.cpp" />

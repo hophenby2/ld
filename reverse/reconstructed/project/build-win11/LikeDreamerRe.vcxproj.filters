@@ -28,6 +28,9 @@
     <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\stage_runtime.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\stage_runtime_pause.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="\\Mac\Home\SteamLibrary\steamapps\common\Like Dreamer\reverse\reconstructed\project\src\stage_runtime_boss07.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
