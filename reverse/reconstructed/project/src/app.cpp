@@ -294,9 +294,11 @@ int App::runSmokeTestLoop() {
                 config.specialMode = request.specialMode;
                 config.specialStageFlag = request.specialStageFlag;
                 config.dataWindowEnabled = request.dataWindowEnabled;
+                config.dataWindowUnlocked = request.dataWindowUnlocked;
                 config.language = request.language;
                 config.bgmVolume = request.bgmVolume;
                 config.soundEffectVolume = request.soundEffectVolume;
+                config.systemConfig = request.systemConfig;
                 config.itemVisibility = request.itemVisibility;
                 config.likeStyle = request.likeStyle;
                 config.optionSlots = request.optionSlots;
@@ -323,8 +325,26 @@ int App::runSmokeTestLoop() {
             }
         }
         bool completeGameplayAfterDraw = false;
+        StageRuntime::GameplayExitRequest gameplayExitAfterDraw =
+            StageRuntime::GameplayExitRequest::None;
         if (diagnosticsPage_ == 6 && stageRuntime_.initialized()) {
             stageRuntime_.update();
+            StageRuntime::SettingsChange stageSettings;
+            if (resources_ && stageRuntime_.consumeSettingsChange(stageSettings)) {
+                FrontendRuntime::GameplaySettings frontendSettings;
+                frontendSettings.bgmVolume = stageSettings.bgmVolume;
+                frontendSettings.soundEffectVolume = stageSettings.soundEffectVolume;
+                frontendSettings.language = stageSettings.language;
+                frontendSettings.dataWindowEnabled = stageSettings.dataWindowEnabled;
+                frontendSettings.systemConfig = stageSettings.systemConfig;
+                frontendSettings.keyboardBindings = stageSettings.keyboardBindings;
+                frontendSettings.controllerBindings = stageSettings.controllerBindings;
+                frontendSettings.controlDevice = stageSettings.controlDevice;
+                frontendSettings.saveData = stageSettings.saveData;
+                frontendSettings.saveSystemConfig = stageSettings.saveSystemConfig;
+                frontendRuntime_.applyGameplaySettings(*resources_, frontendSettings);
+            }
+            gameplayExitAfterDraw = stageRuntime_.consumeExitRequest();
             completeGameplayAfterDraw = stageRuntime_.stageComplete();
         }
 
@@ -344,7 +364,31 @@ int App::runSmokeTestLoop() {
             drawSmokeTestFrame();
         }
         ScreenFlip();
-        if (completeGameplayAfterDraw && resources_) {
+        if (gameplayExitAfterDraw == StageRuntime::GameplayExitRequest::Retry) {
+            stageRuntime_.reset();
+        }
+        else if (gameplayExitAfterDraw == StageRuntime::GameplayExitRequest::SkipTutorial &&
+                 resources_) {
+            frontendRuntime_.skipTutorial(*resources_);
+            diagnosticsPage_ = 0;
+        }
+        else if (gameplayExitAfterDraw == StageRuntime::GameplayExitRequest::AbortGameplay &&
+                 resources_) {
+            frontendRuntime_.abortGameplay(*resources_);
+            diagnosticsPage_ = 0;
+        }
+        else if (gameplayExitAfterDraw == StageRuntime::GameplayExitRequest::GameOver &&
+                 resources_) {
+            const bool replayPrompt = stageRuntime_.routeMode() < 0 ||
+                                      stageRuntime_.routeMode() == 2 ||
+                                      (stageRuntime_.routeMode() == 1 &&
+                                       stageRuntime_.specialStageFlag() == 0);
+            frontendRuntime_.finishGameOver(
+                *resources_, replayPrompt,
+                stageRuntime_.score(), stageRuntime_.frame());
+            diagnosticsPage_ = 0;
+        }
+        else if (completeGameplayAfterDraw && resources_) {
             frontendRuntime_.completeGameplay(
                 *resources_,
                 stageRuntime_.score(),

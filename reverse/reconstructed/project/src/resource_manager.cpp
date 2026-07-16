@@ -44,12 +44,14 @@ bool ResourceManager::loadGraphs(std::span<const GraphResourceSpec> specs) {
         const auto resolved = resolvePath(spec.logicalPath);
 
         if (spec.loadKind == GraphLoadKind::Div) {
-            const int xSize = spec.xSize == 0 ? 1 : spec.xSize;
-            const int ySize = spec.ySize == 0 ? 1 : spec.ySize;
-            handles.assign(static_cast<std::size_t>(spec.allNum), -1);
-            if (LoadDivGraph(resolved.c_str(), spec.allNum, spec.xNum, spec.yNum, xSize, ySize, handles.data()) != -1) {
-                handle = firstValidHandle(handles);
-                handleCount = countValidHandles(handles);
+            if (spec.allNum > 0 && spec.xNum > 0 && spec.yNum > 0 &&
+                spec.xSize > 0 && spec.ySize > 0) {
+                handles.assign(static_cast<std::size_t>(spec.allNum), -1);
+                if (LoadDivGraph(resolved.c_str(), spec.allNum, spec.xNum, spec.yNum,
+                                 spec.xSize, spec.ySize, handles.data()) != -1) {
+                    handle = firstValidHandle(handles);
+                    handleCount = countValidHandles(handles);
+                }
             }
         }
         else {

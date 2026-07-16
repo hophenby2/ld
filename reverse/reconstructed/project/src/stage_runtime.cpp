@@ -30,7 +30,17 @@ constexpr std::array<int, 11> kStageEndFrames{{
     0, 5700, 9700, 9500, 11700, 11800, 12500, 12500, 21420, 17900, 12000,
 }};
 constexpr std::array<int, 5> kOriginalStockThresholds{{56000, 70000, 70000, 70000, 70000}};
-constexpr int kGrazeMargin = 24;
+constexpr int kGrazeMargin = 48;
+
+void normalizeSystemConfig(std::array<int, 7>& values) {
+    values[0] = values[0] != 0 ? 1 : 0;
+    values[1] = std::clamp(values[1], 0, 2);
+    values[2] = values[2] != 0 ? 1 : 0;
+    values[3] = values[3] != 0 ? 1 : 0;
+    values[4] = values[4] != 0 ? 1 : 0;
+    values[5] = values[5] != 0 ? 1 : 0;
+    values[6] = std::clamp(values[6], 0, 3);
+}
 constexpr std::array<double, 5> kProjectileId1Acceleration{{0.06, 0.07, 0.08, 0.10, 0.10}};
 constexpr std::array<double, 5> kProjectileRetargetAcceleration{{0.13, 0.15, 0.175, 0.20, 0.20}};
 constexpr std::array<double, 5> kProjectileId13Acceleration{{0.15, 0.17, 0.18, 0.20, 0.20}};
@@ -1117,14 +1127,17 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
         feverSoundHandles_[i] = resources.soundHandleById(kFeverSoundIds[i]);
     }
     normalShotSoundHandle_ = resources.soundHandleById("SE_se_Shot1");
+    missSoundHandle_ = resources.soundHandleById("SE_se_Miss");
     miss2SoundHandle_ = resources.soundHandleById("SE_se_Miss2");
+    grazeSoundHandle_ = resources.soundHandleById("SE_se_Graze");
+    guardSoundHandle_ = resources.soundHandleById("SE_se_Guard");
     shotHitSoundHandle_ = resources.soundHandleById("SE_se_Shothit");
     shotHit2SoundHandle_ = resources.soundHandleById("SE_se_Shothit2");
     item1SoundHandle_ = resources.soundHandleById("SE_se_Item1");
     item2SoundHandle_ = resources.soundHandleById("SE_se_Item2");
-    item3SoundHandle_ = resources.loadSound("media\\se\\Item3.wav", 3);
-    extendSoundHandle_ = resources.loadSound("media\\se\\Extend.wav", 3);
-    blast1SoundHandle_ = resources.loadSound("media\\se\\Blast1.wav", 3);
+    item3SoundHandle_ = resources.soundHandleById("SE_se_Item3");
+    extendSoundHandle_ = resources.soundHandleById("SE_se_Extend");
+    blast1SoundHandle_ = resources.soundHandleById("SE_se_Blast1");
     enemyDown1SoundHandle_ = resources.soundHandleById("SE_se_EnemyDown1");
     enemyDown2SoundHandle_ = resources.soundHandleById("SE_se_EnemyDown2");
     enemyDown3SoundHandle_ = resources.soundHandleById("SE_se_EnemyDown3");
@@ -1182,8 +1195,10 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
     config_.language = std::clamp(config_.language, 0, 3);
     config_.bgmVolume = std::clamp(config_.bgmVolume, 0, 10);
     config_.soundEffectVolume = std::clamp(config_.soundEffectVolume, 0, 10);
-    config_.itemVisibility = config_.itemVisibility != 0 ? 1 : 0;
-    config_.likeStyle = config_.likeStyle != 0 ? 1 : 0;
+    normalizeSystemConfig(config_.systemConfig);
+    config_.itemVisibility = config_.systemConfig[3];
+    config_.likeStyle = config_.systemConfig[5];
+    initializePauseResources(resources);
     config_.rawStartFrame = std::max(config_.rawStartFrame, 0);
     config_.firstDispatchFrame = std::max(config_.firstDispatchFrame, -1);
     config_.initialStock = config_.initialStock < 0
@@ -1225,8 +1240,9 @@ bool StageRuntime::setConfig(const StageRuntimeConfig& config) {
     next.language = std::clamp(next.language, 0, 3);
     next.bgmVolume = std::clamp(next.bgmVolume, 0, 10);
     next.soundEffectVolume = std::clamp(next.soundEffectVolume, 0, 10);
-    next.itemVisibility = next.itemVisibility != 0 ? 1 : 0;
-    next.likeStyle = next.likeStyle != 0 ? 1 : 0;
+    normalizeSystemConfig(next.systemConfig);
+    next.itemVisibility = next.systemConfig[3];
+    next.likeStyle = next.systemConfig[5];
     next.rawStartFrame = std::max(next.rawStartFrame, 0);
     next.firstDispatchFrame = std::max(next.firstDispatchFrame, -1);
     next.initialStock = next.initialStock < 0 ? -1 : std::clamp(next.initialStock, 0, 3);
@@ -1248,8 +1264,13 @@ bool StageRuntime::setConfig(const StageRuntimeConfig& config) {
                          config_.language != next.language ||
                          config_.bgmVolume != next.bgmVolume ||
                          config_.soundEffectVolume != next.soundEffectVolume ||
+                         config_.dataWindowUnlocked != next.dataWindowUnlocked ||
+                         config_.systemConfig != next.systemConfig ||
                          config_.itemVisibility != next.itemVisibility ||
                          config_.likeStyle != next.likeStyle ||
+                         config_.keyboardBindings != next.keyboardBindings ||
+                         config_.controllerBindings != next.controllerBindings ||
+                         config_.controlDevice != next.controlDevice ||
                          config_.controlModeEnabled != next.controlModeEnabled || config_.helpMode != next.helpMode ||
                          config_.helpAutoProgress != next.helpAutoProgress ||
                          config_.rawStartFrame != next.rawStartFrame ||
@@ -1266,10 +1287,17 @@ bool StageRuntime::setConfig(const StageRuntimeConfig& config) {
     return changed;
 }
 
+StageRuntime::GameplayExitRequest StageRuntime::consumeExitRequest() {
+    const GameplayExitRequest request = pendingExitRequest_;
+    pendingExitRequest_ = GameplayExitRequest::None;
+    return request;
+}
+
 void StageRuntime::reset() {
     const PlayerState previousPlayer = player_;
     const bool continueRun = config_.continueRun;
     config_.continueRun = false;
+    pendingExitRequest_ = GameplayExitRequest::None;
     frame_ = config_.firstDispatchFrame;
     player_ = {};
     if (continueRun) {
@@ -1384,8 +1412,25 @@ void StageRuntime::reset() {
     stage10TransitionStarted_ = false;
     stage10FinalBossSpawned_ = false;
     inputActions_.fill(false);
-    paused_ = false;
+    pauseFlowState_ = PauseFlowState::Gameplay;
+    pauseCursor_ = 0;
+    pauseTransitionTimer_ = 0;
+    pauseStateTimer_ = 0;
+    pauseSelectionPulse_ = 0;
+    pauseUpHeldFrames_ = 0;
+    pauseDownHeldFrames_ = 0;
+    pauseLeftHeldFrames_ = 0;
+    pauseRightHeldFrames_ = 0;
+    pauseInputConsumed_ = false;
+    pauseSettingsDirty_ = false;
+    pauseSaveDataRequested_ = false;
+    pauseSaveSystemConfigRequested_ = false;
     pauseInputHeld_ = false;
+    gameOverDelayComplete_ = false;
+    pauseKeyCaptureActive_ = false;
+    pauseKeyCaptureDelay_ = 0;
+    pauseLastControlDevice_ = config_.controlDevice;
+    pausedBgmHandles_.clear();
     enemies_.clear();
     pendingEnemies_.clear();
     enemyProjectiles_.clear();
@@ -1406,6 +1451,9 @@ void StageRuntime::reset() {
             StopSoundMem(handle);
         }
     }
+    if (gameOverBgmHandle_ != -1) {
+        StopSoundMem(gameOverBgmHandle_);
+    }
     const int stageBgm = stageBgmHandles_[static_cast<std::size_t>(selectedStage_ - 1)];
     // Fresh Stage 10 runs start this at frame 320. Practice/Trial entries beyond
     // that boundary arrive with the track already selected by the context init.
@@ -1421,21 +1469,11 @@ void StageRuntime::update() {
     }
 
     pollInput();
-    const bool pauseDown = actionDown(InputAction::Pause);
-    if (pauseDown && !pauseInputHeld_) {
-        paused_ = !paused_;
-    }
-    pauseInputHeld_ = pauseDown;
-    if (paused_) {
+    if (updatePauseFlow()) {
         return;
     }
 
     updateLayoutGuideToggle();
-
-    if (CheckHitKey(KEY_INPUT_R) != 0) {
-        reset();
-        return;
-    }
     if (stageComplete()) {
         return;
     }
@@ -1531,9 +1569,28 @@ void StageRuntime::update() {
     handleCollisions();
 
     ++frame_;
+    completeGameOverDelayFrame();
 }
 
 void StageRuntime::draw() const {
+    if (pauseFlowState_ == PauseFlowState::GameOverPresentation) {
+        if (!playerFrameFrames_.empty() && playerFrameFrames_.front() != -1) {
+            DrawGraph(940, 0, playerFrameFrames_.front(), TRUE);
+            const int overlayIndex = 9 + std::clamp(config_.setupGroup, 0, 2) * 10;
+            if (overlayIndex < static_cast<int>(playerFrameFrames_.size()) &&
+                playerFrameFrames_[static_cast<std::size_t>(overlayIndex)] != -1) {
+                DrawGraph(0, 0,
+                          playerFrameFrames_[static_cast<std::size_t>(overlayIndex)], TRUE);
+            }
+        }
+        else {
+            drawRightHudPanel();
+        }
+        drawOverlay();
+        drawPauseFlow();
+        return;
+    }
+
     drawBackground();
     drawPlayerSideObjects();
     drawStageEffects(false);
@@ -1555,6 +1612,7 @@ void StageRuntime::draw() const {
     drawStageEffects(true, 0x73);
     drawOverlay();
     drawStageBannerText();
+    drawPauseFlow();
 }
 
 int StageRuntime::enemiesAlive() const {
@@ -3842,6 +3900,12 @@ StageRuntime::StageEnemy* StageRuntime::findEnemyById(int entityId) {
 }
 
 void StageRuntime::updatePlayer() {
+    // The terminal miss clears the original player-active flag before state
+    // 0x1e continues dispatching the rest of the stage simulation.
+    if (pauseFlowState_ == PauseFlowState::GameOverDelay) {
+        return;
+    }
+
     const bool shootDown = actionDown(InputAction::Shoot);
     const bool rapidFireDown = actionDown(InputAction::RapidFire);
     const bool slowDown = actionDown(InputAction::Slow);
@@ -5519,7 +5583,8 @@ void StageRuntime::spawnStageEffect(int type, int graphHandle, int graphExtent, 
     const bool graphlessFamily = type == 0x10 || type == 0x11 ||
                                  type == 0x19 ||
                                  type == 0x1a ||
-                                 type == 0x1d || type == 0x28 ||
+                                 type == 0x1d || type == 0x1e ||
+                                 type == 0x1f || type == 0x28 ||
                                  type == 0x2d ||
                                  type == 0x36;
     if ((!graphlessFamily && graphHandle == -1) || stageEffects_.size() >= kStageEffectCap) {
@@ -5567,6 +5632,50 @@ void StageRuntime::updateStageEffects() {
 
         const int age = effect.age;
         switch (effect.type) {
+        case 0x0e: {
+            // FUN_1400732a0 keeps (global gameplay tick - age) stable, so this
+            // random choice is fixed for the particle's whole life. It selects
+            // both the 10..20 frame lifetime and the per-frame spin step.
+            if (age == 0) {
+                effect.randomSeed = static_cast<std::uint32_t>(effect.angle16) +
+                                    static_cast<std::uint32_t>(frame_);
+            }
+            const std::uint32_t random = stageScriptRandFromFrame(
+                static_cast<int>(effect.randomSeed));
+            const int randomPhase = static_cast<int>(random % 11u);
+            const int lifetime = randomPhase + 10;
+
+            const double radians = fixedAngleToRadiansDouble(effect.angle16);
+            effect.x += static_cast<float>(std::cos(radians) * effect.scale0);
+            effect.y += static_cast<float>(std::sin(radians) * effect.scale0);
+            effect.scaleX += 0.01;
+
+            int drawAlpha = effect.alpha;
+            const int fadeStart = randomPhase + 2;
+            if (age >= lifetime) {
+                drawAlpha = 0;
+            }
+            else if (age >= fadeStart) {
+                drawAlpha = static_cast<int>(
+                    std::sin(static_cast<double>(age - (randomPhase - 6)) *
+                             kPi / 16.0) *
+                    static_cast<double>(effect.alpha));
+            }
+
+            effect.drawX = effect.x;
+            effect.drawY = effect.y;
+            effect.drawAngle16 = normalizeAngle16(
+                static_cast<int>(effect.angle16) +
+                (static_cast<int>(random % 571u) + 30) * age);
+            effect.drawScaleX = effect.scaleX;
+            effect.drawScaleY = effect.scaleX;
+            effect.drawAlpha = drawAlpha;
+            effect.drawQueuedThisFrame = true;
+            if (age == lifetime) {
+                effect.active = false;
+            }
+            break;
+        }
         case 0x10:
         case 0x11:
         case 0x36: {
@@ -5982,6 +6091,32 @@ void StageRuntime::updateStageEffects() {
                     1.0, effect.scaleX, effect.scaleX * 0.1 + 0.5, 50,
                     0xff, 0xff, 0xff, 0xc0);
                 playPlayerSound(item2SoundHandle_, 0x0c);
+            }
+            if (age == effect.lifetime) {
+                effect.active = false;
+            }
+            break;
+        }
+        case 0x1e:
+        case 0x1f: {
+            // FUN_140073e60 uses these graphless post-hit drivers to discharge
+            // Dream Gauge. Type 0x1f is the faster terminal-death variant.
+            if (player_.specialGauge >= kSpecialGaugeReady) {
+                player_.specialGauge = 48000;
+            }
+            if (player_.specialGauge > 0) {
+                const double stageScale = std::max(
+                    0.6,
+                    1.0 - static_cast<double>(selectedStage_ / 2) * 0.1);
+                const double baseDrain = effect.type == 0x1e ? -100.0 : -200.0;
+                player_.specialGauge += static_cast<int>(stageScale * baseDrain);
+                if (player_.specialGauge < 0) {
+                    player_.specialGauge = 0;
+                }
+            }
+            else if (player_.specialGauge < 0) {
+                playPlayerSound(feverSoundHandles_[2], 0x19);
+                player_.specialGauge = 0;
             }
             if (age == effect.lifetime) {
                 effect.active = false;
@@ -14260,24 +14395,91 @@ bool StageRuntime::settlePendingPlayerHit() {
     if (player_.playerStateTimer != 260) {
         return false;
     }
+    if (pauseFlowState_ == PauseFlowState::GameOverDelay ||
+        pauseFlowState_ == PauseFlowState::GameOverPresentation) {
+        return false;
+    }
     const int phaseMode = selectedStage_ == 1 ? stage01BossPhaseMode_
                           : selectedStage_ == 2 ? stage02BossPhaseMode_
                           : selectedStage_ == 3 ? stage03BossPhaseMode_
                           : selectedStage_ == 4 ? stage04BossPhaseMode_
                                                 : lateStageBossPhaseMode_;
+    const int style = std::clamp(config_.optionSlots[3], 0, 3);
+    const bool autoGuard = player_.lives > 0 && style != 3;
+    if (autoGuard) {
+        if (phaseMode == 1 && bossPhaseRewardIndex_ == 0) {
+            bossPhaseRewardIndex_ = 1;
+        }
+        playPlayerSound(guardSoundHandle_, 0x19);
+        const int centerHandle = effectLargeFrames_.empty()
+                                     ? -1
+                                     : effectLargeFrames_[0];
+        spawnStageEffect(0x13, centerHandle, 600, 0x5b,
+                         player_.x, player_.y, 0,
+                         0.0, 0.0, 0.0, 0,
+                         0xff, 0xff, 0xff, 0xff);
+
+        constexpr std::array<float, 4> kGuardRadii{{0.0f, 240.0f, 320.0f, 480.0f}};
+        const float guardRadius = style == 0
+                                      ? 240.0f
+                                      : kGuardRadii[static_cast<std::size_t>(
+                                            std::clamp(player_.lives, 0, 3))];
+        spawnPlayerSideObject(0x16, player_.x, player_.y,
+                              0.0, 0, 0, guardRadius);
+        if (style == 0) {
+            --player_.lives;
+            player_.stockProgress -= stockThresholdForCurrentConfig();
+        }
+        else {
+            player_.lives = 0;
+            player_.stockProgress = 0;
+        }
+
+        const int group = std::clamp(config_.setupGroup, 0, 2);
+        const int portraitIndex = 4 + group * 10;
+        const int portraitHandle = portraitIndex < static_cast<int>(playerFrameFrames_.size())
+                                       ? playerFrameFrames_[static_cast<std::size_t>(portraitIndex)]
+                                       : -1;
+        spawnStageEffect(0x16, portraitHandle, 0, 0x6f,
+                         0.0f, 0.0f, 0,
+                         0.0, 1.0, 1.0, 0x78,
+                         0xff, 0xff, 0xff, 0xff);
+        spawnStageEffect(0x1e, -1, 0, 1,
+                         0.0f, 0.0f, 0,
+                         0.0, 1.0, 1.0, 0x60,
+                         0xff, 0xff, 0xff, 0xff);
+        player_.playerStateTimer = 0;
+        player_.bombLock = -120;
+        player_.invulnerableFrames = std::max(player_.invulnerableFrames, 150);
+        return false;
+    }
+
     if (phaseMode == 1) {
-        // The initial collision changes the phase result from 0 to 1; the
-        // completed miss changes it to -1 and suppresses the bonus entirely.
         bossPhaseRewardIndex_ = -1;
     }
-    --player_.lives;
-    player_.stockProgress -= stockThresholdForCurrentConfig();
-    player_.x = static_cast<float>(notes::gameplay_layout::kPlayerStart.x);
-    player_.y = static_cast<float>(notes::gameplay_layout::kPlayerStart.y);
-    if (player_.lives < 0) {
-        reset();
+    spawnStageEffect(0x10, -1, 0, 0x28,
+                     player_.x, player_.y, 0,
+                     0.0, 1.0, 1.0, 0,
+                     0xff, 0xff, 0xff, 0xff);
+    const int group = std::clamp(config_.setupGroup, 0, 2);
+    const int portraitIndex = (player_.tokenStock == 0 ? 9 : 8) + group * 10;
+    const int portraitHandle = portraitIndex < static_cast<int>(playerFrameFrames_.size())
+                                   ? playerFrameFrames_[static_cast<std::size_t>(portraitIndex)]
+                                   : -1;
+    spawnStageEffect(0x16, portraitHandle, 0, 0x6f,
+                     0.0f, 0.0f, 0,
+                     0.0, 1.0, 1.0, player_.tokenStock == 0 ? 1000 : 0x78,
+                     0xff, 0xff, 0xff, 0xff);
+    spawnStageEffect(0x1f, -1, 0, 1,
+                     0.0f, 0.0f, 0,
+                     0.0, 1.0, 1.0, 0x50,
+                     0xff, 0xff, 0xff, 0xff);
+    if (player_.tokenStock == 0) {
+        beginGameOver();
         return true;
     }
+    flushEnemyProjectilesToEffects();
+    --player_.tokenStock;
     player_.playerStateTimer = 0;
     player_.bombLock = -120;
     player_.invulnerableFrames = std::max(player_.invulnerableFrames, 150);
@@ -14590,6 +14792,28 @@ void StageRuntime::updatePlayerSideObjects() {
                 }
                 break;
             case 0x16:
+                if (updateAge == 0) {
+                    const int particleHandle = playerFrames_.size() > 14
+                                                   ? playerFrames_[14]
+                                                   : -1;
+                    // FUN_140109780 emits 32 independent guard sparks here.
+                    for (int i = 0; i < 32; ++i) {
+                        const std::uint32_t angleSeed =
+                            static_cast<std::uint32_t>(frame_ + i * 0x21);
+                        const std::uint32_t scaleSeed =
+                            static_cast<std::uint32_t>(frame_ + i * 0xd05);
+                        const std::uint32_t speedSeed =
+                            static_cast<std::uint32_t>(frame_ + i * 0x14d);
+                        const double scale = scriptRandomHundredth(
+                            scaleSeed, 1.1, 2.2);
+                        spawnStageEffect(
+                            0x2c, particleHandle, 80, 0x48,
+                            object.x, object.y, scriptRandomAngle(angleSeed),
+                            scriptRandomHundredth(speedSeed, 16.0, 26.0),
+                            scale, scale, 0,
+                            0xff, 0xff, 0xff, 0xc0);
+                    }
+                }
                 object.collisionRadiusOrScale = updateAge < 32
                                                     ? 20.0f + sineEaseIn(
                                                           updateAge, 32,
@@ -14946,27 +15170,78 @@ void StageRuntime::handlePlayerSideObjectProjectileCancels() {
 }
 
 void StageRuntime::handleEnemyProjectilePlayerHitAndGraze() {
-    // FUN_1400cbd30 handles enemy projectile collision and graze/near-miss. This
-    // keeps `graze` tied to bullet proximity rather than offensive hits.
+    // FUN_1400cbd30 reconstructs the effective point from the raw node position
+    // and accumulated radial travel. Integrated steering stores its raw point
+    // directly in x/y; the other helpers retain it in anchorX/anchorY.
+    const int playerHitRadius =
+        static_cast<std::uint32_t>(player_.focusTransition + 2) > 4U ? 3 : 4;
+    bool playerHit = false;
+    std::uint32_t projectileOrdinal = 0;
     for (auto& projectile : enemyProjectiles_) {
-        if (!projectile.active || !projectile.collisionEnabled) {
+        if (!projectile.active) {
             continue;
         }
-        const int hitRadius = projectile.radius + (player_.focused ? 3 : 6);
-        const float distSq = distanceSquared(projectile.x, projectile.y, player_.x, player_.y);
-        if (player_.invulnerableFrames == 0 && distSq <= static_cast<float>(hitRadius * hitRadius)) {
+        const std::uint32_t ordinal = projectileOrdinal++;
+        if (projectile.radius <= 0) {
+            continue;
+        }
+        const bool integratedPosition =
+            projectile.projectileId == 0x0c || projectile.projectileId == 0x0e ||
+            (projectile.projectileId >= 0x23 && projectile.projectileId <= 0x27) ||
+            projectile.projectileId == 0x2c || projectile.projectileId == 0x2d ||
+            projectile.projectileId == 0x35 || projectile.projectileId == 0x36;
+        const float rawX = integratedPosition ? projectile.x : projectile.anchorX;
+        const float rawY = integratedPosition ? projectile.y : projectile.anchorY;
+        const double angle = fixedAngleToRadiansDouble(projectile.angle16);
+        const float testX = rawX + static_cast<float>(
+            std::cos(angle) * static_cast<double>(projectile.speedOrAccelHint));
+        const float testY = rawY + static_cast<float>(
+            std::sin(angle) * static_cast<double>(projectile.speedOrAccelHint));
+        const float distSq = distanceSquared(testX, testY, player_.x, player_.y);
+        const int hitRadius = projectile.radius + playerHitRadius;
+        if (distSq <= static_cast<float>(hitRadius * hitRadius)) {
             projectile.active = false;
-            projectile.grazeOrHitProcessed = true;
-            player_.playerStateTimer = 280;
-            player_.invulnerableFrames = 300;
-            break;
+            playerHit = true;
+            continue;
         }
-        const int grazeRadius = hitRadius + kGrazeMargin;
-        if (!projectile.grazeOrHitProcessed && distSq <= static_cast<float>(grazeRadius * grazeRadius)) {
+        const int grazeRadius = projectile.radius + kGrazeMargin;
+        if (config_.routeMode >= 0 &&
+            pauseFlowState_ != PauseFlowState::GameOverDelay &&
+            projectile.collisionEnabled && !projectile.grazeOrHitProcessed &&
+            distSq <= static_cast<float>(grazeRadius * grazeRadius)) {
             projectile.grazeOrHitProcessed = true;
+            const std::uint16_t aimAngle = radiansToFixedAngleTrunc(std::atan2(
+                static_cast<double>(player_.y - testY),
+                static_cast<double>(player_.x - testX)));
+            const std::uint16_t feedbackAngle = normalizeAngle16(
+                static_cast<int>(scriptRandomAngle(
+                    static_cast<std::uint32_t>(frame_) + 112u + ordinal)) +
+                static_cast<int>(aimAngle) + 0x4000);
+            spawnStageEffect(0x19, -1, 0, 0x42, testX, testY, feedbackAngle,
+                             1.0, 1.0, 0.5, 50,
+                             0xff, 0xff, 0xff, 0xc0);
+            const int grazeParticleHandle = playerFrames_.size() > 14
+                                                ? playerFrames_[14]
+                                                : -1;
+            const std::uint32_t particleSpeedSeed =
+                static_cast<std::uint32_t>(frame_) + 0x2710u + ordinal;
+            const std::uint32_t particleAngleSeed =
+                static_cast<std::uint32_t>(frame_) + 1u + ordinal;
+            spawnStageEffect(
+                0x0e, grazeParticleHandle, 80, 0x44,
+                (testX + player_.x) * 0.5f, (testY + player_.y) * 0.5f,
+                scriptRandomAngle(particleAngleSeed),
+                scriptRandomHundredth(particleSpeedSeed, 5.0, 8.0),
+                0.3, 0.3, 0x0c,
+                0xff, 0xff, 0xff, 0xff);
+            playPlayerSound(grazeSoundHandle_, 0x10);
             ++player_.graze;
-            addRunScore(10);
         }
+    }
+    if (playerHit && player_.invulnerableFrames == 0) {
+        player_.playerStateTimer = 280;
+        player_.invulnerableFrames = 300;
+        playPlayerSound(missSoundHandle_, 0x19);
     }
 }
 
@@ -15797,6 +16072,10 @@ void StageRuntime::drawPlayerSideObjects() const {
 }
 
 void StageRuntime::drawPlayer() const {
+    if (pauseFlowState_ == PauseFlowState::GameOverDelay ||
+        pauseFlowState_ == PauseFlowState::GameOverPresentation) {
+        return;
+    }
     const float x = screenX(player_.x);
     const float y = screenY(player_.y);
     const int frame = playerFrames_.empty() ? -1 : playerFrames_[0];

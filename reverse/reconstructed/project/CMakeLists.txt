@@ -54,6 +54,7 @@ add_executable(LikeDreamerRe WIN32
     src/save_config.cpp
     src/stage_probe.cpp
     src/stage_runtime.cpp
+    src/stage_runtime_pause.cpp
     src/stage_runtime_boss07.cpp
     src/stage_runtime_boss08.cpp
     src/stage_runtime_boss09.cpp

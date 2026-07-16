@@ -49,9 +49,11 @@ public:
         int specialMode = 0;
         int specialStageFlag = 0;
         int dataWindowEnabled = 1;
+        bool dataWindowUnlocked = false;
         int language = 0;
         int bgmVolume = 10;
         int soundEffectVolume = 10;
+        std::array<int, 7> systemConfig{{0, 0, 1, 0, 1, 0, 0}};
         int itemVisibility = 0;
         int likeStyle = 0;
         std::array<int, 4> optionSlots{{0, 0, 0, 0}};
@@ -69,10 +71,30 @@ public:
         bool continueRun = false;
     };
 
+    struct GameplaySettings {
+        int bgmVolume = 10;
+        int soundEffectVolume = 10;
+        int language = 0;
+        int dataWindowEnabled = 1;
+        std::array<int, 7> systemConfig{{0, 0, 1, 0, 1, 0, 0}};
+        std::array<int, 11> keyboardBindings{};
+        std::array<int, 11> controllerBindings{};
+        int controlDevice = 5;
+        bool saveData = false;
+        bool saveSystemConfig = false;
+    };
+
     void initialize(ResourceManager& resources, const SaveConfigState& saveConfigState);
     void update(ResourceManager& resources);
     void draw(const ResourceManager& resources) const;
     void completeGameplay(ResourceManager& resources, int score = 0, int elapsedFrames = 0);
+    void returnToTitle(ResourceManager& resources);
+    void abortGameplay(ResourceManager& resources);
+    void skipTutorial(ResourceManager& resources);
+    void finishGameOver(ResourceManager& resources, bool replayPrompt,
+                        int score, int elapsedFrames);
+    void applyGameplaySettings(ResourceManager& resources,
+                               const GameplaySettings& settings);
 
     GameplayRequest consumeGameplayRequest();
     MainState state() const { return state_; }
@@ -177,6 +199,7 @@ private:
     void scanReplaySlots(const ResourceManager& resources);
     void playSound(ResourceManager& resources, const char* id) const;
     void ensureTitleBgm(ResourceManager& resources);
+    void restartTitleBgm(ResourceManager& resources);
     void stopTitleBgm(ResourceManager& resources);
     void stopAllBgm(ResourceManager& resources);
     void startResultBgm(ResourceManager& resources);

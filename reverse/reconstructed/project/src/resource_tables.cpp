@@ -5,6 +5,21 @@
 namespace reconstructed {
 namespace {
 
+template <std::size_t N>
+constexpr bool validGraphSpecs(const std::array<GraphResourceSpec, N>& specs) {
+    for (const auto& spec : specs) {
+        if (spec.id == nullptr || spec.logicalPath == nullptr ||
+            spec.allNum <= 0 || spec.xNum <= 0 || spec.yNum <= 0) {
+            return false;
+        }
+        if (spec.loadKind == GraphLoadKind::Div &&
+            (spec.xSize <= 0 || spec.ySize <= 0)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // Evidence: reverse/reconstructed/data-structures/resource-handle-map.md,
 // graphics-table.md, and renamed decompiled anchors 1400f4f70/1400ced90/1400d0e50.
 constexpr std::array<GraphResourceSpec, 5> kStartupGraphs{{
@@ -41,7 +56,7 @@ constexpr std::array<GraphResourceSpec, 23> kFrontendGraphs{{
     {"GFX_system_WhiteBack_frontend", "media\\system\\WhiteBack.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Startup},
 }};
 
-constexpr std::array<GraphResourceSpec, 65> kExpandedGraphs{{
+constexpr std::array<GraphResourceSpec, 68> kExpandedGraphs{{
     {"GFX_system_BetaLogo", "media\\system\\BetaLogo.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
     {"GFX_system_DemoEnd", "media\\system\\DemoEnd.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
     {"GFX_system_TitleMenu", "media\\system\\TitleMenu.png", GraphLoadKind::Div, 9, 1, 9, 0x21c, 0x3c, ResourceSource::Primary},
@@ -51,6 +66,7 @@ constexpr std::array<GraphResourceSpec, 65> kExpandedGraphs{{
     {"GFX_system_ConfigMenu", "media\\system\\ConfigMenu.png", GraphLoadKind::Div, 0x14, 1, 0x14, 0xf0, 0x28, ResourceSource::Primary},
     {"GFX_system_ConfigMenu2", "media\\system\\ConfigMenu2.png", GraphLoadKind::Div, 0xf, 1, 0xf, 0xf0, 0x28, ResourceSource::Primary},
     {"GFX_system_KeyConfigMenu", "media\\system\\KeyConfigMenu.png", GraphLoadKind::Div, 0x15, 1, 0x15, 0xf0, 0x28, ResourceSource::Primary},
+    {"GFX_system_ConfigNumber", "media\\system\\ConfigNumber.png", GraphLoadKind::Div, 0x0b, 1, 0x0b, 0x1e, 0x28, ResourceSource::Primary},
     {"GFX_system_Num_s", "media\\system\\Num_s.png", GraphLoadKind::Div, 0xe, 0xe, 1, 0x14, 0x1e, ResourceSource::Primary},
     {"GFX_system_Num_m", "media\\system\\Num_m.png", GraphLoadKind::Div, 10, 10, 1, 0x20, 0x30, ResourceSource::Primary},
     {"GFX_system_Num_l", "media\\system\\Num_l.png", GraphLoadKind::Div, 0xe, 0xe, 1, 0x30, 0x48, ResourceSource::Primary},
@@ -61,6 +77,8 @@ constexpr std::array<GraphResourceSpec, 65> kExpandedGraphs{{
     {"GFX_player_Item", "media\\player\\Item.png", GraphLoadKind::Div, 0xf, 0xf, 1, 100, 100, ResourceSource::Primary},
     {"GFX_player_PlayerFrame", "media\\player\\PlayerFrame.png", GraphLoadKind::Div, 0x1e, 10, 3, 0x154, 0x2d0, ResourceSource::Primary},
     {"GFX_player_State", "media\\player\\State.png", GraphLoadKind::Div, 0x20, 1, 0x20, 200, 0x28, ResourceSource::Primary},
+    {"GFX_player_PauseBack", "media\\player\\PauseBack.png", GraphLoadKind::Div, 10, 5, 2, 600, 0x2d0, ResourceSource::Primary},
+    {"GFX_player_PauseCount", "media\\player\\PauseCount.png", GraphLoadKind::Div, 4, 4, 1, 0x140, 0x140, ResourceSource::Primary},
     {"GFX_player_DreamGauge", "media\\player\\DreamGauge.png", GraphLoadKind::Div, 2, 2, 1, 0xa0, 0xa0, ResourceSource::Primary},
     {"GFX_effect_Effect_s", "media\\effect\\Effect_s.png", GraphLoadKind::Div, 0x14, 10, 2, 100, 100, ResourceSource::Primary},
     {"GFX_effect_Effect_m", "media\\effect\\Effect_m.png", GraphLoadKind::Div, 0x1e, 10, 3, 200, 200, ResourceSource::Primary},
@@ -84,32 +102,36 @@ constexpr std::array<GraphResourceSpec, 65> kExpandedGraphs{{
     {"GFX_gallery_NoticeFrame", "media\\gallery\\NoticeFrame.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
     {"GFX_gallery_GalleryFrame", "media\\gallery\\GalleryFrame.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
     {"GFX_gallery_EnemyListWindow", "media\\gallery\\EnemyListWindow.png", GraphLoadKind::Single, 1, 1, 1, 0, 0, ResourceSource::Primary},
-    {"GFX_system_Manual", "media\\system\\Manual.png", GraphLoadKind::Div, 0xb, 1, 0xb, 0, 0, ResourceSource::Secondary},
-    {"GFX_system_ManualMenu", "media\\system\\ManualMenu.png", GraphLoadKind::Div, 0xc, 1, 0xc, 0, 0, ResourceSource::Secondary},
-    {"GFX_system_DifficultyTips", "media\\system\\DifficultyTips.png", GraphLoadKind::Div, 6, 1, 6, 0, 0, ResourceSource::Secondary},
-    {"GFX_system_KerPromot", "media\\system\\KerPromot.png", GraphLoadKind::Div, 0xe, 1, 0xe, 0, 0, ResourceSource::Secondary},
-    {"GFX_player_PauseMenu", "media\\player\\PauseMenu.png", GraphLoadKind::Div, 0x1e, 1, 0x1e, 0, 0, ResourceSource::Secondary},
-    {"GFX_stage_TutorialPanel", "media\\stage\\TutorialPanel.png", GraphLoadKind::Div, 3, 3, 1, 0, 0, ResourceSource::Secondary},
-    {"GFX_player_Unlock", "media\\player\\Unlock.png", GraphLoadKind::Div, 9, 1, 9, 0, 0, ResourceSource::Secondary},
-    {"GFX_gallery_NoticeText2", "media\\gallery\\NoticeText2.png", GraphLoadKind::Div, 0x14, 1, 0x14, 0, 0, ResourceSource::Secondary},
-    {"GFX_gallery_NoticeText3", "media\\gallery\\NoticeText3.png", GraphLoadKind::Div, 0x32, 1, 0x32, 0, 0, ResourceSource::Secondary},
-    {"GFX_system_Manual_eng", "media\\system\\Manual_eng.png", GraphLoadKind::Div, 0xb, 1, 0xb, 0, 0, ResourceSource::Secondary},
-    {"GFX_player_PauseMenu_eng", "media\\player\\PauseMenu_eng.png", GraphLoadKind::Div, 0x1e, 1, 0x1e, 0, 0, ResourceSource::Secondary},
-    {"GFX_stage_TutorialPanel_eng", "media\\stage\\TutorialPanel_eng.png", GraphLoadKind::Div, 3, 3, 1, 0, 0, ResourceSource::Secondary},
-    {"GFX_player_Unlock_eng", "media\\player\\Unlock_eng.png", GraphLoadKind::Div, 9, 1, 9, 0, 0, ResourceSource::Secondary},
-    {"GFX_system_Manual_ch1", "media\\system\\Manual_ch1.png", GraphLoadKind::Div, 0xb, 1, 0xb, 0, 0, ResourceSource::Secondary},
-    {"GFX_player_PauseMenu_ch1", "media\\player\\PauseMenu_ch1.png", GraphLoadKind::Div, 0x1e, 1, 0x1e, 0, 0, ResourceSource::Secondary},
-    {"GFX_stage_TutorialPanel_ch1", "media\\stage\\TutorialPanel_ch1.png", GraphLoadKind::Div, 3, 3, 1, 0, 0, ResourceSource::Secondary},
-    {"GFX_player_Unlock_ch1", "media\\player\\Unlock_ch1.png", GraphLoadKind::Div, 9, 1, 9, 0, 0, ResourceSource::Secondary},
-    {"GFX_system_Manual_ch2", "media\\system\\Manual_ch2.png", GraphLoadKind::Div, 0xb, 1, 0xb, 0, 0, ResourceSource::Secondary},
-    {"GFX_player_PauseMenu_ch2", "media\\player\\PauseMenu_ch2.png", GraphLoadKind::Div, 0x1e, 1, 0x1e, 0, 0, ResourceSource::Secondary},
-    {"GFX_stage_TutorialPanel_ch2", "media\\stage\\TutorialPanel_ch2.png", GraphLoadKind::Div, 3, 3, 1, 0, 0, ResourceSource::Secondary},
-    {"GFX_player_Unlock_ch2", "media\\player\\Unlock_ch2.png", GraphLoadKind::Div, 9, 1, 9, 0, 0, ResourceSource::Secondary},
-    {"GFX_gallery_GalleryPic_ch1", "media\\gallery\\GalleryPic_ch1.png", GraphLoadKind::Div, 0x14, 5, 4, 0, 0, ResourceSource::Secondary},
-    {"GFX_gallery_GalleryPic_ch2", "media\\gallery\\GalleryPic_ch2.png", GraphLoadKind::Div, 0x14, 5, 4, 0, 0, ResourceSource::Secondary},
+    {"GFX_system_Manual", "media\\system\\Manual.png", GraphLoadKind::Div, 0xb, 1, 0xb, 800, 0x230, ResourceSource::Secondary},
+    {"GFX_system_ManualMenu", "media\\system\\ManualMenu.png", GraphLoadKind::Div, 0xc, 1, 0xc, 0xb4, 0x1e, ResourceSource::Secondary},
+    {"GFX_system_DifficultyTips", "media\\system\\DifficultyTips.png", GraphLoadKind::Div, 6, 1, 6, 300, 120, ResourceSource::Secondary},
+    {"GFX_system_KerPromot", "media\\system\\KerPromot.png", GraphLoadKind::Div, 0xe, 1, 0xe, 140, 40, ResourceSource::Secondary},
+    {"GFX_player_PauseMenu", "media\\player\\PauseMenu.png", GraphLoadKind::Div, 0x1e, 1, 0x1e, 0x1e0, 0x50, ResourceSource::Secondary},
+    {"GFX_stage_TutorialPanel", "media\\stage\\TutorialPanel.png", GraphLoadKind::Div, 3, 3, 1, 600, 0x2d0, ResourceSource::Secondary},
+    {"GFX_player_Unlock", "media\\player\\Unlock.png", GraphLoadKind::Div, 9, 1, 9, 700, 270, ResourceSource::Secondary},
+    {"GFX_gallery_NoticeText2", "media\\gallery\\NoticeText2.png", GraphLoadKind::Div, 0x14, 1, 0x14, 140, 25, ResourceSource::Secondary},
+    {"GFX_gallery_NoticeText3", "media\\gallery\\NoticeText3.png", GraphLoadKind::Div, 0x32, 1, 0x32, 140, 25, ResourceSource::Secondary},
+    {"GFX_system_Manual_eng", "media\\system\\Manual_eng.png", GraphLoadKind::Div, 0xb, 1, 0xb, 800, 0x230, ResourceSource::Secondary},
+    {"GFX_player_PauseMenu_eng", "media\\player\\PauseMenu_eng.png", GraphLoadKind::Div, 0x1e, 1, 0x1e, 0x1e0, 0x50, ResourceSource::Secondary},
+    {"GFX_stage_TutorialPanel_eng", "media\\stage\\TutorialPanel_eng.png", GraphLoadKind::Div, 3, 3, 1, 600, 0x2d0, ResourceSource::Secondary},
+    {"GFX_player_Unlock_eng", "media\\player\\Unlock_eng.png", GraphLoadKind::Div, 9, 1, 9, 700, 270, ResourceSource::Secondary},
+    {"GFX_system_Manual_ch1", "media\\system\\Manual_ch1.png", GraphLoadKind::Div, 0xb, 1, 0xb, 800, 0x230, ResourceSource::Secondary},
+    {"GFX_player_PauseMenu_ch1", "media\\player\\PauseMenu_ch1.png", GraphLoadKind::Div, 0x1e, 1, 0x1e, 0x1e0, 0x50, ResourceSource::Secondary},
+    {"GFX_stage_TutorialPanel_ch1", "media\\stage\\TutorialPanel_ch1.png", GraphLoadKind::Div, 3, 3, 1, 600, 0x2d0, ResourceSource::Secondary},
+    {"GFX_player_Unlock_ch1", "media\\player\\Unlock_ch1.png", GraphLoadKind::Div, 9, 1, 9, 700, 270, ResourceSource::Secondary},
+    {"GFX_system_Manual_ch2", "media\\system\\Manual_ch2.png", GraphLoadKind::Div, 0xb, 1, 0xb, 800, 0x230, ResourceSource::Secondary},
+    {"GFX_player_PauseMenu_ch2", "media\\player\\PauseMenu_ch2.png", GraphLoadKind::Div, 0x1e, 1, 0x1e, 0x1e0, 0x50, ResourceSource::Secondary},
+    {"GFX_stage_TutorialPanel_ch2", "media\\stage\\TutorialPanel_ch2.png", GraphLoadKind::Div, 3, 3, 1, 600, 0x2d0, ResourceSource::Secondary},
+    {"GFX_player_Unlock_ch2", "media\\player\\Unlock_ch2.png", GraphLoadKind::Div, 9, 1, 9, 700, 270, ResourceSource::Secondary},
+    {"GFX_gallery_GalleryPic_ch1", "media\\gallery\\GalleryPic_ch1.png", GraphLoadKind::Div, 0x14, 5, 4, 0x500, 0x2d0, ResourceSource::Secondary},
+    {"GFX_gallery_GalleryPic_ch2", "media\\gallery\\GalleryPic_ch2.png", GraphLoadKind::Div, 0x14, 5, 4, 0x500, 0x2d0, ResourceSource::Secondary},
 }};
 
-constexpr std::array<SoundResourceSpec, 70> kSounds{{
+static_assert(validGraphSpecs(kStartupGraphs));
+static_assert(validGraphSpecs(kFrontendGraphs));
+static_assert(validGraphSpecs(kExpandedGraphs));
+
+constexpr std::array<SoundResourceSpec, 95> kSounds{{
     {"BGM_bgm_Opening", "media\\bgm\\Opening.ogg", SoundKind::Bgm, 3},
     {"BGM_bgm_Title", "media\\bgm\\Title.ogg", SoundKind::Bgm, 3},
     {"BGM_bgm_Tutorial", "media\\bgm\\Tutorial.ogg", SoundKind::Bgm, 3},
@@ -139,22 +161,32 @@ constexpr std::array<SoundResourceSpec, 70> kSounds{{
     {"SE_se_Switch", "media\\se\\Switch.wav", SoundKind::Se, 3},
     {"SE_se_Text", "media\\se\\Text.wav", SoundKind::Se, 3},
     {"SE_se_Text2", "media\\se\\Text2.wav", SoundKind::Se, 3},
+    {"SE_se_Pose", "media\\se\\Pose.wav", SoundKind::Se, 3},
     {"SE_se_Miss", "media\\se\\Miss.wav", SoundKind::Se, 3},
     {"SE_se_Miss2", "media\\se\\Miss2.wav", SoundKind::Se, 3},
+    {"SE_se_Extend", "media\\se\\Extend.wav", SoundKind::Se, 3},
     {"SE_se_Shot1", "media\\se\\Shot1.wav", SoundKind::Se, 3},
+    {"SE_se_Shot2", "media\\se\\Shot2.wav", SoundKind::Se, 3},
+    {"SE_se_Shot4", "media\\se\\Shot4.wav", SoundKind::Se, 3},
+    {"SE_se_Shot5", "media\\se\\Shot5.wav", SoundKind::Se, 3},
     {"SE_se_Shothit", "media\\se\\Shothit.wav", SoundKind::Se, 3},
     {"SE_se_Shothit2", "media\\se\\Shothit2.wav", SoundKind::Se, 3},
     {"SE_se_Item1", "media\\se\\Item1.wav", SoundKind::Se, 3},
     {"SE_se_Item2", "media\\se\\Item2.wav", SoundKind::Se, 3},
+    {"SE_se_Item3", "media\\se\\Item3.wav", SoundKind::Se, 3},
+    {"SE_se_Guard", "media\\se\\Guard.wav", SoundKind::Se, 3},
+    {"SE_se_DreamPower", "media\\se\\DreamPower.wav", SoundKind::Se, 3},
     {"SE_se_Bonus", "media\\se\\Bonus.wav", SoundKind::Se, 3},
     {"SE_se_BossApproach", "media\\se\\BossApproach.wav", SoundKind::Se, 3},
     {"SE_se_BossLife", "media\\se\\BossLife.wav", SoundKind::Se, 3},
     {"SE_se_BossWeaken", "media\\se\\BossWeaken.wav", SoundKind::Se, 3},
     {"SE_se_Notice", "media\\se\\Notice.wav", SoundKind::Se, 3},
     {"SE_se_Alert", "media\\se\\Alert.wav", SoundKind::Se, 3},
+    {"SE_se_Blast1", "media\\se\\Blast1.wav", SoundKind::Se, 3},
     {"SE_se_Blast2", "media\\se\\Blast2.wav", SoundKind::Se, 3},
     {"SE_se_Bullet1", "media\\se\\Bullet1.wav", SoundKind::Se, 3},
     {"SE_se_Bullet2", "media\\se\\Bullet2.wav", SoundKind::Se, 3},
+    {"SE_se_Graze", "media\\se\\Graze.wav", SoundKind::Se, 3},
     {"SE_se_EnemyDown1", "media\\se\\EnemyDown1.wav", SoundKind::Se, 3},
     {"SE_se_EnemyDown2", "media\\se\\EnemyDown2.wav", SoundKind::Se, 3},
     {"SE_se_EnemyDown3", "media\\se\\EnemyDown3.wav", SoundKind::Se, 3},
@@ -167,7 +199,20 @@ constexpr std::array<SoundResourceSpec, 70> kSounds{{
     {"SE_se_BossSE4_2", "media\\se\\BossSE4.wav", SoundKind::Se, 3},
     {"SE_se_BossSE5", "media\\se\\BossSE5.wav", SoundKind::Se, 3},
     {"SE_se_BossSE6", "media\\se\\BossSE6.wav", SoundKind::Se, 3},
+    {"SE_se_BossSE7", "media\\se\\BossSE7.wav", SoundKind::Se, 3},
     {"SE_se_BossSE8", "media\\se\\BossSE8.wav", SoundKind::Se, 3},
+    {"SE_se_BossSE9", "media\\se\\BossSE9.wav", SoundKind::Se, 3},
+    {"SE_se_BossSE10", "media\\se\\BossSE10.wav", SoundKind::Se, 3},
+    {"SE_se_BossSE11", "media\\se\\BossSE11.wav", SoundKind::Se, 3},
+    {"SE_se_BossSE12", "media\\se\\BossSE12.wav", SoundKind::Se, 3},
+    {"SE_se_BossSE13", "media\\se\\BossSE13.wav", SoundKind::Se, 3},
+    {"SE_se_BossSE14", "media\\se\\BossSE14.wav", SoundKind::Se, 3},
+    {"SE_se_BossSE15", "media\\se\\BossSE15.wav", SoundKind::Se, 3},
+    {"SE_se_BossSE16", "media\\se\\BossSE16.wav", SoundKind::Se, 3},
+    {"SE_se_BossSE17", "media\\se\\BossSE17.wav", SoundKind::Se, 3},
+    {"SE_se_BossSE18", "media\\se\\BossSE18.wav", SoundKind::Se, 3},
+    {"SE_se_BossSE19", "media\\se\\BossSE19.wav", SoundKind::Se, 3},
+    {"SE_se_BossSE20", "media\\se\\BossSE20.wav", SoundKind::Se, 3},
     {"SE_se_Bomb1", "media\\se\\Bomb1.wav", SoundKind::Se, 3},
     {"SE_se_Bomb2", "media\\se\\Bomb2.wav", SoundKind::Se, 3},
     {"SE_se_Bomb3", "media\\se\\Bomb3.wav", SoundKind::Se, 3},
@@ -180,6 +225,8 @@ constexpr std::array<SoundResourceSpec, 70> kSounds{{
     {"SE_se_Fever2", "media\\se\\Fever2.mp3", SoundKind::Se, 3},
     {"SE_se_Fever3", "media\\se\\Fever3.wav", SoundKind::Se, 3},
     {"SE_se_Fever4", "media\\se\\Fever4.wav", SoundKind::Se, 3},
+    {"SE_se_Opening1", "media\\se\\Opening1.wav", SoundKind::Se, 3},
+    {"SE_se_Opening2", "media\\se\\Opening2.wav", SoundKind::Se, 3},
 }};
 
 static_assert([] {

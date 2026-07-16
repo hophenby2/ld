@@ -636,16 +636,11 @@ int keyboardPromptFrame(int keyCode) {
         : static_cast<int>(found - kKeyboardPromptKeys.begin());
 }
 
-int controllerPromptFrame(int controlDevice, int action, int binding) {
-    const int base = std::clamp(controlDevice, 0, 4) * 15;
-    if (action < 4) {
-        return base;
+int controllerPromptFrame(int controlDevice, int binding) {
+    if (controlDevice < 1 || controlDevice > 4) {
+        return -1;
     }
-    // FUN_1400dacb0 uses fixed action-row prompts for the generic device-0
-    // family. Only the four named controller families search by button mask.
-    if (controlDevice == 0) {
-        return action - 3;
-    }
+    const int base = controlDevice * 15;
     unsigned int mask = 0x10;
     for (int index = 0; index < 28; ++index) {
         if (binding == static_cast<int>(mask)) {
@@ -655,6 +650,17 @@ int controllerPromptFrame(int controlDevice, int action, int binding) {
         mask <<= 1;
     }
     return -1;
+}
+
+int controllerButtonNumber(int binding) {
+    unsigned int mask = 0x10;
+    for (int index = 0; index < 28; ++index) {
+        if (binding == static_cast<int>(mask)) {
+            return index + 1;
+        }
+        mask <<= 1;
+    }
+    return 0;
 }
 
 } // namespace
@@ -896,6 +902,111 @@ void FrontendRuntime::completeGameplay(ResourceManager& resources, int score, in
     startResultBgm(resources);
 }
 
+void FrontendRuntime::returnToTitle(ResourceManager& resources) {
+    gameplayRequest_ = {};
+    stopAllBgm(resources);
+    setState(MainState::TitleMenu, 0);
+    resetInputCounters();
+    restartTitleBgm(resources);
+}
+
+void FrontendRuntime::abortGameplay(ResourceManager& resources) {
+    if (routeMode_ < 0) {
+        returnToTitle(resources);
+        return;
+    }
+
+    gameplayRequest_ = {};
+    stopAllBgm(resources);
+
+    // The original gameplay-abort tail restores state 0x04 for Normal/Trial
+    // and state 0x05, cursor 8, for Practice.
+    if (routeMode_ == 2) {
+        setState(MainState::AlternateSetup, 8);
+    }
+    else {
+        setState(MainState::StageSelect, 0);
+    }
+    resetInputCounters();
+    restartTitleBgm(resources);
+}
+
+void FrontendRuntime::skipTutorial(ResourceManager& resources) {
+    const bool firstCompletion = !shortcutUnlocked_;
+    shortcutUnlocked_ = true;
+    routeMode_ = 0;
+    gameplayRequest_ = {};
+    stopAllBgm(resources);
+
+    if (firstCompletion) {
+        setupGroup_ = 0;
+        optionSlots_ = setupOptionsByGroup_[0];
+        refreshOptionSlots();
+        setState(MainState::StageSetup, 0);
+    }
+    else {
+        setState(MainState::Options, 7);
+    }
+    resetInputCounters();
+    saveFrontendState(resources);
+    restartTitleBgm(resources);
+}
+
+void FrontendRuntime::finishGameOver(ResourceManager& resources, bool replayPrompt,
+                                     int score, int elapsedFrames) {
+    if (!replayPrompt) {
+        abortGameplay(resources);
+        return;
+    }
+    resultScore_ = std::max(0, score);
+    resultElapsedFrames_ = std::max(0, elapsedFrames);
+    resultRouteCompletion_ = 0;
+    gameplayRequest_ = {};
+    ensureResultGraphs(resources);
+    stopAllBgm(resources);
+    setState(MainState::ReplayPrompt, 0);
+    resetInputCounters();
+}
+
+void FrontendRuntime::applyGameplaySettings(ResourceManager& resources,
+                                            const GameplaySettings& settings) {
+    bgmVolume_ = std::clamp(settings.bgmVolume, 0, 10);
+    seVolume_ = std::clamp(settings.soundEffectVolume, 0, 10);
+    language_ = std::clamp(settings.language, 0, 3);
+    dataWindowEnabled_ = settings.dataWindowEnabled != 0 ? 1 : 0;
+
+    auto normalizedSystemConfig = settings.systemConfig;
+    normalizedSystemConfig[0] = normalizedSystemConfig[0] != 0 ? 1 : 0;
+    normalizedSystemConfig[1] = std::clamp(normalizedSystemConfig[1], 0, 2);
+    for (std::size_t index = 2; index <= 5; ++index) {
+        normalizedSystemConfig[index] = normalizedSystemConfig[index] != 0 ? 1 : 0;
+    }
+    normalizedSystemConfig[6] = std::clamp(normalizedSystemConfig[6], 0, 3);
+    const bool fullScreenChanged = normalizedSystemConfig[0] != systemConfig_[0];
+    const bool waitVSyncChanged = normalizedSystemConfig[2] != systemConfig_[2];
+    systemConfig_ = normalizedSystemConfig;
+    keyBindings_ = settings.keyboardBindings;
+    controllerBindings_ = settings.controllerBindings;
+    controlDevice_ = std::clamp(settings.controlDevice, 0, 5);
+
+    if (fullScreenChanged) {
+        ChangeWindowMode(systemConfig_[0] == 0 ? TRUE : FALSE);
+    }
+    if (waitVSyncChanged) {
+        SetWaitVSyncFlag(systemConfig_[2] != 0 ? TRUE : FALSE);
+    }
+    const int titleBgm = resources.soundHandleById("BGM_bgm_Title");
+    if (titleBgm != -1) {
+        ChangeVolumeSoundMem(bgmVolume_ * 0x19, titleBgm);
+    }
+    if (settings.saveData) {
+        saveFrontendState(resources);
+    }
+    if (settings.saveSystemConfig) {
+        saveSystemConfig(resources);
+    }
+}
+
 FrontendRuntime::InputSnapshot FrontendRuntime::readInput() {
     const int padState = GetJoypadInputState(DX_INPUT_PAD1);
     std::array<bool, 11> actions{};
@@ -1069,9 +1180,11 @@ void FrontendRuntime::queueGameplayRequest(bool continueRun, bool manualTrialCon
                                             ? practiceOptions_[3]
                                             : (routeMode_ == 1 && trialMapStage == 14 ? 1 : 0);
     gameplayRequest_.dataWindowEnabled = dataWindowEnabled_;
+    gameplayRequest_.dataWindowUnlocked = dataWindowUnlocked_;
     gameplayRequest_.language = language_;
     gameplayRequest_.bgmVolume = bgmVolume_;
     gameplayRequest_.soundEffectVolume = seVolume_;
+    gameplayRequest_.systemConfig = systemConfig_;
     gameplayRequest_.itemVisibility = systemConfig_[3];
     gameplayRequest_.likeStyle = systemConfig_[5];
     gameplayRequest_.optionSlots = optionSlots_;
@@ -3327,28 +3440,36 @@ void FrontendRuntime::drawKeyConfig(const ResourceManager& resources) const {
     for (int row = 0; row < kKeyConfigRows; ++row) {
         int alpha = row == cursor_ ? 0xff : 0x60;
         const bool available = controlDevice_ == 5 || row >= 4;
-        if (!available && row < 11) {
-            alpha = std::min(alpha, 0x80);
-        }
+        const int brightness = available || row >= 11 ? 0xff : 0x80;
         if (row == cursor_ && transitionTimer_ != 0 && wrapIndex(transitionTimer_ + 10000, 4) >= 2) {
             alpha = std::min(alpha, 0x60);
         }
         const float y = 102.0f + static_cast<float>(row) * 42.0f;
         if (row < 11) {
+            SetDrawBright(brightness, brightness, brightness);
             drawFrameScaledAlpha(resources, "GFX_system_KeyConfigMenu", 7 + row,
                                  560.0f, y, 1.0, alpha);
             if (keyCaptureActive_ && row == cursor_) {
                 drawFrameScaledAlpha(resources, "GFX_system_KeyConfigMenu", 20,
                                      760.0f, y, 1.0,
                                      0x80 - static_cast<int>(std::sin(static_cast<float>(frame_) * kPi / 32.0f) * 0x40));
+                SetDrawBright(255, 255, 255);
                 continue;
             }
 
             int promptFrame = -1;
             const char* promptPath = nullptr;
-            if (controlDevice_ < 5) {
+            if (controlDevice_ == 0) {
+                drawFrameScaledAlpha(resources, "GFX_system_KeyConfigMenu", 19,
+                                     760.0f, y, 1.0, 255);
+                drawConfigNumber(resources, 845.0f, y,
+                                 controllerButtonNumber(controllerBindings_[
+                                     static_cast<std::size_t>(row)]),
+                                 false, 255);
+            }
+            else if (controlDevice_ < 5) {
                 promptPath = kControllerPromptPath;
-                promptFrame = controllerPromptFrame(controlDevice_, row,
+                promptFrame = controllerPromptFrame(controlDevice_,
                     controllerBindings_[static_cast<std::size_t>(row)]);
             }
             else {
@@ -3356,8 +3477,10 @@ void FrontendRuntime::drawKeyConfig(const ResourceManager& resources) const {
                 promptFrame = keyboardPromptFrame(keyBindings_[static_cast<std::size_t>(row)]);
             }
             if (promptPath != nullptr && promptFrame >= 0 && resources.graphFrame(promptPath, promptFrame) != -1) {
-                drawPathFrameScaledAlpha(resources, promptPath, promptFrame, 760.0f, y, 1.0, alpha);
+                drawPathFrameScaledAlpha(resources, promptPath, promptFrame,
+                                         760.0f, y, 1.0, 255);
             }
+            SetDrawBright(255, 255, 255);
         }
         else if (row == 11) {
             drawFrameScaledAlpha(resources, "GFX_system_KeyConfigMenu", 18, 560.0f, y, 1.0, alpha);
@@ -3746,6 +3869,7 @@ void FrontendRuntime::saveFrontendState(const ResourceManager& resources) const 
     writeI32(0x2688, helpMode_);
     writeI32(0x26a4, language_);
     writeI32(0x26a8, dataWindowEnabled_);
+    writeI32(0x26ac, shortcutUnlocked_ ? 1 : 0);
     writeI32(0x26bc, controlDevice_);
     for (int action = 0; action < 11; ++action) {
         writeI32(0x26c0 + static_cast<std::size_t>(action) * 4,
@@ -3788,6 +3912,15 @@ void FrontendRuntime::ensureTitleBgm(ResourceManager& resources) {
     if (handle != -1) {
         ChangeVolumeSoundMem(bgmVolume_ * 0x19, handle);
         PlaySoundMem(handle, DX_PLAYTYPE_LOOP, FALSE);
+        titleBgmStarted_ = true;
+    }
+}
+
+void FrontendRuntime::restartTitleBgm(ResourceManager& resources) {
+    const int handle = resources.soundHandleById("BGM_bgm_Title");
+    if (handle != -1) {
+        ChangeVolumeSoundMem(bgmVolume_ * 0x19, handle);
+        PlaySoundMem(handle, DX_PLAYTYPE_LOOP, TRUE);
         titleBgmStarted_ = true;
     }
 }

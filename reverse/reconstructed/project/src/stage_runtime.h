@@ -12,6 +12,14 @@ namespace reconstructed {
 
 class StageRuntime {
 public:
+    enum class GameplayExitRequest {
+        None,
+        Retry,
+        SkipTutorial,
+        AbortGameplay,
+        GameOver,
+    };
+
     struct StageRuntimeConfig {
         int stage = 1;
         int routeMode = 0;
@@ -27,6 +35,8 @@ public:
         int language = 0;
         int bgmVolume = 10;
         int soundEffectVolume = 10;
+        bool dataWindowUnlocked = false;
+        std::array<int, 7> systemConfig{{0, 0, 1, 0, 1, 0, 0}};
         int itemVisibility = 0;
         int likeStyle = 0;
         std::array<int, 4> optionSlots{{0, 0, 0, 0}};
@@ -49,6 +59,19 @@ public:
         const TextDatabase* textDatabase = nullptr;
     };
 
+    struct SettingsChange {
+        int bgmVolume = 10;
+        int soundEffectVolume = 10;
+        int language = 0;
+        int dataWindowEnabled = 1;
+        std::array<int, 7> systemConfig{{0, 0, 1, 0, 1, 0, 0}};
+        std::array<int, 11> keyboardBindings{};
+        std::array<int, 11> controllerBindings{};
+        int controlDevice = 5;
+        bool saveData = false;
+        bool saveSystemConfig = false;
+    };
+
     struct StageSpawnEvent {
         int frame = 0;
         int spawnType = 0;
@@ -65,9 +88,14 @@ public:
     void reset();
     void update();
     void draw() const;
+    GameplayExitRequest consumeExitRequest();
+    bool consumeSettingsChange(SettingsChange& change);
+    void beginGameOver();
 
     bool initialized() const { return initialized_; }
     int selectedStage() const { return selectedStage_; }
+    int routeMode() const { return config_.routeMode; }
+    int specialStageFlag() const { return config_.specialStageFlag; }
     int frame() const { return frame_; }
     int score() const { return player_.score; }
     int enemiesAlive() const;
@@ -84,6 +112,20 @@ public:
     }
 
 private:
+    enum class PauseFlowState : int {
+        Gameplay,
+        Menu,
+        ResumeCountdown,
+        ConfirmRetry,
+        ConfirmAbort,
+        ConfirmSkipTutorial,
+        Settings,
+        VideoConfig,
+        ControlConfig,
+        GameOverDelay,
+        GameOverPresentation,
+    };
+
     enum class InputAction : int {
         Up = 0,
         Down = 1,
@@ -623,12 +665,26 @@ private:
     void drawHudNumber(int rightX, int y, int value, const std::vector<int>& digitFrames, int digitWidth, int digitHeight, double scale = 1.0) const;
     void drawNumberWithSeparators(int rightX, int y, int value, const std::vector<int>& digitFrames, int digitWidth, int digitHeight, double scale = 1.0) const;
 
+    void initializePauseResources(ResourceManager& resources);
+    bool updatePauseFlow();
+    void drawPauseFlow() const;
+    void enterPauseMenu();
+    void completeGameOverDelayFrame();
+    void captureAndStopStageBgm();
+    void resumeStageBgm();
+    void stopStageBgm();
+    void playPauseWipeSound(int phase) const;
+    void updatePauseHeldCounters();
+    bool anyInputActionDown() const;
+    static bool pauseRepeat(int heldFrames);
+
     void updateLayoutGuideToggle();
     float aimAtPlayer(float x, float y) const;
     static float deterministicUnit(int frame, int salt);
     static bool offscreen(float x, float y, float margin);
 
     bool initialized_ = false;
+    GameplayExitRequest pendingExitRequest_ = GameplayExitRequest::None;
     int selectedStage_ = 1;
     StageRuntimeConfig config_;
     int frame_ = 0;
@@ -643,10 +699,30 @@ private:
     std::vector<int> effectMediumFrames_;
     std::vector<int> effectLargeFrames_;
     int whiteBackHandle_ = -1;
+    std::vector<int> pauseBackFrames_;
+    std::vector<int> pauseCountFrames_;
+    std::array<std::vector<int>, 4> pauseMenuFramesByLanguage_;
+    std::vector<int> pauseConfigMenuFrames_;
+    std::vector<int> pauseConfigMenu2Frames_;
+    std::vector<int> pauseConfigNumberFrames_;
+    std::vector<int> pauseKeyConfigMenuFrames_;
+    std::vector<int> pauseKeyboardPromptFrames_;
+    std::vector<int> pauseControllerPromptFrames_;
+    int pauseSelectSoundHandle_ = -1;
+    int pauseEnterSoundHandle_ = -1;
+    int pauseCancelSoundHandle_ = -1;
+    int pauseErrorSoundHandle_ = -1;
+    int pausePoseSoundHandle_ = -1;
+    int pauseSwitchSoundHandle_ = -1;
+    int gameOverBgmHandle_ = -1;
+    std::vector<int> pausedBgmHandles_;
     std::array<int, 8> bombSoundHandles_{{-1, -1, -1, -1, -1, -1, -1, -1}};
     std::array<int, 4> feverSoundHandles_{{-1, -1, -1, -1}};
     int normalShotSoundHandle_ = -1;
+    int missSoundHandle_ = -1;
     int miss2SoundHandle_ = -1;
+    int grazeSoundHandle_ = -1;
+    int guardSoundHandle_ = -1;
     int shotHitSoundHandle_ = -1;
     int shotHit2SoundHandle_ = -1;
     int item1SoundHandle_ = -1;
@@ -729,8 +805,24 @@ private:
     std::array<bool, 11> inputActions_{};
     bool showLayoutGuides_ = false;
     bool prevLayoutGuideToggle_ = false;
-    bool paused_ = false;
+    PauseFlowState pauseFlowState_ = PauseFlowState::Gameplay;
+    int pauseCursor_ = 0;
+    int pauseTransitionTimer_ = 0;
+    int pauseStateTimer_ = 0;
+    int pauseSelectionPulse_ = 0;
+    int pauseUpHeldFrames_ = 0;
+    int pauseDownHeldFrames_ = 0;
+    int pauseLeftHeldFrames_ = 0;
+    int pauseRightHeldFrames_ = 0;
+    bool pauseInputConsumed_ = false;
+    bool pauseSettingsDirty_ = false;
+    bool pauseSaveDataRequested_ = false;
+    bool pauseSaveSystemConfigRequested_ = false;
     bool pauseInputHeld_ = false;
+    bool gameOverDelayComplete_ = false;
+    bool pauseKeyCaptureActive_ = false;
+    int pauseKeyCaptureDelay_ = 0;
+    int pauseLastControlDevice_ = 5;
     bool stage01GateFlag_ = false;
     bool stage02GateFlag_ = false;
     bool stage03GateFlag_ = false;
