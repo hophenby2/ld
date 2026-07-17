@@ -189,6 +189,12 @@ void StageRuntime::updateStage09Boss(StageEnemy& enemy) {
     const int difficulty = std::clamp(config_.difficulty, 0, 4);
     const int state = enemy.helperState;
     const int timer = enemy.helperTimer;
+    // FUN_14004a970's +0x3c draw anchor advances only in the two long
+    // travelling patterns.  The articulated pieces below use this value
+    // independently of the root's collision position.
+    if (state == 0x0b || state == 0x6f) {
+        enemy.angle += static_cast<float>(timer) * 0.01f;
+    }
     const auto aimed = [&]() {
         return boss09AngleTo(enemy.x, enemy.y, player_.x, player_.y);
     };
@@ -1577,7 +1583,7 @@ void StageRuntime::updateStage09BossNode(StageEnemy& enemy) {
 }
 
 bool StageRuntime::drawStage09Boss(const StageEnemy& enemy, float x,
-                                   float y) const {
+                                   float y, int exactLayer) const {
     if (enemy.spawnType != 0x140) return false;
     if (!enemy.drawBodyThisFrame) return true;
 
@@ -1602,25 +1608,123 @@ bool StageRuntime::drawStage09Boss(const StageEnemy& enemy, float x,
         bodyFrame = 0x7f + (timer / 5) % 2;
     }
 
-    if (state > 10 || (state == 10 && timer >= 0xfa)) {
-        const int sideFrame = config_.difficulty > 3 ? 0x90 : 0x81;
-        if (sideFrame < static_cast<int>(bossFrames_.size())) {
-            const int swing = static_cast<int>(
-                std::sin(frame_ * kBoss09Tau / 120.0) * 0x1200);
-            drawOriginalMode7Node(bossFrames_[static_cast<std::size_t>(sideFrame)],
-                                  x + 24.0f, y - 20.0f,
-                                  boss09Angle(swing), 1.0, 1.0, false);
-            drawOriginalMode7Node(bossFrames_[static_cast<std::size_t>(sideFrame)],
-                                  x - 24.0f, y - 20.0f,
-                                  boss09Angle(-swing), 1.0, 1.0, true);
+    const auto drawFrame = [this](const std::vector<int>& frames, int frame,
+                                  float drawX, float drawY,
+                                  std::uint16_t angle = 0,
+                                  double scale = 1.0,
+                                  bool reverse = false) {
+        if (frame < 0 || frame >= static_cast<int>(frames.size())) {
+            return false;
+        }
+        const int graph = frames[static_cast<std::size_t>(frame)];
+        if (graph == -1) return false;
+        drawOriginalMode7Node(graph, drawX, drawY, angle,
+                              scale, scale, reverse);
+        return true;
+    };
+    const auto polarPoint = [](float centerX, float centerY,
+                               std::uint16_t angle, float distance) {
+        const double radians = boss09Radians(angle);
+        return std::pair<float, float>{
+            centerX + static_cast<float>(std::cos(radians) * distance),
+            centerY + static_cast<float>(std::sin(radians) * distance)};
+    };
+
+    bool drew = false;
+    const float cameraX = x - enemy.x;
+    const float cameraY = y - enemy.y;
+    const bool earlyAssembly = state < 0x3c ||
+                               (state >= 0x6f && state < 0xa0);
+    if (earlyAssembly) {
+        // Enemy_l[62] is the moving upper body.  Enemy_l[61] is a separate
+        // fixed-axis component: its normal copy is at layer 0x12 and state 0
+        // also queues a materialization copy at layer 0x19.
+        if (exactLayer == 0x1e) {
+            drew |= drawFrame(enemyLargeFrames_, 0x3e, x, y);
+        }
+        const float assemblyY = cameraY + enemy.angle + 120.0f;
+        if (exactLayer == 0x12) {
+            drew |= drawFrame(enemyLargeFrames_, 0x3d,
+                              cameraX + 360.0f, assemblyY);
+        }
+        if (exactLayer == 0x19 && state == 0 && timer < 0xbe) {
+            const int alpha = std::clamp(timer * 255 / 0xbe, 0, 255);
+            SetDrawBlendMode(DX_BLENDMODE_ADD, alpha);
+            drew |= drawFrame(enemyLargeFrames_, 0x3d,
+                              cameraX + 360.0f, assemblyY);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        }
+
+        // FUN_14004a970 builds six delayed links from each side.  The two
+        // upper chains retain their own descending layers (0x14..0x0f), while
+        // both lower chains are explicitly fixed to 0x0f.
+        if ((state != 0 || timer >= 0x3c) &&
+            exactLayer >= 0x0f && exactLayer <= 0x14) {
+            float spacing = 55.0f;
+            if (state == 0) {
+                spacing *= std::clamp((timer - 0x3c) / 20.0f, 0.0f, 1.0f);
+            }
+            for (int link = 0; link < 6; ++link) {
+                const float distance = spacing * static_cast<float>(link);
+                const int upperLayer = 0x14 - link;
+                const int phase = (frame_ - link * 10) % 120;
+                const double pulse = phase >= 0 && phase <= 0x20 && state < 10
+                    ? 1.0 + std::sin(static_cast<double>(phase) *
+                                     kBoss09Pi / 0x20) * 0.1
+                    : 1.0;
+                if (exactLayer == upperLayer) {
+                    const auto right = polarPoint(cameraX + 730.0f,
+                                                   cameraY + enemy.angle + 420.0f,
+                                                   0x9770, distance);
+                    const auto left = polarPoint(cameraX - 10.0f,
+                                                  cameraY + enemy.angle + 420.0f,
+                                                  0xe890, distance);
+                    drew |= drawFrame(enemySmallFrames_, 0x8a,
+                                      right.first, right.second,
+                                      0x9770, pulse);
+                    drew |= drawFrame(enemySmallFrames_, 0x8a,
+                                      left.first, left.second,
+                                      0xe890, pulse, true);
+                }
+                if (exactLayer == 0x0f) {
+                    const auto right = polarPoint(cameraX + 730.0f,
+                                                   cameraY + enemy.angle - 30.0f,
+                                                   0x6890, distance);
+                    const auto left = polarPoint(cameraX - 10.0f,
+                                                  cameraY + enemy.angle - 30.0f,
+                                                  0x1770, distance);
+                    drew |= drawFrame(enemySmallFrames_, 0x8b,
+                                      right.first, right.second,
+                                      0x6890, pulse);
+                    drew |= drawFrame(enemySmallFrames_, 0x8b,
+                                      left.first, left.second,
+                                      0x1770, pulse, true);
+                }
+            }
         }
     }
 
-    if (bodyFrame >= 0 && bodyFrame < static_cast<int>(bossFrames_.size())) {
-        drawOriginalMode7Node(bossFrames_[static_cast<std::size_t>(bodyFrame)],
-                              x, y, 0, 1.0, 1.0, false);
+    const bool lateLayerSet = state > 10 ||
+                              (state == 10 && timer >= 0xfa);
+    if (lateLayerSet && exactLayer == 0x22) {
+        const int sideFrame = config_.difficulty > 3 ? 0x90 : 0x81;
+        const int swing = static_cast<int>(
+            std::sin(frame_ * kBoss09Tau / 120.0) * 3000.0);
+        const double scale = 0.7 +
+            std::sin(frame_ * kBoss09Tau / 120.0) * 0.3;
+        drew |= drawFrame(bossFrames_, sideFrame,
+                          x + 24.0f, y - 20.0f,
+                          boss09Angle(swing), scale);
+        drew |= drawFrame(bossFrames_, sideFrame,
+                          x - 24.0f, y - 20.0f,
+                          boss09Angle(-swing), scale, true);
     }
-    else {
+
+    const int bodyLayer = lateLayerSet ? 0x23 : 0x1e;
+    if (lateLayerSet && exactLayer == bodyLayer) {
+        drew |= drawFrame(bossFrames_, bodyFrame, x, y);
+    }
+    if (!drew && exactLayer == bodyLayer && !earlyAssembly) {
         DrawCircle(static_cast<int>(x), static_cast<int>(y), 46,
                    GetColor(120, 220, 255), TRUE);
     }
@@ -1628,7 +1732,7 @@ bool StageRuntime::drawStage09Boss(const StageEnemy& enemy, float x,
 }
 
 bool StageRuntime::drawStage09BossNode(const StageEnemy& enemy, float x,
-                                       float y) const {
+                                       float y, int exactLayer) const {
     if (enemy.parentSpawnType != 0x140 ||
         !isStage09BossNodeType(enemy.spawnType)) {
         return false;
@@ -1637,6 +1741,7 @@ bool StageRuntime::drawStage09BossNode(const StageEnemy& enemy, float x,
 
     const int timer = enemy.drawHelperTimer;
     if (enemy.spawnType == 0xc3) {
+        if (exactLayer != 0x3c) return true;
         if (effectLargeFrames_.size() <= 6 || effectLargeFrames_[6] == -1) {
             return true;
         }
@@ -1664,6 +1769,7 @@ bool StageRuntime::drawStage09BossNode(const StageEnemy& enemy, float x,
     }
 
     if (enemy.spawnType == 0xcd) {
+        if (exactLayer != 0x1d) return true;
         const int frame = 0xab + (timer / 5) % 3;
         if (frame >= 0 && frame < static_cast<int>(enemyMediumFrames_.size()) &&
             enemyMediumFrames_[static_cast<std::size_t>(frame)] != -1) {
@@ -1693,6 +1799,7 @@ bool StageRuntime::drawStage09BossNode(const StageEnemy& enemy, float x,
     }
 
     if (enemy.spawnType >= 0xda && enemy.spawnType <= 0xdd) {
+        if (exactLayer != 0x23) return true;
         double scale = 1.0;
         if (timer < 0x1e) {
             scale = std::sin(static_cast<double>(timer) * kBoss09Pi / 60.0);
@@ -1725,11 +1832,13 @@ bool StageRuntime::drawStage09BossNode(const StageEnemy& enemy, float x,
         alpha = std::clamp(255 - timer * 13, 0, 255);
     }
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
-    if (enemySmallFrames_.size() > 140 && enemySmallFrames_[140] != -1) {
+    if (exactLayer == 0x1f && enemySmallFrames_.size() > 140 &&
+        enemySmallFrames_[140] != -1) {
         drawOriginalMode7Node(enemySmallFrames_[140], x, y,
                               enemy.secondaryAngle16, scale, scale, false);
     }
-    if (enemySmallFrames_.size() > 141 && enemySmallFrames_[141] != -1) {
+    if (exactLayer == 0x20 && enemySmallFrames_.size() > 141 &&
+        enemySmallFrames_[141] != -1) {
         drawOriginalMode7Node(enemySmallFrames_[141], x, y,
                               enemy.sourceAngle16, scale, scale, false);
     }

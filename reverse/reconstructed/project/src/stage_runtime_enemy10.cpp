@@ -745,12 +745,12 @@ void StageRuntime::emitStage10EnemyProjectiles(StageEnemy& enemy) {
 }
 
 bool StageRuntime::drawStage10Enemy(const StageEnemy& enemy, float x,
-                                    float y) const {
+                                    float y, int exactLayer) const {
     if (!isStage10EnemyType(enemy.spawnType)) {
         return false;
     }
 
-    if (enemy.drawMarkerThisFrame) {
+    if (enemy.drawMarkerThisFrame && exactLayer == 0x32) {
         const int marker = frameHandle(effectMediumFrames_, 4);
         if (marker != -1) {
             const double startScale = enemy.spawnType <= 0xfd ? 2.0 : 3.0;
@@ -763,6 +763,26 @@ bool StageRuntime::drawStage10Enemy(const StageEnemy& enemy, float x,
         }
     }
     if (!enemy.drawBodyThisFrame) {
+        return true;
+    }
+
+    if (exactLayer == 0x32 && enemy.targetable &&
+        enemy.spawnType != 0xff && enemy.spawnType != 0x101) {
+        StageEnemy gauge = enemy;
+        gauge.hp = enemy.drawHp;
+        const int gaugeMode = enemy.spawnType <= 0xfd ? 2 : 1;
+        drawEnemyGaugeExact(gauge, gaugeMode, x, y, exactLayer);
+    }
+
+    int bodyLayer = 0x23;
+    if (enemy.spawnType >= 0xfc && enemy.spawnType <= 0x101) {
+        bodyLayer = 0x22;
+    }
+    else if (enemy.spawnType == 0x102 ||
+             enemy.spawnType == 0x103 || enemy.spawnType == 0x104) {
+        bodyLayer = 0x20;
+    }
+    if (exactLayer != bodyLayer) {
         return true;
     }
 
@@ -955,13 +975,6 @@ bool StageRuntime::drawStage10Enemy(const StageEnemy& enemy, float x,
                    GetColor(255, 120, 180), TRUE);
     }
 
-    if (enemy.targetable && enemy.spawnType != 0xff &&
-        enemy.spawnType != 0x101) {
-        StageEnemy gauge = enemy;
-        gauge.hp = enemy.drawHp;
-        const int gaugeMode = enemy.spawnType <= 0xfd ? 2 : 1;
-        drawEnemyGaugeExact(gauge, gaugeMode, x, y);
-    }
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     return true;
 }

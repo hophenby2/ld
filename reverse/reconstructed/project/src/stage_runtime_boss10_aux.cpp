@@ -660,7 +660,8 @@ void StageRuntime::updateStage10FinalBossEmitter(StageEnemy& enemy) {
 }
 
 bool StageRuntime::drawStage10FinalBossEmitter(const StageEnemy& enemy,
-                                                float x, float y) const {
+                                                float x, float y,
+                                                int exactLayer) const {
     if (!isStage10FinalBossEmitterType(enemy.spawnType)) {
         return false;
     }
@@ -668,6 +669,15 @@ bool StageRuntime::drawStage10FinalBossEmitter(const StageEnemy& enemy,
     if (enemy.spawnType >= 0x128 && enemy.spawnType <= 0x12a) {
         // FUN_14006a2e0 is invisible; it leaves one Effect_s[17] particle
         // every update instead of drawing the entity itself.
+        return true;
+    }
+
+    int bodyLayer = 0x24;
+    if (enemy.spawnType == 0x123 || enemy.spawnType == 0x124 ||
+        enemy.spawnType == 0x12b || enemy.spawnType == 0x12c) {
+        bodyLayer = 0x23;
+    }
+    if (exactLayer != bodyLayer) {
         return true;
     }
 

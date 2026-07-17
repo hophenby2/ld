@@ -2631,7 +2631,7 @@ void StageRuntime::updateStage08Boss(StageEnemy& enemy) {
 }
 
 bool StageRuntime::drawStage08Boss(const StageEnemy& enemy, float x,
-                                   float y) const {
+                                   float y, int exactLayer) const {
     if (enemy.spawnType != 0x13f) return false;
     if (!enemy.drawBodyThisFrame) return true;
 
@@ -2658,8 +2658,8 @@ bool StageRuntime::drawStage08Boss(const StageEnemy& enemy, float x,
     const int sourceFrame = std::max(0, frame_ - 1);
     bool drew = false;
 
-    // FUN_140038190 keeps the opening machine on screen through state 19,
-    // then overlaps it with the core for the first 130 ticks of state 20.
+    // FUN_140038190 keeps the opening machine on screen through state 19 and
+    // hands it to the core at tick 130 of state 20.
     if (state < 20 || (state == 20 && timer < 130)) {
         const float fixedX = x + (360.0f - enemy.x);
         const bool settled = state > 10 ||
@@ -2668,22 +2668,26 @@ bool StageRuntime::drawStage08Boss(const StageEnemy& enemy, float x,
             (settled ? 0.0f : static_cast<float>(
                 std::sin((sourceFrame - 60) * kBoss08Tau / 180.0) * 3.0));
 
-        drew |= draw(stageBack2Frames_, 6, fixedX, y + 240.0f);
-        drew |= draw(enemyLargeFrames_, 56, fixedX, shellY);
-        drew |= draw(enemyLargeFrames_, 54, x, y);
-        if (state == 1 && timer >= 0 && timer < 24) {
-            SetDrawBlendMode(DX_BLENDMODE_ADD,
-                             std::clamp(32 + timer * 7, 0, 160));
-            drew |= draw(enemyLargeFrames_, 54, x, y);
-            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        if (exactLayer == 0x14) {
+            drew |= draw(stageBack2Frames_, 6, fixedX, y + 240.0f);
         }
-        drew |= draw(enemyLargeFrames_, 55, fixedX, shellY);
+        if (exactLayer == 0x1e) {
+            drew |= draw(enemyLargeFrames_, 56, fixedX, shellY);
+            drew |= draw(enemyLargeFrames_, 54, x, y);
+            if (state == 1 && timer >= 0 && timer < 24) {
+                SetDrawBlendMode(DX_BLENDMODE_ADD,
+                                 std::clamp(32 + timer * 7, 0, 160));
+                drew |= draw(enemyLargeFrames_, 54, x, y);
+                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            }
+            drew |= draw(enemyLargeFrames_, 55, fixedX, shellY);
+        }
     }
 
     const bool coreVisible = (state >= 21 && state <= 29) ||
-                             (state == 20 && timer < 130) ||
-                             (state == 30 && timer <= 130);
-    if (coreVisible) {
+                             (state == 20 && timer >= 130) ||
+                             (state == 30 && timer < 130);
+    if (coreVisible && exactLayer == 0x1d) {
         const int swing = static_cast<int>(
             std::sin(sourceFrame * kBoss08Tau / 120.0) * 2000.0);
         const double pulse = 1.0 +
@@ -2711,7 +2715,7 @@ bool StageRuntime::drawStage08Boss(const StageEnemy& enemy, float x,
 
     // State 99 explicitly selects Boss[108..109] and queues an opaque and an
     // additive copy until tick 299.
-    if (state == 99 && timer < 300) {
+    if (state == 99 && timer < 300 && exactLayer == 0x1e) {
         const int frame = 108 + (timer / 5) % 2;
         drew |= draw(bossFrames_, frame, x, y);
         SetDrawBlendMode(DX_BLENDMODE_ADD, 96);
@@ -2719,8 +2723,9 @@ bool StageRuntime::drawStage08Boss(const StageEnemy& enemy, float x,
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     }
 
-    if (!drew && !((state >= 30 && state < 99) ||
-                   (state == 99 && timer >= 300))) {
+    if (exactLayer == 0x1e && !drew && !coreVisible &&
+        !((state >= 30 && state < 99) ||
+          (state == 99 && timer >= 300))) {
         DrawCircle(static_cast<int>(x), static_cast<int>(y),
                    std::max(24, enemy.radius / 2),
                    GetColor(255, 96, 160), TRUE);
@@ -2729,12 +2734,25 @@ bool StageRuntime::drawStage08Boss(const StageEnemy& enemy, float x,
 }
 
 bool StageRuntime::drawStage08BossNode(const StageEnemy& enemy, float x,
-                                       float y) const {
+                                       float y, int exactLayer) const {
     if (!isStage08BossNodeType(enemy.spawnType) ||
         enemy.parentSpawnType != 0x13f) {
         return false;
     }
     if (!enemy.drawBodyThisFrame) return true;
+
+    if (enemy.drawMarkerThisFrame && exactLayer == 0x32) {
+        const int marker = effectMediumFrames_.size() > 4
+                               ? effectMediumFrames_[4]
+                               : -1;
+        if (marker != -1) {
+            const double scale = std::max(
+                0.0, 3.0 - enemy.markerDrawTimer * 0.15);
+            DrawRotaGraphF(x + enemy.markerDrawX - enemy.x,
+                           y + enemy.markerDrawY - enemy.y,
+                           scale, 0.0, marker, TRUE);
+        }
+    }
 
     const auto mediumFrame = [this](int index) {
         return index >= 0 && index < static_cast<int>(enemyMediumFrames_.size())
@@ -2814,6 +2832,7 @@ bool StageRuntime::drawStage08BossNode(const StageEnemy& enemy, float x,
     // FUN_140040750 manually queues Enemy_m[168] appendages around an
     // Enemy_m[167] body for all four 0xa7..0xaa variants.
     if (enemy.spawnType >= 0xa7 && enemy.spawnType <= 0xaa) {
+        if (exactLayer != 0x1d) return true;
         const bool reverse = (enemy.childIndex & 1) != 0;
         const int appendage = mediumFrame(168);
         const int body = mediumFrame(167);
@@ -2837,20 +2856,24 @@ bool StageRuntime::drawStage08BossNode(const StageEnemy& enemy, float x,
     // Enemy_m[166] body; the old path incorrectly used Enemy_l[53].
     if (enemy.spawnType == 0xab) {
         const int body = mediumFrame(166);
-        if (body != -1) {
+        if (body != -1 && exactLayer == 0x18) {
+            SetDrawBright(0, 0, 0);
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x40);
             drawOriginalMode7Node(body, x + 16.0f, y + 9.0f,
                                   enemy.sourceAngle16, 1.0, 1.0, false);
             SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            SetDrawBright(255, 255, 255);
+        }
+        if (body != -1 && exactLayer == 0x20) {
             drawOriginalMode7Node(body, x, y, enemy.sourceAngle16,
                                   1.0, 1.0, false);
         }
-        else {
+        else if (body == -1 && exactLayer == 0x20) {
             DrawCircle(static_cast<int>(x), static_cast<int>(y),
                        std::max(6, enemy.radius / 3),
                        GetColor(255, 100, 180), TRUE);
         }
-        if (enemy.drawHelperState == 2) {
+        if (enemy.drawHelperState == 2 && exactLayer == 0x15) {
             const int overlay = effectMediumFrames_.size() > 18
                                     ? effectMediumFrames_[18]
                                     : -1;
@@ -2858,7 +2881,8 @@ bool StageRuntime::drawStage08BossNode(const StageEnemy& enemy, float x,
                      0.8, 0.5, false, DX_BLENDMODE_ALPHA, 0xc0);
         }
         if (enemy.targetable) {
-            drawEnemyGaugeExact(enemy, enemy.radius >= 50 ? 2 : 1, x, y);
+            drawEnemyGaugeExact(enemy, enemy.radius >= 50 ? 2 : 1,
+                                x, y, exactLayer);
         }
         return true;
     }
@@ -2867,6 +2891,10 @@ bool StageRuntime::drawStage08BossNode(const StageEnemy& enemy, float x,
     const int state = enemy.drawHelperState;
 
     if (enemy.spawnType == 0xac) {
+        if (enemy.targetable) {
+            drawEnemyGaugeExact(enemy, 1, x, y, exactLayer);
+        }
+        if (exactLayer != 0x1f) return true;
         const double wave = std::sin(static_cast<double>(timer) *
                                      kBoss08Pi / 50.0);
         const float baseY = y + 108.0f - static_cast<float>(wave * 3.0);
@@ -2888,7 +2916,6 @@ bool StageRuntime::drawStage08BossNode(const StageEnemy& enemy, float x,
             drew |= drawNormal(mediumFrame(165), x, capY, 0, 1.0);
         }
         if (!drew) fallback(x, y);
-        if (enemy.targetable) drawEnemyGaugeExact(enemy, 1, x, y);
         return true;
     }
 
@@ -2913,14 +2940,22 @@ bool StageRuntime::drawStage08BossNode(const StageEnemy& enemy, float x,
     };
 
     if (enemy.spawnType == 0xad) {
+        if (enemy.targetable) {
+            drawEnemyGaugeExact(enemy, 2, x, y, exactLayer);
+        }
+        if (exactLayer != 0x24) return true;
         const double radius = std::sin(static_cast<double>(timer) *
                                        kBoss08Pi / 30.0) * 4.0;
         if (!drawTwinBladeBody(1.0, radius)) fallback(x, y);
-        if (enemy.targetable) drawEnemyGaugeExact(enemy, 2, x, y);
         return true;
     }
 
     if ((enemy.spawnType >= 0xae && enemy.spawnType <= 0xb6)) {
+        if (enemy.targetable && enemy.spawnType != 0xb4 &&
+            enemy.spawnType != 0xb5) {
+            drawEnemyGaugeExact(enemy, 2, x, y, exactLayer);
+        }
+        if (exactLayer != 0x24) return true;
         double appendageScale = delayedEntryScale(timer);
         int appendageBlend = DX_BLENDMODE_ALPHA;
         int appendageAlpha = 0xff;
@@ -2957,14 +2992,14 @@ bool StageRuntime::drawStage08BossNode(const StageEnemy& enemy, float x,
         drew |= drawAdd(smallFrame(135), x, y, 0, coreScale,
                         pulseAlpha(timer));
         if (!drew) fallback(x, y);
-        if (enemy.targetable && enemy.spawnType != 0xb4 &&
-            enemy.spawnType != 0xb5) {
-            drawEnemyGaugeExact(enemy, 2, x, y);
-        }
         return true;
     }
 
     if (enemy.spawnType == 0xb7) {
+        if (enemy.targetable) {
+            drawEnemyGaugeExact(enemy, 2, x, y, exactLayer);
+        }
+        if (exactLayer != 0x24) return true;
         double scale = 1.0;
         if (state == 0 && timer < 50) {
             scale = 0.2 + std::sin(static_cast<double>(timer) *
@@ -2973,11 +3008,14 @@ bool StageRuntime::drawStage08BossNode(const StageEnemy& enemy, float x,
         const double radius = std::sin(static_cast<double>(timer) *
                                        kBoss08Pi / 30.0) * 8.0 * scale;
         if (!drawTwinBladeBody(scale, radius)) fallback(x, y);
-        if (enemy.targetable) drawEnemyGaugeExact(enemy, 2, x, y);
         return true;
     }
 
     if (enemy.spawnType >= 0xb8 && enemy.spawnType <= 0xba) {
+        const int bodyLayer = enemy.spawnType == 0xb8 ? 0x20
+                            : enemy.spawnType == 0xb9 ? 0x1e
+                                                       : 0x1f;
+        if (exactLayer != bodyLayer) return true;
         int frame = 57;
         if (enemy.spawnType == 0xb9) frame = 58;
         if (enemy.spawnType == 0xba) frame = state == 0 ? 60 : 59;
@@ -3041,11 +3079,14 @@ bool StageRuntime::drawStage08BossNode(const StageEnemy& enemy, float x,
     if (enemy.spawnType == 0xbb) {
         // FUN_1400483e0 is an invisible controller. Its only visual is a
         // separately allocated Effect_m[20] node; it has no body sprite.
-        if (enemy.targetable) drawEnemyGaugeExact(enemy, 1, x, y);
+        if (enemy.targetable) {
+            drawEnemyGaugeExact(enemy, 1, x, y, exactLayer);
+        }
         return true;
     }
 
     if (enemy.spawnType >= 0xbc && enemy.spawnType <= 0xc2) {
+        if (exactLayer != 0x24) return true;
         static constexpr std::array<std::array<int, 3>, 7> kPalette{{
             {{0xff, 0x78, 0x78}}, {{0xff, 0xc8, 0x6e}},
             {{0xff, 0xff, 0x78}}, {{0x78, 0xff, 0x78}},
@@ -3083,6 +3124,7 @@ bool StageRuntime::drawStage08BossNode(const StageEnemy& enemy, float x,
     }
 
     if (enemy.spawnType == 0xc3) {
+        if (exactLayer != 0x3c) return true;
         const int ring = effectLargeFrames_.size() > 6
                              ? effectLargeFrames_[6]
                              : -1;

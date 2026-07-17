@@ -930,7 +930,7 @@ void StageRuntime::updateStage10SceneNode(StageEnemy& enemy) {
 }
 
 bool StageRuntime::drawStage10SceneNode(const StageEnemy& enemy, float x,
-                                        float y) const {
+                                        float y, int exactLayer) const {
     if (!isStage10SceneNodeType(enemy.spawnType)) return false;
     if (!enemy.drawBodyThisFrame) return true;
 
@@ -975,6 +975,7 @@ bool StageRuntime::drawStage10SceneNode(const StageEnemy& enemy, float x,
         const int sourceFrame = std::max(0, frame_ - 1);
         switch (enemy.spawnType) {
         case 0xde: {
+            if (exactLayer != 0x13) return true;
             drawExtraLarge(0, x, y);
             drawLarge(71, x, y - 240.0f);
             const double scale = 1.0 +
@@ -987,9 +988,12 @@ bool StageRuntime::drawStage10SceneNode(const StageEnemy& enemy, float x,
             break;
         }
         case 0xdf:
-            drawExtraLarge(1, x, y);
+            if (exactLayer == 0x12) {
+                drawExtraLarge(1, x, y);
+            }
             break;
         case 0xe0: {
+            if (exactLayer != 0x11) return true;
             const auto body = toScreenPoint(enemy.angle, enemy.speed);
             drawExtraLarge(2, body[0], body[1],
                            enemy.sourceAngle16, !right);
@@ -999,19 +1003,25 @@ bool StageRuntime::drawStage10SceneNode(const StageEnemy& enemy, float x,
             const auto body = toScreenPoint(enemy.angle, enemy.speed);
             const auto marker = toScreenPoint(enemy.markerDrawX,
                                               enemy.markerDrawY);
-            drawExtraLarge(3, body[0], body[1],
-                           enemy.sourceAngle16, !right);
-            drawLarge(73, marker[0], marker[1],
-                      enemy.targetAngle16, !right);
+            if (exactLayer == 0x12) {
+                drawExtraLarge(3, body[0], body[1],
+                               enemy.sourceAngle16, !right);
+            }
+            if (exactLayer == 0x11) {
+                drawLarge(73, marker[0], marker[1],
+                          enemy.targetAngle16, !right);
+            }
             break;
         }
         case 0xe2: {
+            if (exactLayer != 0x11) return true;
             const auto body = toScreenPoint(enemy.angle, enemy.speed);
             drawExtraLarge(right ? 4 : 6, body[0], body[1],
                            enemy.secondaryAngle16);
             break;
         }
         case 0xe3: {
+            if (exactLayer != 0x10) return true;
             const int markerFrame = right ? 75 : 77;
             const int bodyFrame = right ? 5 : 7;
             const int satelliteFrame = right ? 74 : 76;
@@ -1055,6 +1065,22 @@ bool StageRuntime::drawStage10SceneNode(const StageEnemy& enemy, float x,
         handle = frameAt(enemySmallFrames_, 144 + enemy.spawnType - 0xf2);
     }
 
+    if (enemy.drawHelperState == 1 && enemy.targetable) {
+        StageEnemy gaugeSnapshot = enemy;
+        gaugeSnapshot.hp = enemy.drawHp;
+        drawEnemyGaugeExact(gaugeSnapshot,
+                            enemy.spawnType <= 0xf1 ? 1 : 2,
+                            x, y, exactLayer);
+    }
+
+    const int bodyLayer = enemy.spawnType <= 0xf1 &&
+                                  enemy.drawHelperState == 2
+                              ? 0x14
+                              : 0x17;
+    if (exactLayer != bodyLayer) {
+        return true;
+    }
+
     if (handle != -1) {
         drawOriginalMode7Node(handle, x, y, enemy.secondaryAngle16,
                               1.0, 1.0, false);
@@ -1069,12 +1095,6 @@ bool StageRuntime::drawStage10SceneNode(const StageEnemy& enemy, float x,
         }
     }
 
-    if (enemy.drawHelperState == 1 && enemy.targetable) {
-        StageEnemy gaugeSnapshot = enemy;
-        gaugeSnapshot.hp = enemy.drawHp;
-        drawEnemyGaugeExact(gaugeSnapshot,
-                            enemy.spawnType <= 0xf1 ? 1 : 2, x, y);
-    }
     return true;
 }
 

@@ -770,10 +770,10 @@ void StageRuntime::updateStage09MidbossNode(StageEnemy& enemy) {
 }
 
 bool StageRuntime::drawStage09Midboss(const StageEnemy& enemy, float x,
-                                      float y) const {
+                                      float y, int exactLayer) const {
     if (!isStage09MidbossType(enemy.spawnType)) return false;
     if (enemy.spawnType >= 0x149) {
-        return drawStage09TailMidboss(enemy, x, y);
+        return drawStage09TailMidboss(enemy, x, y, exactLayer);
     }
     if (!enemy.drawBodyThisFrame) return true;
 
@@ -797,15 +797,19 @@ bool StageRuntime::drawStage09Midboss(const StageEnemy& enemy, float x,
     };
 
     if (enemy.spawnType == 0x146) {
-        drawLarge(0, x, y);
+        if (exactLayer == 0x1e) {
+            drawLarge(0, x, y);
+        }
     }
     else if (enemy.spawnType == 0x147) {
         const int sourceFrame = std::max(0, frame_ - 1);
-        for (int i = 0; i < 4; ++i) {
-            drawLarge(8, x, y + 90.0f,
-                      midboss09Angle(sourceFrame * 600 + i * 0x4000));
+        if (exactLayer == 0x1e) {
+            for (int i = 0; i < 4; ++i) {
+                drawLarge(8, x, y + 90.0f,
+                          midboss09Angle(sourceFrame * 600 + i * 0x4000));
+            }
+            drawLarge(7, x, y);
         }
-        drawLarge(7, x, y);
 
         int bossFrame = 100;
         if (state == 2) {
@@ -817,8 +821,23 @@ bool StageRuntime::drawStage09Midboss(const StageEnemy& enemy, float x,
         }
         if (bossFrame < static_cast<int>(bossFrames_.size()) &&
             bossFrames_[static_cast<std::size_t>(bossFrame)] != -1) {
-            drawOriginalMode7Node(bossFrames_[static_cast<std::size_t>(bossFrame)],
-                                  x, y - 160.0f, 0, 1.0, 1.0, false);
+            if (exactLayer == 0x1f) {
+                SetDrawBright(0, 0, 0);
+                SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x40);
+                drawOriginalMode7Node(
+                    bossFrames_[static_cast<std::size_t>(bossFrame)],
+                    x, y - 160.0f, 0, 1.0, 1.0, false);
+                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+                SetDrawBright(255, 255, 255);
+            }
+            if (exactLayer == 0x20) {
+                SetDrawBlendMode(DX_BLENDMODE_ALPHA,
+                                 std::min(alpha, 0xc0));
+                drawOriginalMode7Node(
+                    bossFrames_[static_cast<std::size_t>(bossFrame)],
+                    x, y - 160.0f, 0, 1.0, 1.0, false);
+                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            }
         }
 
         if (48 < static_cast<int>(enemyMediumFrames_.size())) {
@@ -828,22 +847,29 @@ bool StageRuntime::drawStage09Midboss(const StageEnemy& enemy, float x,
                     const auto angle = midboss09Angle(sourceFrame * 0xde +
                                                       i * 0x13b1);
                     const double radians = midboss09Radians(angle);
-                    drawOriginalMode7Node(
-                        orbitGraph,
-                        x + static_cast<float>(std::cos(radians) * 125.0),
-                        y - 160.0f +
-                            static_cast<float>(std::sin(radians) * 85.0),
-                        0, 1.0, 1.0, angle > 0x8000);
+                    const int orbitLayer = angle > 0x8000 ? 0x1f : 0x20;
+                    if (exactLayer == orbitLayer) {
+                        drawOriginalMode7Node(
+                            orbitGraph,
+                            x + static_cast<float>(std::cos(radians) * 125.0),
+                            y - 160.0f +
+                                static_cast<float>(std::sin(radians) * 85.0),
+                            0, 1.0, 1.0, angle > 0x8000);
+                    }
                 }
             }
         }
     }
     else {
-        drawLarge(13, x, y);
+        if (exactLayer == 0x20) {
+            drawLarge(13, x, y);
+        }
         const int sourceFrame = std::max(0, frame_ - 1);
-        for (int i = 0; i < 4; ++i) {
-            drawLarge(15, x, y - 255.0f,
-                      midboss09Angle(sourceFrame * 0x500 + i * 0x4000));
+        if (exactLayer == 0x22) {
+            for (int i = 0; i < 4; ++i) {
+                drawLarge(15, x, y - 255.0f,
+                          midboss09Angle(sourceFrame * 0x500 + i * 0x4000));
+            }
         }
     }
 
@@ -852,10 +878,10 @@ bool StageRuntime::drawStage09Midboss(const StageEnemy& enemy, float x,
 }
 
 bool StageRuntime::drawStage09MidbossNode(const StageEnemy& enemy, float x,
-                                          float y) const {
+                                          float y, int exactLayer) const {
     if (!isStage09MidbossNodeType(enemy.spawnType)) return false;
     if (enemy.spawnType >= 0xc8) {
-        return drawStage09TailMidbossNode(enemy, x, y);
+        return drawStage09TailMidbossNode(enemy, x, y, exactLayer);
     }
     if (!enemy.drawBodyThisFrame) return true;
 
@@ -887,9 +913,12 @@ bool StageRuntime::drawStage09MidbossNode(const StageEnemy& enemy, float x,
         const double radians = midboss09Radians(orbit);
         const float dx = static_cast<float>(std::cos(radians) * 40.0);
         const float dy = static_cast<float>(std::sin(radians) * 40.0);
-        drawSmall(14, x + dx, y + dy, orbit);
-        drawSmall(14, x - dx, y + dy, midboss09Angle(-static_cast<int>(orbit)), true);
-        drawSmall(11, x, y);
+        if (exactLayer == 0x23) {
+            drawSmall(14, x + dx, y + dy, orbit);
+            drawSmall(14, x - dx, y + dy,
+                      midboss09Angle(-static_cast<int>(orbit)), true);
+            drawSmall(11, x, y);
+        }
         return true;
     }
 
@@ -898,16 +927,26 @@ bool StageRuntime::drawStage09MidbossNode(const StageEnemy& enemy, float x,
         if (enemy.drawHelperState == 0) {
             alpha = std::clamp(enemy.drawHelperTimer * 255 / 30, 0, 255);
         }
-        if (alpha < 255) SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
-        drawMedium(170, x, y - 50.0f);
-        drawMedium(170, x, y + 50.0f);
-        drawSmall(20 + (enemy.drawHelperTimer / 3) % 3,
-                  x, y - 60.0f);
-        if (alpha < 255) SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        if (exactLayer == 0x1e) {
+            SetDrawBright(0, 0, 0);
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x40);
+            drawMedium(170, x, y - 50.0f);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            SetDrawBright(255, 255, 255);
+        }
+        if (exactLayer == 0x23) {
+            if (alpha < 255) SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+            drawMedium(170, x, y + 50.0f);
+            drawSmall(20 + (enemy.drawHelperTimer / 3) % 3,
+                      x, y - 60.0f);
+            if (alpha < 255) SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        }
         return true;
     }
 
-    drawMedium(62, x, y, enemy.sourceAngle16);
+    if (exactLayer == 0x21) {
+        drawMedium(62, x, y, enemy.sourceAngle16);
+    }
     return true;
 }
 

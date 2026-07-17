@@ -42,8 +42,9 @@ inline constexpr int kMenu2YOffset = 68;
 } // namespace title_layout
 
 namespace gameplay_layout {
-// Original entities use x=60..660 and are translated by +280 for the central
-// screen playfield at x=340..940. Stage scripts retain those original values.
+// At the centered start position, original entities use x=60..660 and a +280
+// camera offset. Gameplay updates that offset to 340-playerX/6 so the logical
+// movement rectangle continues to map onto screen x=340..940.
 inline constexpr RectI kPlayLocalRect{60, 0, 600, kScreenHeight};
 inline constexpr PointI kPlayScreenOrigin{280, 0};
 inline constexpr PointI kStageBackOrigin{280, 0};

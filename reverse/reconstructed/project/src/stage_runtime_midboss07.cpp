@@ -933,7 +933,7 @@ void StageRuntime::updateStage07MidbossNode(StageEnemy& enemy) {
 }
 
 bool StageRuntime::drawStage07Midboss(const StageEnemy& enemy, float x,
-                                      float y) const {
+                                      float y, int exactLayer) const {
     if (!isStage07MidbossType(enemy.spawnType)) return false;
     if (!enemy.drawBodyThisFrame) return true;
 
@@ -965,23 +965,33 @@ bool StageRuntime::drawStage07Midboss(const StageEnemy& enemy, float x,
     const int armFrame = 0x62 + (std::max(0, frame_ - 1) / 3) % 2;
     const float upperY = y + 300.0f;
 
-    draw(enemyLargeFrames_, 48, x, y + 164.0f);
-    draw(enemySmallFrames_, armFrame, x + 160.0f, upperY);
-    draw(enemySmallFrames_, armFrame, x + 90.0f, upperY);
-    draw(enemySmallFrames_, armFrame, x - 160.0f, upperY);
-    draw(enemySmallFrames_, armFrame, x - 90.0f, upperY);
-    draw(enemyLargeFrames_, 45, x, y + 140.0f);
-    if (midboss07Rand(frame_) % 5u != 0u) {
-        draw(enemyLargeFrames_, first ? 46 : 47, x, y + 140.0f);
+    if (exactLayer == 0x17) {
+        SetDrawBright(0, 0, 0x20);
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x40);
+        draw(enemyLargeFrames_, 48, x, y + 164.0f);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        SetDrawBright(255, 255, 255);
     }
-    draw(enemyLargeFrames_, first ? 42 : 43, x, y + 140.0f);
-    draw(bossFrames_, bodyFrame, x, y + 120.0f);
+    if (exactLayer == 0x19) {
+        draw(enemySmallFrames_, armFrame, x + 160.0f, upperY);
+        draw(enemySmallFrames_, armFrame, x + 90.0f, upperY);
+        draw(enemySmallFrames_, armFrame, x - 160.0f, upperY);
+        draw(enemySmallFrames_, armFrame, x - 90.0f, upperY);
+        draw(enemyLargeFrames_, 45, x, y + 140.0f);
+        if (midboss07Rand(frame_) % 5u != 0u) {
+            draw(enemyLargeFrames_, first ? 46 : 47, x, y + 140.0f);
+        }
+        draw(enemyLargeFrames_, first ? 42 : 43, x, y + 140.0f);
+        draw(bossFrames_, bodyFrame, x, y + 120.0f);
+    }
 
     const double pulse = 1.0 +
         std::sin(static_cast<double>(std::max(0, frame_ - 1)) *
                  kMidboss07Tau / 82.0) *
             0.05;
-    draw(enemyMediumFrames_, first ? 126 : 130, x, y, 0, pulse);
+    if (exactLayer == 0x1a) {
+        draw(enemyMediumFrames_, first ? 126 : 130, x, y, 0, pulse);
+    }
 
     int animation = first ? 127 : 131;
     const int state = enemy.drawHelperState;
@@ -1016,13 +1026,17 @@ bool StageRuntime::drawStage07Midboss(const StageEnemy& enemy, float x,
             else if (local < window + 10) animation = 132;
         }
     }
-    draw(enemyMediumFrames_, animation, x, y);
-    draw(enemyLargeFrames_, 44, x, y + 140.0f);
+    if (exactLayer == 0x1a) {
+        draw(enemyMediumFrames_, animation, x, y);
+    }
+    if (exactLayer == 0x1d) {
+        draw(enemyLargeFrames_, 44, x, y + 140.0f);
+    }
     return true;
 }
 
 bool StageRuntime::drawStage07MidbossNode(const StageEnemy& enemy, float x,
-                                          float y) const {
+                                          float y, int exactLayer) const {
     if (!isStage07MidbossNodeType(enemy.spawnType)) return false;
     if (enemy.spawnType == 0x79 || !enemy.drawBodyThisFrame) return true;
 
@@ -1042,10 +1056,12 @@ bool StageRuntime::drawStage07MidbossNode(const StageEnemy& enemy, float x,
         const int frame = enemy.spawnType == 0x7a
                               ? (enemy.drawHelperState == 0 ? 134 : 136)
                               : (enemy.drawHelperState == 0 ? 135 : 137);
-        draw(enemyMediumFrames_, frame, x, y + 10.0f, 0, 1.0,
-             enemy.originX < 0.0f);
+        if (exactLayer == 0x1b) {
+            draw(enemyMediumFrames_, frame, x, y + 10.0f, 0, 1.0,
+                 enemy.originX < 0.0f);
+        }
         if (enemy.drawHelperState == 0 && enemy.targetable) {
-            drawEnemyGaugeExact(enemy, 1, x, y);
+            drawEnemyGaugeExact(enemy, 1, x, y, exactLayer);
         }
         return true;
     }
@@ -1058,14 +1074,18 @@ bool StageRuntime::drawStage07MidbossNode(const StageEnemy& enemy, float x,
             static_cast<float>(std::cos(radians) * 120.0);
         const float weaponY = baseY +
             static_cast<float>(std::sin(radians) * 120.0);
-        SetDrawBright(enemy.spawnType == 0x7c ? 255 : 0,
-                      enemy.spawnType == 0x7c ? 0 : 255, 255);
-        draw(enemySmallFrames_, 81, weaponX, weaponY,
-             enemy.sourceAngle16, 0.9);
-        SetDrawBright(255, 255, 255);
-        draw(enemySmallFrames_, 100, baseX, baseY,
-             enemy.sourceAngle16);
-        if (enemy.targetable) drawEnemyGaugeExact(enemy, 2, x, y);
+        if (exactLayer == 0x1c) {
+            SetDrawBright(enemy.spawnType == 0x7c ? 255 : 0,
+                          enemy.spawnType == 0x7c ? 0 : 255, 255);
+            draw(enemySmallFrames_, 81, weaponX, weaponY,
+                 enemy.sourceAngle16, 0.9);
+            SetDrawBright(255, 255, 255);
+            draw(enemySmallFrames_, 100, baseX, baseY,
+                 enemy.sourceAngle16);
+        }
+        if (enemy.targetable) {
+            drawEnemyGaugeExact(enemy, 2, x, y, exactLayer);
+        }
         return true;
     }
 
@@ -1088,20 +1108,22 @@ bool StageRuntime::drawStage07MidbossNode(const StageEnemy& enemy, float x,
                                               static_cast<int>(
                                                   enemy.sourceAngle16) -
                                               0x4000);
-    draw(enemySmallFrames_, bodyFrame, x, y, bodyAngle, scale);
+    if (exactLayer == 0x23) {
+        draw(enemySmallFrames_, bodyFrame, x, y, bodyAngle, scale);
+    }
 
     const double radians = midboss07Radians(enemy.sourceAngle16);
     const float rearX = x -
         static_cast<float>(std::cos(radians) * 24.0 * scale);
     const float rearY = y -
         static_cast<float>(std::sin(radians) * 24.0 * scale);
-    if (enemy.spawnType == 0x7e) {
+    if (enemy.spawnType == 0x7e && exactLayer == 0x23) {
         draw(enemySmallFrames_, 104, rearX, rearY,
              midboss07Angle(timer * 0xc80), scale);
         draw(enemySmallFrames_, 104, rearX, rearY,
              midboss07Angle(timer * 0xc80 - 0x8000), scale);
     }
-    else {
+    else if (exactLayer == 0x23) {
         draw(enemySmallFrames_, 108, rearX, rearY,
              midboss07Angle(static_cast<int>(enemy.sourceAngle16) +
                             timer * 0x180 - 0x4000),
@@ -1111,7 +1133,9 @@ bool StageRuntime::drawStage07MidbossNode(const StageEnemy& enemy, float x,
                             timer * 0x180 + 0x4000),
              scale);
     }
-    if (enemy.targetable) drawEnemyGaugeExact(enemy, 2, x, y);
+    if (enemy.targetable) {
+        drawEnemyGaugeExact(enemy, 2, x, y, exactLayer);
+    }
     return true;
 }
 

@@ -412,6 +412,19 @@ void App::drawSmokeTestFrame() {
         return;
     }
 
+    // Gameplay is composed over the black back buffer. Drawing the diagnostics
+    // TitleBack first leaks the title screen through intentional background
+    // fades and through Stage 8's recovered empty interval.
+    if (diagnosticsPage_ == 6) {
+        if (stageRuntime_.initialized()) {
+            stageRuntime_.draw();
+        }
+        else {
+            drawStageRuntimeUnavailable();
+        }
+        return;
+    }
+
     const int titleBack = resources_ ? resources_->graphHandle("media\\system\\TitleBack.png") : -1;
     const int titleLogo = resources_ ? resources_->graphHandle("media\\system\\TitleLogo.png") : -1;
     const int nowLoading = resources_ ? resources_->graphHandle("media\\system\\NowLoading.png") : -1;
@@ -433,15 +446,7 @@ void App::drawSmokeTestFrame() {
 
     DrawString(24, 24, "LikeDreamerRe reconstruction scaffold", GetColor(255, 240, 128));
     DrawString(24, 48, "Ctrl+F1 title  +F2 resources  +F3 text CSV  +F4 save/config  +F5 stage probe  +F6 playable stage", GetColor(255, 255, 255));
-    if (diagnosticsPage_ == 6) {
-        if (stageRuntime_.initialized()) {
-            stageRuntime_.draw();
-        }
-        else {
-            drawStageRuntimeUnavailable();
-        }
-    }
-    else if (diagnosticsPage_ == 1) {
+    if (diagnosticsPage_ == 1) {
         DrawString(24, 72, "Smoke test: startup/title resource loading only", GetColor(255, 255, 255));
         drawDiagnostics(24, 120);
     }

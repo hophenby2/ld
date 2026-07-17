@@ -238,6 +238,7 @@ private:
         int age = 0;
         int drawAge = 0;
         bool drawQueuedThisFrame = false;
+        int drawLayer = 0x50;
         int visualSelector = 0;
         int projectileId = 0;
         float x = 0.0f;
@@ -484,7 +485,8 @@ private:
     void emitStage06EnemyProjectiles(StageEnemy& enemy);
     bool spawnStage06EnemyNode(StageEnemy& parent, int childIndex,
                                std::uint16_t angle16);
-    bool drawStage06Enemy(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage06Enemy(const StageEnemy& enemy, float x, float y,
+                          int exactLayer) const;
     void updateStage07Midboss(StageEnemy& enemy);
     void updateStage07MidbossNode(StageEnemy& enemy);
     bool spawnStage07MidbossNode(StageEnemy& parent, int spawnType,
@@ -493,20 +495,23 @@ private:
                                  double speed, int hitPoints, int radius,
                                  bool attached, int kind,
                                  bool countsForPhase);
-    bool drawStage07Midboss(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage07Midboss(const StageEnemy& enemy, float x, float y,
+                            int exactLayer) const;
     bool drawStage07MidbossNode(const StageEnemy& enemy, float x,
-                                float y) const;
+                                float y, int exactLayer) const;
     void updateStage07Enemy(StageEnemy& enemy);
     void emitStage07EnemyProjectiles(StageEnemy& enemy);
     bool spawnStage07EnemyChild(StageEnemy& parent, float offsetX,
                                 float offsetY, int childIndex);
-    bool drawStage07Enemy(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage07Enemy(const StageEnemy& enemy, float x, float y,
+                          int exactLayer) const;
     void updateStage08Enemy(StageEnemy& enemy);
     bool spawnStage08EnemyChild(StageEnemy& parent, int spawnType,
                                 int childIndex, float offsetX, float offsetY,
                                 std::uint16_t angle16, int kind, int radius,
                                 bool targetable);
-    bool drawStage08Enemy(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage08Enemy(const StageEnemy& enemy, float x, float y,
+                          int exactLayer) const;
     void updateStage07Boss(StageEnemy& enemy);
     void updateStage07BossNode(StageEnemy& enemy);
     bool spawnStage07BossNode(StageEnemy& parent, int spawnType,
@@ -520,8 +525,10 @@ private:
                               int childIndex, float offsetX, float offsetY,
                               std::uint16_t angle16, double speed,
                               int hitPoints, int radius, bool attached);
-    bool drawStage08Boss(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage08BossNode(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage08Boss(const StageEnemy& enemy, float x, float y,
+                         int exactLayer) const;
+    bool drawStage08BossNode(const StageEnemy& enemy, float x, float y,
+                             int exactLayer) const;
     void updateStage09Boss(StageEnemy& enemy);
     void emitStage09BossProjectiles(StageEnemy& enemy);
     void updateStage09BossNode(StageEnemy& enemy);
@@ -529,8 +536,10 @@ private:
                               int childIndex, float offsetX, float offsetY,
                               std::uint16_t angle16, double speed,
                               int radius, bool attached);
-    bool drawStage09Boss(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage09BossNode(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage09Boss(const StageEnemy& enemy, float x, float y,
+                         int exactLayer) const;
+    bool drawStage09BossNode(const StageEnemy& enemy, float x, float y,
+                             int exactLayer) const;
     void updateStage09Midboss(StageEnemy& enemy);
     void updateStage09MidbossNode(StageEnemy& enemy);
     void emitStage09Midboss146Projectiles(StageEnemy& enemy);
@@ -543,13 +552,18 @@ private:
                                  int childIndex, float offsetX, float offsetY,
                                  std::uint16_t angle16, double speed,
                                  int hitPoints, int radius, bool attached);
-    bool drawStage09Midboss(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage09MidbossNode(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage09TailMidboss(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage09TailMidbossNode(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage09Midboss(const StageEnemy& enemy, float x, float y,
+                            int exactLayer) const;
+    bool drawStage09MidbossNode(const StageEnemy& enemy, float x, float y,
+                                int exactLayer) const;
+    bool drawStage09TailMidboss(const StageEnemy& enemy, float x, float y,
+                                int exactLayer) const;
+    bool drawStage09TailMidbossNode(const StageEnemy& enemy, float x, float y,
+                                    int exactLayer) const;
     void updateStage10Enemy(StageEnemy& enemy);
     void emitStage10EnemyProjectiles(StageEnemy& enemy);
-    bool drawStage10Enemy(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage10Enemy(const StageEnemy& enemy, float x, float y,
+                          int exactLayer) const;
     bool isStage10SceneNodeType(int spawnType) const;
     bool isSharedHitboxProxyType(int spawnType) const;
     bool isStage10GuardNodeType(int spawnType) const;
@@ -560,7 +574,7 @@ private:
                                int hitPoints, int kind, int radius);
     void updateStage10SceneNode(StageEnemy& enemy);
     bool drawStage10SceneNode(const StageEnemy& enemy, float x,
-                              float y) const;
+                              float y, int exactLayer) const;
     bool spawnSharedHitboxProxy(StageEnemy& parent, int spawnType,
                                 float offsetX, float offsetY, int radius);
     void updateSharedHitboxProxy(StageEnemy& enemy);
@@ -575,7 +589,7 @@ private:
                                       int childIndex = 0);
     void updateStage10FinalBossEmitter(StageEnemy& enemy);
     bool drawStage10FinalBossEmitter(const StageEnemy& enemy, float x,
-                                     float y) const;
+                                     float y, int exactLayer) const;
     void updateStage10FinalBossNode(StageEnemy& enemy);
     bool spawnStage10FinalBossNode(StageEnemy& parent, int spawnType);
     void updateProjectiles();
@@ -600,11 +614,13 @@ private:
                                 bool playSound = true);
     void spawnPostDeathCounterEntity(const StageEnemy& enemy, double lifetime);
     void updateSpecialGaugeAction();
-    void updateSpecialGaugeState();
+    void updateSpecialGaugeState(int shotTimerBeforeInput);
     bool settlePendingPlayerHit();
     void startEquippedBomb();
     void startFever(bool manualActivation);
     void armManualFever();
+    void spawnFeverReadyEffects();
+    void spawnFeverTrailEffect();
     void playPlayerSound(int handle, int volumeMultiplier = 0x19) const;
     void updateBossCountdownAudio(int hitPoints, int countdown) const;
     void updatePlayerSideObjects();
@@ -626,32 +642,66 @@ private:
     void spawnProjectileSpread(int visualSelector, int projectileId, float x, float y, float centerAngle, double speed, int radius, int count, float spreadRadians);
     void spawnProjectileSpread(int visualSelector, int projectileId, float x, float y, std::uint16_t centerAngle16, float initialTravel, double speed, int radius, int count, int spreadAngle16, int arg8OrAux);
     void spawnRewardItem(int itemType, float x, float y, std::uint16_t angle16, float speed, int radiusOrScale);
-    void drawBackground() const;
-    void drawPlayerSideObjects() const;
-    void drawPlayer() const;
-    void drawEnemies() const;
-    bool drawStage01BossExact(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage01MarkerExact(const StageEnemy& enemy, float x, float y) const;
-    bool drawType0AExact(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage01Type0EExact(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage01Type0FExact(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage01Type10Or11Exact(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage02Type19Exact(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage02Type1AExact(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage02Type1BExact(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage02Type1CExact(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage02Type1DOr1EExact(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage02Type1FExact(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage02Type20Exact(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage02Type21Exact(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage02BossExact(const StageEnemy& enemy, float x, float y) const;
+    float screenX(float localX) const;
+    void drawBackgroundLayer(int exactLayer) const;
+    enum class PlayerSideDrawPass {
+        Normal,
+        Flash,
+        Core,
+        Ring,
+    };
+    enum class PlayerOverlayDrawPass {
+        MarkerRing,
+        GaugeFill,
+        GaugeFrame,
+        Aura,
+        Hitbox,
+    };
+    void drawPlayerBody() const;
+    void drawPlayerSideObjects(PlayerSideDrawPass pass) const;
+    void drawPlayer(PlayerOverlayDrawPass pass) const;
+    void drawEnemies(int exactLayer) const;
+    bool drawStage01BossExact(const StageEnemy& enemy, float x, float y,
+                              int exactLayer) const;
+    bool drawStage01MarkerExact(const StageEnemy& enemy, float x, float y,
+                                int exactLayer) const;
+    bool drawType0AExact(const StageEnemy& enemy, float x, float y,
+                         int exactLayer) const;
+    bool drawStage01Type0EExact(const StageEnemy& enemy, float x, float y,
+                                int exactLayer) const;
+    bool drawStage01Type0FExact(const StageEnemy& enemy, float x, float y,
+                                int exactLayer) const;
+    bool drawStage01Type10Or11Exact(const StageEnemy& enemy, float x, float y,
+                                    int exactLayer) const;
+    bool drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, float y,
+                                    int exactLayer) const;
+    bool drawStage02Type19Exact(const StageEnemy& enemy, float x, float y,
+                                int exactLayer) const;
+    bool drawStage02Type1AExact(const StageEnemy& enemy, float x, float y,
+                                int exactLayer) const;
+    bool drawStage02Type1BExact(const StageEnemy& enemy, float x, float y,
+                                int exactLayer) const;
+    bool drawStage02Type1CExact(const StageEnemy& enemy, float x, float y,
+                                int exactLayer) const;
+    bool drawStage02Type1DOr1EExact(const StageEnemy& enemy, float x, float y,
+                                    int exactLayer) const;
+    bool drawStage02Type1FExact(const StageEnemy& enemy, float x, float y,
+                                int exactLayer) const;
+    bool drawStage02Type20Exact(const StageEnemy& enemy, float x, float y,
+                                int exactLayer) const;
+    bool drawStage02Type21Exact(const StageEnemy& enemy, float x, float y,
+                                int exactLayer) const;
+    bool drawStage02BossExact(const StageEnemy& enemy, float x, float y,
+                              int exactLayer) const;
     void drawStage01BossHud() const;
     void drawStage02BossHud() const;
-    void drawEnemyGaugeExact(const StageEnemy& enemy, int mode, float x, float y) const;
-    bool drawStage03EnemyExact(const StageEnemy& enemy, float x, float y) const;
+    void drawEnemyGaugeExact(const StageEnemy& enemy, int mode, float x,
+                             float y, int exactLayer) const;
+    bool drawStage03EnemyExact(const StageEnemy& enemy, float x, float y,
+                               int exactLayer) const;
     void drawStage03BossHud() const;
-    bool drawStage04BossExact(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage04BossExact(const StageEnemy& enemy, float x, float y,
+                              int exactLayer) const;
     void drawStage04BossHud() const;
     void drawLateStageBossHud() const;
     void drawSharedBossHud(const StageEnemy& boss, int phaseMode, int maxHp,
@@ -661,21 +711,26 @@ private:
     void drawStageBannerPanels() const;
     void drawStageBannerText() const;
     const std::vector<int>& localizedBossApproach1Frames() const;
-    bool drawStage04EnemyExact(const StageEnemy& enemy, float x, float y) const;
-    bool drawLateStageBoss(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage07BossNode(const StageEnemy& enemy, float x, float y) const;
-    bool drawStage10FinalBossNode(const StageEnemy& enemy, float x, float y) const;
-    bool drawLateStageEnemy(const StageEnemy& enemy, float x, float y) const;
+    bool drawStage04EnemyExact(const StageEnemy& enemy, float x, float y,
+                               int exactLayer) const;
+    bool drawLateStageBoss(const StageEnemy& enemy, float x, float y,
+                           int exactLayer) const;
+    bool drawStage07BossNode(const StageEnemy& enemy, float x, float y,
+                             int exactLayer) const;
+    bool drawStage10FinalBossNode(const StageEnemy& enemy, float x, float y,
+                                  int exactLayer) const;
+    bool drawLateStageEnemy(const StageEnemy& enemy, float x, float y,
+                            int exactLayer) const;
     void drawOriginalMode7Node(int handle, float x, float y, std::uint16_t angle16, double scaleX, double scaleY, bool reverseX) const;
     void drawStageEffects(bool foreground, int exactLayer = -1) const;
-    void drawProjectiles() const;
-    void drawRewardItems() const;
+    void drawProjectiles(int exactLayer) const;
+    void drawRewardItems(bool specialLayer) const;
     void drawOverlay() const;
-    void drawHudSidebar() const;
-    void drawLeftHudPanel() const;
-    void drawRightHudPanel() const;
-    void drawTimeWindowHud() const;
-    void drawStateRows() const;
+    void drawHudSidebar(int exactLayer) const;
+    void drawLeftHudPanel(int exactLayer) const;
+    void drawRightHudPanel(int exactLayer) const;
+    void drawTimeWindowHud(int exactLayer) const;
+    void drawStateRows(int exactLayer) const;
     void drawLayoutGuides() const;
     void drawDebugOverlay() const;
     void drawHudNumber(float anchorX, float centerY, std::int64_t value,
@@ -804,8 +859,14 @@ private:
     int stage8Back2Handle_ = -1;
     mutable std::array<float, 4> lateBackgroundScroll_{};
     mutable int lateBackgroundScrollFrame_ = -0x3fffffff;
+    int backgroundDrawFrame_ = 0;
+    int backgroundStage08BossState_ = -1;
+    int backgroundStage08BossTimer_ = 0;
+    int backgroundStage09BossState_ = -1;
+    int backgroundStage09BossTimer_ = 0;
+    bool backgroundStageGateOpen_ = false;
     std::array<int, 6> stage09BossDefeatFrames_{{-1, -1, -1, -1, -1, -1}};
-    std::vector<int> stageFrameFrames_;
+    std::array<int, 6> backgroundStage09BossDefeatFrames_{{-1, -1, -1, -1, -1, -1}};
     std::vector<int> numSmallFrames_;
     std::vector<int> numMediumFrames_;
     std::vector<int> numLargeFrames_;

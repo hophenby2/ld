@@ -98,6 +98,9 @@ void StageRuntime::updateStage06Enemy(StageEnemy& enemy) {
     enemy.drawBodyThisFrame = false;
     enemy.drawMarkerThisFrame = false;
 
+    const float dispatchDelta =
+        static_cast<float>(std::clamp(timeWindowDispatchCount_, 1, 4));
+
     const auto aimPlayer = [this, &enemy]() {
         return s06Aim(enemy.x, enemy.y, player_.x, player_.y);
     };
@@ -116,7 +119,7 @@ void StageRuntime::updateStage06Enemy(StageEnemy& enemy) {
         }
 
         const int timer = enemy.helperTimer;
-        enemy.originY += 1.0f;
+        enemy.originY += dispatchDelta;
         const int unfoldTimer = std::min(timer, 120);
         const int riseTimer = std::min(timer, 180);
         const float radiusX = static_cast<float>(static_cast<int>(
@@ -228,7 +231,7 @@ void StageRuntime::updateStage06Enemy(StageEnemy& enemy) {
     }
 
     if (enemy.spawnType == 0x5a) { // FUN_14009eca0
-        enemy.originY += 1.0f;
+        enemy.originY += dispatchDelta;
         if (enemy.helperState == 0) {
             enemy.x = enemy.originX;
             enemy.y = enemy.originY;
@@ -251,7 +254,7 @@ void StageRuntime::updateStage06Enemy(StageEnemy& enemy) {
     }
 
     if (enemy.spawnType == 0x5b || enemy.spawnType == 0x5c) { // FUN_14009f5d0
-        enemy.y += 1.0f;
+        enemy.y += dispatchDelta;
         if (enemy.helperState == 0) {
             enemy.drawMarkerThisFrame = true;
             enemy.markerDrawTimer = enemy.helperTimer;
@@ -287,7 +290,7 @@ void StageRuntime::updateStage06Enemy(StageEnemy& enemy) {
     }
 
     if (enemy.spawnType == 0x5d) { // FUN_1400a0220
-        enemy.y += 1.0f;
+        enemy.y += dispatchDelta;
         if (enemy.helperState == 0) {
             if (enemy.y < -100.0f) return;
             enemy.helperState = 1;
@@ -300,7 +303,7 @@ void StageRuntime::updateStage06Enemy(StageEnemy& enemy) {
     }
 
     if (enemy.spawnType == 0x5e) { // FUN_1400a0e90
-        enemy.originY += 1.0f;
+        enemy.originY += dispatchDelta;
         if (enemy.helperState == 0) {
             enemy.x = enemy.originX;
             enemy.y = enemy.originY;
@@ -320,7 +323,7 @@ void StageRuntime::updateStage06Enemy(StageEnemy& enemy) {
     }
 
     if (enemy.spawnType == 0x5f) { // FUN_1400a1730
-        enemy.y += 1.0f;
+        enemy.y += dispatchDelta;
         enemy.drawBodyThisFrame = true;
         enemy.drawHp = enemy.hp;
         if (enemy.helperState == 0) {
@@ -641,8 +644,8 @@ void StageRuntime::emitStage06EnemyProjectiles(StageEnemy& enemy) {
 }
 
 bool StageRuntime::drawStage06Enemy(const StageEnemy& enemy, float x,
-                                    float y) const {
-    if (enemy.drawMarkerThisFrame) {
+                                    float y, int exactLayer) const {
+    if (enemy.drawMarkerThisFrame && exactLayer == 0x32) {
         const int marker = s06Frame(effectMediumFrames_, 4);
         if (marker != -1) {
             const double scale = enemy.spawnType == 0x5b || enemy.spawnType == 0x5c
@@ -655,10 +658,24 @@ bool StageRuntime::drawStage06Enemy(const StageEnemy& enemy, float x,
     }
     if (!enemy.drawBodyThisFrame) return true;
 
-    const auto draw = [this](const std::vector<int>& frames, int frame,
+    int bodyLayer = 0x23;
+    if (enemy.spawnType == 0x57 || enemy.spawnType == 0x58 ||
+        enemy.spawnType == 0x59) {
+        bodyLayer = 0x20;
+    }
+    else if (enemy.spawnType == 0x60) {
+        bodyLayer = 0x1c;
+    }
+    else if ((enemy.spawnType >= 0x5a && enemy.spawnType <= 0x5f)) {
+        bodyLayer = -1;
+    }
+
+    const auto draw = [this, exactLayer, bodyLayer](
+                             const std::vector<int>& frames, int frame,
                              float drawX, float drawY, std::uint16_t angle = 0,
                              bool reverse = false, double sx = 1.0,
                              double sy = 1.0) {
+        if (bodyLayer >= 0 && exactLayer != bodyLayer) return;
         const int graph = s06Frame(frames, frame);
         if (graph != -1) {
             drawOriginalMode7Node(graph, drawX, drawY, angle, sx, sy, reverse);
@@ -699,12 +716,26 @@ bool StageRuntime::drawStage06Enemy(const StageEnemy& enemy, float x,
         const double heading = s06Radians(enemy.sourceAngle16);
         const float fireX = x + static_cast<float>(std::cos(heading) * 8.0);
         const float fireY = y + static_cast<float>(std::sin(heading) * 8.0) + 7.0f;
-        draw(enemySmallFrames_, 58, x, y, s06Angle(timer * 0x1bc));
-        draw(enemySmallFrames_, 59, x, y);
-        draw(enemySmallFrames_, 60, fireX, fireY);
+        if (exactLayer == 0x1a) {
+            draw(enemySmallFrames_, 58, x, y, s06Angle(timer * 0x1bc));
+            draw(enemySmallFrames_, 59, x, y);
+            draw(enemySmallFrames_, 60, fireX, fireY);
+        }
         const double pulse = 1.0 + std::sin((timer - 20) * kTau / 61.0) * 0.1;
-        draw(enemySmallFrames_, 61, x + enemy.originX - enemy.x,
-             y + enemy.originY - enemy.y + 30.0f, 0, false, pulse, pulse);
+        if (exactLayer == 0x19) {
+            draw(enemySmallFrames_, 61, x + enemy.originX - enemy.x,
+                 y + enemy.originY - enemy.y + 30.0f,
+                 0, false, pulse, pulse);
+        }
+        if (exactLayer == 0x18) {
+            SetDrawBright(0, 0, 0);
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x40);
+            draw(enemySmallFrames_, 61, x + enemy.originX - enemy.x,
+                 y + enemy.originY - enemy.y + 30.0f,
+                 0, false, pulse, pulse);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            SetDrawBright(255, 255, 255);
+        }
         break;
     }
     case 0x5b:
@@ -718,13 +749,24 @@ bool StageRuntime::drawStage06Enemy(const StageEnemy& enemy, float x,
         const int wingL = ((timer + 55) % 100) < 51
                               ? static_cast<int>(std::sin(((timer + 55) % 100) * kPi / 50.0) * 13000.0)
                               : 0;
-        draw(enemySmallFrames_, 66, x + 8.0f, y + wave3 + 16.0f, s06Angle(-wingR));
-        draw(enemySmallFrames_, 66, x - 8.0f, y + wave3 + 16.0f, s06Angle(wingL), true);
-        draw(enemySmallFrames_, 67, x + 10.0f, y + wave3, s06Angle(-wing));
-        draw(enemySmallFrames_, 67, x - 10.0f, y + wave3, s06Angle(wing), true);
-        draw(enemySmallFrames_, 68, x, y + wave3);
-        draw(enemySmallFrames_, 69, x, y + wave0 - 14.0f);
-        draw(enemySmallFrames_, 62 + (timer / 7) % 4, x, y + 60.0f);
+        if (exactLayer == 0x1a) {
+            draw(enemySmallFrames_, 66, x + 8.0f, y + wave3 + 16.0f, s06Angle(-wingR));
+            draw(enemySmallFrames_, 66, x - 8.0f, y + wave3 + 16.0f, s06Angle(wingL), true);
+            draw(enemySmallFrames_, 67, x + 10.0f, y + wave3, s06Angle(-wing));
+            draw(enemySmallFrames_, 67, x - 10.0f, y + wave3, s06Angle(wing), true);
+            draw(enemySmallFrames_, 68, x, y + wave3);
+            draw(enemySmallFrames_, 69, x, y + wave0 - 14.0f);
+        }
+        if (exactLayer == 0x19) {
+            draw(enemySmallFrames_, 62 + (timer / 7) % 4, x, y + 60.0f);
+        }
+        if (exactLayer == 0x18) {
+            SetDrawBright(0, 0, 0);
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x40);
+            draw(enemySmallFrames_, 62 + (timer / 7) % 4, x, y + 60.0f);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            SetDrawBright(255, 255, 255);
+        }
         break;
     }
     case 0x5d: {
@@ -732,32 +774,64 @@ bool StageRuntime::drawStage06Enemy(const StageEnemy& enemy, float x,
         const float wave14 = static_cast<float>(std::sin((timer - 14) * kTau / 55.0) * 2.0);
         const int wing = static_cast<int>(std::sin((timer - 28) * kTau / 55.0) * 3000.0);
         const int spin = static_cast<int>(std::sin((timer - 7) * kTau / 55.0) * 600.0);
-        draw(enemyMediumFrames_, 96, x, y);
-        draw(enemyMediumFrames_, 91, x, y);
-        draw(enemyMediumFrames_, 95, x + 13.0f, y + wave0 + 12.0f, s06Angle(spin));
-        draw(enemyMediumFrames_, 95, x - 13.0f, y + wave0 + 12.0f, s06Angle(-spin), true);
-        draw(enemyMediumFrames_, 92, x, y + wave0 - 8.0f);
-        draw(enemyMediumFrames_, 93, x, y + wave14 - 5.0f);
-        draw(enemyMediumFrames_, 94, x + 20.0f, y + wave14 - 29.0f, s06Angle(wing));
-        draw(enemyMediumFrames_, 94, x - 20.0f, y + wave14 - 29.0f, s06Angle(-wing), true);
+        if (exactLayer == 0x18) {
+            SetDrawBright(0, 0, 0);
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x40);
+            draw(enemyMediumFrames_, 96, x, y);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            SetDrawBright(255, 255, 255);
+        }
+        if (exactLayer == 0x19) {
+            draw(enemyMediumFrames_, 91, x, y);
+        }
+        if (exactLayer == 0x1b) {
+            draw(enemyMediumFrames_, 95, x + 13.0f,
+                 y + wave0 + 12.0f, s06Angle(spin));
+            draw(enemyMediumFrames_, 95, x - 13.0f,
+                 y + wave0 + 12.0f, s06Angle(-spin), true);
+            draw(enemyMediumFrames_, 92, x, y + wave0 - 8.0f);
+            draw(enemyMediumFrames_, 93, x, y + wave14 - 5.0f);
+            draw(enemyMediumFrames_, 94, x + 20.0f,
+                 y + wave14 - 29.0f, s06Angle(wing));
+            draw(enemyMediumFrames_, 94, x - 20.0f,
+                 y + wave14 - 29.0f, s06Angle(-wing), true);
+        }
         break;
     }
     case 0x5e: {
         const int spin = static_cast<int>(std::sin(timer * kTau / 177.0) * 2000.0);
         const int secondary = static_cast<int>(std::sin(timer * kTau / 77.0) * 800.0);
-        draw(enemyMediumFrames_, 97, x, y, s06Angle(spin));
-        draw(enemyMediumFrames_, 98, x, y, s06Angle(spin), enemy.originX < 360.0f);
-        draw(enemyMediumFrames_, 99, x, y, s06Angle(spin + secondary));
-        draw(enemyMediumFrames_, 100, x + enemy.originX - enemy.x,
-             y + enemy.originY - enemy.y + 40.0f);
+        if (exactLayer == 0x1a) {
+            draw(enemyMediumFrames_, 97, x, y, s06Angle(spin));
+            draw(enemyMediumFrames_, 98, x, y, s06Angle(spin),
+                 enemy.originX < 360.0f);
+            draw(enemyMediumFrames_, 99, x, y,
+                 s06Angle(spin + secondary));
+        }
+        if (exactLayer == 0x18) {
+            SetDrawBright(0, 0, 0);
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x40);
+            draw(enemyMediumFrames_, 100, x + enemy.originX - enemy.x,
+                 y + enemy.originY - enemy.y + 40.0f);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            SetDrawBright(255, 255, 255);
+        }
         break;
     }
     case 0x5f: {
         const double scale = enemy.drawHelperState == 2
                                  ? 1.0 + std::sin(timer * kPi / 6.0) * 0.1
                                  : 1.0;
-        draw(enemyLargeFrames_, 35, x, y - 168.0f, 0, false, scale, 1.5);
-        draw(enemyLargeFrames_, 35, x, y + 130.0f, 0, false, scale, 1.0);
+        if (exactLayer == 0x18) {
+            SetDrawBright(0, 0, 0);
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x40);
+            draw(enemyLargeFrames_, 35, x, y - 168.0f, 0, false, scale, 1.5);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            SetDrawBright(255, 255, 255);
+        }
+        if (exactLayer == 0x1a) {
+            draw(enemyLargeFrames_, 35, x, y + 130.0f, 0, false, scale, 1.0);
+        }
         break;
     }
     case 0x60:
@@ -774,7 +848,7 @@ bool StageRuntime::drawStage06Enemy(const StageEnemy& enemy, float x,
                                  enemy.spawnType == 0x5c
                              ? 2
                              : (enemy.spawnType == 0x5f ? 0 : 1);
-        drawEnemyGaugeExact(gauge, mode, x, y);
+        drawEnemyGaugeExact(gauge, mode, x, y, exactLayer);
     }
     return true;
 }

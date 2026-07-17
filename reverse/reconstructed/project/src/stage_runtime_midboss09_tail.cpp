@@ -773,7 +773,8 @@ void StageRuntime::updateStage09TailMidbossNode(StageEnemy& enemy) {
 }
 
 bool StageRuntime::drawStage09TailMidboss(const StageEnemy& enemy,
-                                           float x, float y) const {
+                                           float x, float y,
+                                           int exactLayer) const {
     if (enemy.spawnType < 0x149 || enemy.spawnType > 0x14b) return false;
     if (!enemy.drawBodyThisFrame) return true;
 
@@ -820,20 +821,28 @@ bool StageRuntime::drawStage09TailMidboss(const StageEnemy& enemy,
         }
         SetDrawBright(brightness, brightness, brightness);
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(alpha, 0, 255));
-        draw(handleAt(enemyLargeFrames_, 19), x, y, 0, scale, scale);
+        if (exactLayer == 0x1e) {
+            draw(handleAt(enemyLargeFrames_, 19), x, y, 0, scale, scale);
+        }
         double secondScale = scale;
         const int pulse = frame_ % 40;
         if (pulse < 11) {
             secondScale -= scale * 0.1 * std::sin(
                 static_cast<double>(pulse) * kTail09Pi / 10.0);
         }
-        draw(handleAt(enemyLargeFrames_, 20), x, y, 0,
-             secondScale, secondScale);
+        if (exactLayer == 0x1b) {
+            draw(handleAt(enemyLargeFrames_, 20), x, y, 0,
+                 secondScale, secondScale);
+        }
         SetDrawBright(255, 255, 255);
     }
     else if (enemy.spawnType == 0x14a) {
-        draw(handleAt(enemyLargeFrames_, 29), x, y - 110.0f);
-        draw(handleAt(enemyLargeFrames_, 33), x, y - 110.0f);
+        if (exactLayer == 0x1e) {
+            draw(handleAt(enemyLargeFrames_, 29), x, y - 110.0f);
+        }
+        if (exactLayer == 0x20) {
+            draw(handleAt(enemyLargeFrames_, 33), x, y - 110.0f);
+        }
         int bossFrame = 110;
         if (state == 2) {
             bossFrame = 113 + (timer / 5) % 2;
@@ -842,8 +851,15 @@ bool StageRuntime::drawStage09TailMidboss(const StageEnemy& enemy,
             static constexpr std::array<int, 4> kFrames{{110, 111, 112, 111}};
             bossFrame = kFrames[static_cast<std::size_t>((timer / 6) % 4)];
         }
-        draw(handleAt(bossFrames_, bossFrame), x, y);
-        draw(handleAt(enemyLargeFrames_, 34), x, y - 495.0f);
+        if (exactLayer == 0x1f) {
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA,
+                             std::min(0xc0, deathAlpha));
+            draw(handleAt(bossFrames_, bossFrame), x, y);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        }
+        if (exactLayer == 0x20) {
+            draw(handleAt(enemyLargeFrames_, 34), x, y - 495.0f);
+        }
 
         static constexpr std::array<float, 6> kOffsetX{{
             90.0f, 156.0f, -95.0f, -156.0f, 156.0f, -156.0f,
@@ -859,25 +875,34 @@ bool StageRuntime::drawStage09TailMidboss(const StageEnemy& enemy,
                                       : 0.7;
         const double emitterScale = introScale + 0.2 * std::sin(
             static_cast<double>(timer) * kTail09Tau / 9.0);
-        for (int i = 0; i < 6; ++i) {
-            draw(handleAt(enemySmallFrames_, 56),
-                 x + kOffsetX[static_cast<std::size_t>(i)],
-                 y + kOffsetY[static_cast<std::size_t>(i)],
-                 0, emitterScale, emitterScale);
+        if (exactLayer == 0x1f) {
+            for (int i = 0; i < 6; ++i) {
+                draw(handleAt(enemySmallFrames_, 56),
+                     x + kOffsetX[static_cast<std::size_t>(i)],
+                     y + kOffsetY[static_cast<std::size_t>(i)],
+                     0, emitterScale, emitterScale);
+            }
         }
     }
     else {
         const int spin = std::max(0, frame_ - 1) * 0xb6;
-        draw(handleAt(enemyLargeFrames_, 36), x, y, tail09Angle(-spin));
-        draw(handleAt(enemyLargeFrames_, 36), x, y, tail09Angle(spin));
-        draw(handleAt(enemyLargeFrames_, 37), x, y, enemy.secondaryAngle16);
-        draw(handleAt(enemyLargeFrames_, 39), x, y, enemy.targetAngle16);
-        draw(handleAt(enemyLargeFrames_, 38), x, y, enemy.targetAngle16);
+        if (exactLayer == 0x19) {
+            draw(handleAt(enemyLargeFrames_, 36), x, y, tail09Angle(-spin));
+            draw(handleAt(enemyLargeFrames_, 36), x, y, tail09Angle(spin));
+            draw(handleAt(enemyLargeFrames_, 37), x, y,
+                 enemy.secondaryAngle16);
+            draw(handleAt(enemyLargeFrames_, 39), x, y,
+                 enemy.targetAngle16);
+        }
         const double facing = tail09Radians(enemy.targetAngle16);
-        draw(handleAt(enemyMediumFrames_, 103),
-             x + static_cast<float>(std::cos(facing) * 90.0),
-             y + static_cast<float>(std::sin(facing) * 90.0),
-             enemy.targetAngle16);
+        if (exactLayer == 0x1b) {
+            draw(handleAt(enemyLargeFrames_, 38), x, y,
+                 enemy.targetAngle16);
+            draw(handleAt(enemyMediumFrames_, 103),
+                 x + static_cast<float>(std::cos(facing) * 90.0),
+                 y + static_cast<float>(std::sin(facing) * 90.0),
+                 enemy.targetAngle16);
+        }
     }
 
     SetDrawBright(255, 255, 255);
@@ -886,7 +911,8 @@ bool StageRuntime::drawStage09TailMidboss(const StageEnemy& enemy,
 }
 
 bool StageRuntime::drawStage09TailMidbossNode(const StageEnemy& enemy,
-                                               float x, float y) const {
+                                               float x, float y,
+                                               int exactLayer) const {
     if (enemy.spawnType < 0xc8 || enemy.spawnType > 0xcc) return false;
     if (!enemy.drawBodyThisFrame) return true;
 
@@ -920,7 +946,8 @@ bool StageRuntime::drawStage09TailMidbossNode(const StageEnemy& enemy,
                 parent->y + kTail09ChainY[static_cast<std::size_t>(index)];
             const float anchorX = x + anchorModelX - enemy.x;
             const float anchorY = y + anchorModelY - enemy.y;
-            for (int segment = 0; segment < 20; ++segment) {
+            for (int segment = 0; segment < 20 && exactLayer == 0x1c;
+                 ++segment) {
                 if (enemy.drawHelperState == -1 &&
                     enemy.drawHelperTimer > 60 - segment * 3) {
                     continue;
@@ -944,7 +971,7 @@ bool StageRuntime::drawStage09TailMidbossNode(const StageEnemy& enemy,
                      enemy.sourceAngle16, scale, scale);
             }
         }
-        if (enemy.drawHelperState != -1) {
+        if (enemy.drawHelperState != -1 && exactLayer == 0x23) {
             double scale = 1.0;
             if (enemy.drawHelperState == 0) {
                 if (enemy.drawHelperTimer < 40) scale = 0.0;
@@ -960,7 +987,7 @@ bool StageRuntime::drawStage09TailMidbossNode(const StageEnemy& enemy,
         if (enemy.targetable) {
             StageEnemy snapshot = enemy;
             snapshot.hp = enemy.drawHp;
-            drawEnemyGaugeExact(snapshot, 1, x, y - 80.0f);
+            drawEnemyGaugeExact(snapshot, 1, x, y - 80.0f, exactLayer);
         }
         return true;
     }
@@ -985,14 +1012,16 @@ bool StageRuntime::drawStage09TailMidbossNode(const StageEnemy& enemy,
             alpha = static_cast<int>(255.0 * std::sin(
                 static_cast<double>(timer) * kTail09Pi / 40.0));
         }
-        SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(alpha, 0, 255));
-        draw(handleAt(enemyLargeFrames_, 40), x, y,
-             tail09Angle(static_cast<int>(parent->targetAngle16) +
-                         static_cast<int>(enemy.targetAngle16)),
-             scale, scale);
-        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        if (exactLayer == 0x1c) {
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(alpha, 0, 255));
+            draw(handleAt(enemyLargeFrames_, 40), x, y,
+                 tail09Angle(static_cast<int>(parent->targetAngle16) +
+                             static_cast<int>(enemy.targetAngle16)),
+                 scale, scale);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        }
     }
-    else {
+    else if (exactLayer == 0x1a) {
         double scale = timer < 20
                            ? std::sin(static_cast<double>(timer) *
                                       kTail09Pi / 40.0)

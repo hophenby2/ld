@@ -1874,9 +1874,30 @@ void StageRuntime::updateStage07BossNode(StageEnemy& enemy) {
 }
 
 bool StageRuntime::drawStage07BossNode(const StageEnemy& enemy, float x,
-                                       float y) const {
+                                       float y, int exactLayer) const {
     if (!isStage07BossNodeType(enemy.spawnType)) return false;
     if (!enemy.drawBodyThisFrame) return true;
+
+    int bodyLayer = 0x23;
+    if (enemy.spawnType == 0x80) {
+        bodyLayer = 0x0f;
+    }
+    else if (enemy.spawnType >= 0x81 && enemy.spawnType <= 0x84) {
+        bodyLayer = 0x19;
+    }
+    else if (enemy.spawnType == 0x85 || enemy.spawnType == 0x86) {
+        bodyLayer = 0x1d;
+    }
+    else if (enemy.spawnType == 0x87 || enemy.spawnType == 0x88) {
+        bodyLayer = 0x1b;
+    }
+    else if (enemy.spawnType == 0x89 || enemy.spawnType == 0x8a) {
+        bodyLayer = 0x1c;
+    }
+    else if (enemy.spawnType == 0x93 || enemy.spawnType == 0x94) {
+        bodyLayer = enemy.parentSpawnType == 0x84 ? 0x23 : 0x22;
+    }
+    if (exactLayer != bodyLayer) return true;
 
     const auto drawFrame = [this](const std::vector<int>& frames, int index,
                                   float drawX, float drawY,

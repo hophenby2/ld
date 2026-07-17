@@ -202,10 +202,6 @@ constexpr float kPlayRight = static_cast<float>(notes::gameplay_layout::kPlayLoc
 constexpr float kPlayTop = static_cast<float>(notes::gameplay_layout::kPlayLocalRect.y);
 constexpr float kPlayBottom = static_cast<float>(notes::gameplay_layout::kPlayLocalRect.bottom());
 
-float screenX(float localX) {
-    return localX + static_cast<float>(notes::gameplay_layout::kPlayScreenOrigin.x);
-}
-
 float screenY(float localY) {
     return localY + static_cast<float>(notes::gameplay_layout::kPlayScreenOrigin.y);
 }
@@ -596,6 +592,12 @@ std::uint16_t scriptRandomAngle(std::uint32_t seed) {
     return static_cast<std::uint16_t>(random - random / 0x10001u);
 }
 
+std::uint16_t scriptRandomUpperHalfAngle(std::uint32_t seed) {
+    const std::uint32_t random = stageScriptRandFromFrame(static_cast<int>(seed));
+    return static_cast<std::uint16_t>(
+        random + random / 0x8001u * 0x7fffu - 0x8000u);
+}
+
 std::uint16_t cancelRewardAngle(int frame, std::size_t projectileIndex) {
     const std::uint32_t seed = static_cast<std::uint32_t>(frame) +
                                static_cast<std::uint32_t>(projectileIndex) + 1u;
@@ -719,14 +721,15 @@ std::uint16_t radiansToFixedAngleTrunc(double radians) {
     return normalizeAngle16(static_cast<int>(radians * kFixedAnglePerRadian));
 }
 
-double projectileDrawRotationForVisualSelector(int visualSelector, int age, std::uint16_t angle16) {
+std::uint16_t projectileDrawAngleForVisualSelector(int visualSelector, int age,
+                                                   std::uint16_t angle16) {
     // FUN_140070250 is selector-driven: some visuals preserve projectile angle,
     // while pellets/orbs/beads/diamonds overwrite it with age-based spin.
     const int ageSpinStep = projectileAgeSpinStepForVisualSelector(visualSelector);
     if (ageSpinStep != 0) {
-        return fixedAngleToRadiansDouble(normalizeAngle16(age * ageSpinStep));
+        return normalizeAngle16(age * ageSpinStep);
     }
-    return fixedAngleToRadiansDouble(angle16);
+    return angle16;
 }
 
 std::uint16_t approachAngle16(std::uint16_t current, std::uint16_t target, int maxStep) {
@@ -1047,6 +1050,14 @@ const StageRuntime::StageSpawnEvent* StageRuntime::eventsForStage(int stage, std
     return nullptr;
 }
 
+float StageRuntime::screenX(float localX) const {
+    // FUN_1400bca30 updates DAT_140e45d30 every gameplay frame. Mode-7/8/10
+    // nodes use this camera offset, keeping the dynamic world rectangle fixed
+    // at screen x=340..940 as the player moves through its logical bounds.
+    const float cameraX = 340.0f - player_.x / 6.0f;
+    return cameraX + localX;
+}
+
 bool StageRuntime::initialize(ResourceManager& resources, int stage) {
     StageRuntimeConfig config;
     config.stage = stage;
@@ -1110,7 +1121,6 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
     stage8Back1Handle_ = graphOrLoad("GFX_stage_Stage8Back1", "media\\stage\\Stage8Back1.png");
     stage8Back2Handle_ = graphOrLoad("GFX_stage_Stage8Back2", "media\\stage\\Stage8Back2.png");
 
-    stageFrameFrames_ = resources.loadDivGraph("media\\system\\StageFrame.png", 2, 2, 1, 600, 720);
     numSmallFrames_ = resources.loadDivGraph("media\\system\\Num_s.png", 0x0e, 0x0e, 1, 0x14, 0x1e);
     numMediumFrames_ = resources.loadDivGraph("media\\system\\Num_m.png", 10, 10, 1, 0x20, 0x30);
     numLargeFrames_ = resources.loadDivGraph("media\\system\\Num_l.png", 0x0e, 0x0e, 1, 0x30, 0x48);
@@ -1352,6 +1362,8 @@ void StageRuntime::reset() {
         player_.extendIndex = previousPlayer.extendIndex;
         player_.stockProgress = previousPlayer.stockProgress;
         player_.lives = previousPlayer.lives;
+        player_.animationClock = previousPlayer.animationClock;
+        player_.drawAnimationClock = previousPlayer.drawAnimationClock;
     }
     else {
         if (config_.initialStock >= 0) {
@@ -1495,7 +1507,14 @@ void StageRuntime::reset() {
     stageEffects_.clear();
     lateBackgroundScroll_.fill(0.0);
     lateBackgroundScrollFrame_ = -0x3fffffff;
+    backgroundDrawFrame_ = frame_;
+    backgroundStage08BossState_ = -1;
+    backgroundStage08BossTimer_ = 0;
+    backgroundStage09BossState_ = -1;
+    backgroundStage09BossTimer_ = 0;
+    backgroundStageGateOpen_ = false;
     stage09BossDefeatFrames_.fill(-1);
+    backgroundStage09BossDefeatFrames_.fill(-1);
 
     for (const int handle : stageBgmHandles_) {
         if (handle != -1) {
@@ -1607,13 +1626,36 @@ void StageRuntime::update() {
     }
     timeWindowDispatchCount_ = stageDispatchCount;
 
+    // FUN_1400be7a0 queues the complete background before the stage-specific
+    // entity dispatcher mutates the frame counter or boss helper state.
+    backgroundDrawFrame_ = frame_;
+    backgroundStage08BossState_ = -1;
+    backgroundStage08BossTimer_ = 0;
+    backgroundStage09BossState_ = -1;
+    backgroundStage09BossTimer_ = 0;
+    backgroundStageGateOpen_ = stageGateOpen;
+    for (const StageEnemy& enemy : enemies_) {
+        if (!enemy.active) {
+            continue;
+        }
+        if (enemy.spawnType == 0x13f && backgroundStage08BossState_ < 0) {
+            backgroundStage08BossState_ = enemy.helperState;
+            backgroundStage08BossTimer_ = enemy.helperTimer;
+        }
+        else if (enemy.spawnType == 0x140 && backgroundStage09BossState_ < 0) {
+            backgroundStage09BossState_ = enemy.helperState;
+            backgroundStage09BossTimer_ = enemy.helperTimer;
+        }
+    }
+    backgroundStage09BossDefeatFrames_ = stage09BossDefeatFrames_;
+    spawnBackgroundEffects();
+
     for (int dispatch = 0; dispatch < stageDispatchCount; ++dispatch) {
         spawnDueEvents();
         if (dispatch + 1 < stageDispatchCount) {
             ++frame_;
         }
     }
-    spawnBackgroundEffects();
     updatePlayer();
     const bool hasGaugeFlashClockSource =
         std::any_of(enemies_.begin(), enemies_.end(),
@@ -1627,6 +1669,11 @@ void StageRuntime::update() {
     }
     updatePlayerSideObjects();
     updateEnemies();
+    // FUN_140078b70 performs the player-object collision pass from each enemy
+    // update, before reward items and FUN_140070e40 advance the effect list.
+    // This lets hit sparks and shot afterimages update and queue in the frame
+    // in which they were created.
+    handlePlayerSideObjectEnemyCollisions();
     const int currentBossPhaseMode = [this]() {
         switch (selectedStage_) {
         case 1: return stage01BossPhaseMode_;
@@ -1645,7 +1692,8 @@ void StageRuntime::update() {
     updateRewardItems();
     updateStageEffects();
     updateProjectiles();
-    handleCollisions();
+    handlePlayerSideObjectProjectileCancels();
+    handleEnemyProjectilePlayerHitAndGraze();
 
     const auto& extendThresholds =
         kExtendThresholds[static_cast<std::size_t>(std::clamp(config_.difficulty, 0, 4))];
@@ -1663,48 +1711,139 @@ void StageRuntime::update() {
         enemyProjectileSpawnsThisSecond_ = 0;
     }
 
+    // FUN_1400bca30 increments DAT_140e44acc at the dispatcher tail even when
+    // the player update returned early for a miss or the game-over delay.
+    ++player_.animationClock;
     ++frame_;
     completeGameOverDelayFrame();
 }
 
 void StageRuntime::draw() const {
     if (pauseFlowState_ == PauseFlowState::GameOverPresentation) {
-        if (!playerFrameFrames_.empty() && playerFrameFrames_.front() != -1) {
-            DrawGraph(940, 0, playerFrameFrames_.front(), TRUE);
-            const int overlayIndex = 9 + std::clamp(config_.setupGroup, 0, 2) * 10;
-            if (overlayIndex < static_cast<int>(playerFrameFrames_.size()) &&
-                playerFrameFrames_[static_cast<std::size_t>(overlayIndex)] != -1) {
-                DrawGraph(0, 0,
-                          playerFrameFrames_[static_cast<std::size_t>(overlayIndex)], TRUE);
-            }
-        }
-        else {
-            drawRightHudPanel();
-        }
+        drawRightHudPanel(0x6e);
+        drawHudSidebar(0x6e);
+        drawHudSidebar(0x6f);
+        drawHudSidebar(0x70);
+        drawHudSidebar(0x73);
+        drawHudSidebar(0x78);
+        drawHudSidebar(0x7c);
         drawOverlay();
         drawPauseFlow();
         return;
     }
 
-    drawBackground();
-    drawPlayerSideObjects();
-    drawStageEffects(false);
-    drawEnemies();
-    drawProjectiles();
-    drawStageEffects(true);
-    drawRewardItems();
-    drawPlayer();
+    const auto drawEnemyEffectRange = [this](int firstLayer, int lastLayer) {
+        for (int layer = firstLayer; layer <= lastLayer; ++layer) {
+            if (layer <= 0x18) {
+                drawBackgroundLayer(layer);
+            }
+            drawEnemies(layer);
+            drawStageEffects(true, layer);
+        }
+    };
+
+    drawEnemyEffectRange(0x00, 0x15);
+    drawBackgroundLayer(0x16);
+    if (config_.itemVisibility == 1 && whiteBackHandle_ != -1) {
+        // FUN_1400be7a0 queues this at layer 0x16, after the lower
+        // background/effect nodes and before the normal entity layers.
+        SetDrawBright(0, 0, 0);
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x40);
+        DrawGraph(0, 0, whiteBackHandle_, TRUE);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        SetDrawBright(255, 255, 255);
+    }
+    // The background mask is queued first at 0x16; persistent effects on the
+    // same layer are appended later in the frame and therefore draw over it.
+    drawEnemies(0x16);
+    drawStageEffects(true, 0x16);
+
+    for (int layer = 0x17; layer <= 0x26; ++layer) {
+        if (layer <= 0x18) {
+            drawBackgroundLayer(layer);
+        }
+        if (layer == 0x17) {
+            drawPlayerSideObjects(PlayerSideDrawPass::Flash);
+        }
+        drawEnemies(layer);
+        drawStageEffects(true, layer);
+        if (layer == 0x23) {
+            // Selectors 0x13/0x14 queue their immediate overlay here even
+            // though their base projectile remains on 0x50 or 0x51.
+            drawProjectiles(layer);
+        }
+    }
+    drawEnemies(0x27);
+    drawStageEffects(true, 0x27);
+    drawPlayerBody();
+    drawEnemies(0x28);
+    drawStageEffects(true, 0x28);
+    drawEnemyEffectRange(0x29, 0x2b);
+    drawPlayerSideObjects(PlayerSideDrawPass::Normal);
+    drawEnemies(0x2c);
+    drawStageEffects(true, 0x2c);
+    drawEnemyEffectRange(0x2d, 0x3b);
+    drawPlayerSideObjects(PlayerSideDrawPass::Core);
+    drawEnemies(0x3c);
+    drawStageEffects(true, 0x3c);
+    drawEnemyEffectRange(0x3d, 0x3f);
+    drawEnemies(0x40);
+    drawStageEffects(true, 0x40);
+    drawEnemies(0x41);
+    drawRewardItems(false);
+    drawStageEffects(true, 0x41);
+    drawEnemyEffectRange(0x42, 0x45);
+    drawPlayer(PlayerOverlayDrawPass::MarkerRing);
+    drawEnemies(0x46);
+    drawStageEffects(true, 0x46);
+    drawEnemyEffectRange(0x47, 0x4b);
+    drawPlayer(PlayerOverlayDrawPass::GaugeFill);
+    drawEnemies(0x4c);
+    drawRewardItems(true);
+    drawStageEffects(true, 0x4c);
+    drawPlayer(PlayerOverlayDrawPass::GaugeFrame);
+    drawEnemies(0x4d);
+    drawStageEffects(true, 0x4d);
+    drawEnemies(0x4e);
+    drawStageEffects(true, 0x4e);
+    drawProjectiles(0x4e);
+    drawEnemies(0x4f);
+    drawStageEffects(true, 0x4f);
+    drawProjectiles(0x4f);
+    drawPlayer(PlayerOverlayDrawPass::Aura);
+    drawEnemies(0x50);
+    drawStageEffects(true, 0x50);
+    drawProjectiles(0x50);
+    drawEnemies(0x51);
+    drawStageEffects(true, 0x51);
+    drawProjectiles(0x51);
+    drawEnemyEffectRange(0x52, 0x59);
+    drawPlayer(PlayerOverlayDrawPass::Hitbox);
+    drawEnemies(0x5a);
+    drawStageEffects(true, 0x5a);
+    drawEnemyEffectRange(0x5b, 0x6d);
+    drawRightHudPanel(0x6e);
+    drawHudSidebar(0x6e);
+    drawEnemies(0x6e);
+    drawStageEffects(true, 0x6e);
+    drawHudSidebar(0x6f);
     drawStageApproach();
     drawStage01BossHud();
     drawStage02BossHud();
     drawStage03BossHud();
     drawStage04BossHud();
     drawLateStageBossHud();
-    drawRightHudPanel();
-    drawStageBannerPanels();
+    drawEnemies(0x6f);
     drawStageEffects(true, 0x6f);
+    drawHudSidebar(0x70);
+    drawStageBannerPanels();
+    drawStageEffects(true, 0x70);
+    drawStageEffects(true, 0x71);
     drawStageEffects(true, 0x72);
+    drawHudSidebar(0x73);
     drawStageEffects(true, 0x73);
+    drawHudSidebar(0x78);
+    drawHudSidebar(0x7c);
     drawOverlay();
     drawStageBannerText();
     drawPauseFlow();
@@ -3995,6 +4134,11 @@ StageRuntime::StageEnemy* StageRuntime::findEnemyById(int entityId) {
 }
 
 void StageRuntime::updatePlayer() {
+    // DAT_140e44acc belongs to the gameplay dispatcher, not to the live-player
+    // branch. Keep the value used by this frame even when a miss returns early.
+    player_.drawAnimationClock = player_.animationClock;
+    const int shotTimerBeforeInput = player_.shotTimer;
+
     // The terminal miss clears the original player-active flag before state
     // 0x1e continues dispatching the rest of the stage simulation.
     if (pauseFlowState_ == PauseFlowState::GameOverDelay) {
@@ -4147,7 +4291,29 @@ void StageRuntime::updatePlayer() {
     updatePlayerOptions();
 
     const bool firing = player_.playerStateTimer < 180 && (shootDown || rapidFireDown);
-    if (player_.playerStateTimer >= 180 || player_.bombLock > 0) {
+    const bool stageClearShotLock = [this]() {
+        switch (selectedStage_) {
+        case 1: return stage01ClearTransition_;
+        case 2: return stage02ClearTransition_;
+        case 3: return stage03ClearTransition_;
+        case 4: return stage04ClearTransition_;
+        // Stages 5-7 and 10 use FUN_140003ad0, which raises the original
+        // DAT_140e41b08 lock on clear age 420. Stages 8 and 9 use
+        // FUN_140003e60 and raise it on the first clear frame instead.
+        case 5:
+        case 6:
+        case 7:
+        case 10:
+            return lateStageClearStarted_ && lateStageClearTimer_ >= 420;
+        case 8:
+        case 9:
+            return lateStageClearStarted_;
+        default:
+            return false;
+        }
+    }();
+    if (player_.playerStateTimer >= 180 || player_.bombLock > 0 ||
+        stageClearShotLock) {
         player_.shotTimer = 0;
     }
     else if (config_.controlModeEnabled == 1) {
@@ -4242,8 +4408,7 @@ void StageRuntime::updatePlayer() {
     else {
         player_.hitboxScale = 1.0f;
     }
-    player_.hitboxAngle16 = normalizeAngle16(frame_ * 0x3c0);
-    player_.drawAnimationClock = player_.animationClock;
+    player_.hitboxAngle16 = normalizeAngle16(player_.animationClock * 0x3c0);
     player_.drawInvulnerabilityOverlay =
         player_.invulnerableFrames != 0 && (player_.animationClock & 1) == 0;
 
@@ -4251,7 +4416,7 @@ void StageRuntime::updatePlayer() {
         --player_.playerStateTimer;
     }
     processStockProgressAfterGain(0);
-    updateSpecialGaugeState();
+    updateSpecialGaugeState(shotTimerBeforeInput);
     if (playerMovedThisFrame && !player_.focused &&
         (player_.drawAnimationClock & 1) == 0) {
         const int afterimageHandle =
@@ -4267,7 +4432,6 @@ void StageRuntime::updatePlayer() {
     if (player_.invulnerableFrames > 0) {
         --player_.invulnerableFrames;
     }
-    ++player_.animationClock;
 }
 
 void StageRuntime::updatePlayerOptions() {
@@ -5897,11 +6061,14 @@ void StageRuntime::spawnBackgroundEffects() {
 
     if (selectedStage_ == 4) {
         const int stageEnd = kStageEndFrames[4];
-        int brightness = 0x80;
+        int brightness = 0xc0;
         if (stageEnd > 0 && frame_ >= 0 && frame_ < stageEnd) {
             const double phase = static_cast<double>(frame_ + stageEnd) * kPi /
                                  (2.0 * static_cast<double>(stageEnd));
-            brightness += static_cast<int>(std::sin(phase) * 64.0);
+            brightness = 0x80 + static_cast<int>(std::sin(phase) * 64.0);
+        }
+        else if (frame_ >= stageEnd) {
+            brightness = 0x80;
         }
 
         if (frame_ % 0x28 == 5) {
@@ -5927,8 +6094,8 @@ void StageRuntime::spawnBackgroundEffects() {
         }
     }
 
-    if (selectedStage_ == 5 && frame_ >= 0 && frame_ <= 11800 - 600) {
-        if (frame_ % 0x18 == 0) {
+    if (selectedStage_ == 5 && frame_ <= 11800 - 600) {
+        if (player_.animationClock % 0x18 == 0) {
             const int graph = stageBack2Frames_.size() > 1
                                   ? stageBack2Frames_[1]
                                   : -1;
@@ -5936,7 +6103,7 @@ void StageRuntime::spawnBackgroundEffects() {
                              360.0f, 640.0f, 0xc000, 0.5, 0.0, 0.0, 0x78,
                              0xff, 0xff, 0xff, 0xff);
         }
-        if (frame_ % 0x13 == 0) {
+        if (player_.animationClock % 0x13 == 0) {
             const int graph = stageBack2Frames_.size() > 2
                                   ? stageBack2Frames_[2]
                                   : -1;
@@ -5944,6 +6111,16 @@ void StageRuntime::spawnBackgroundEffects() {
                              360.0f, 640.0f, 0xc000, 0.5, 0.0, 0.0, 0x78,
                              0xff, 0xff, 0xff, 0x80);
         }
+    }
+
+    if (selectedStage_ == 8 && frame_ >= 0x1a90 && frame_ < 0x2968 &&
+        (player_.animationClock & 0x1f) == 0) {
+        const int graph = stageBack2Frames_.size() > 5
+                              ? stageBack2Frames_[5]
+                              : -1;
+        spawnStageEffect(0x42, graph, 720, 5,
+                         360.0f, 640.0f, 0xc000, 2.0, 0.0, 0.0, 100,
+                         0xff, 0xff, 0xff, 0xff);
     }
 }
 
@@ -5984,8 +6161,12 @@ void StageRuntime::spawnStageEffect(int type, int graphHandle, int graphExtent, 
         effect.randomSeed = static_cast<std::uint32_t>(angle16) +
                             static_cast<std::uint32_t>(frame_);
     }
-    else if (type == 0x33 || type == 0x3a || type == 0x3b ||
-             type == 0x3d || type == 0x3e) {
+    else if (type == 0x3b || type == 0x3d || type == 0x3e) {
+        // FUN_140076ec0 derives the fixed rotation from
+        // DAT_140e44acc - age, i.e. the animation clock at creation.
+        effect.randomSeed = static_cast<std::uint32_t>(player_.animationClock);
+    }
+    else if (type == 0x33 || type == 0x3a) {
         effect.randomSeed = static_cast<std::uint32_t>(frame_);
     }
     stageEffects_.push_back(effect);
@@ -6004,6 +6185,49 @@ void StageRuntime::updateStageEffects() {
 
         const int age = effect.age;
         switch (effect.type) {
+        case 0x08: {
+            // FUN_140071cb0 type 8 keeps alpha constant while both axes shrink
+            // linearly to zero. Motion is applied before the mode-7 draw.
+            const int lifetime = std::max(1, effect.lifetime);
+            const double remaining =
+                1.0 - static_cast<double>(age) / static_cast<double>(lifetime);
+            const double radians = fixedAngleToRadiansDouble(effect.angle16);
+            effect.x += static_cast<float>(std::cos(radians) * effect.scale0);
+            effect.y += static_cast<float>(std::sin(radians) * effect.scale0);
+            effect.drawX = effect.x;
+            effect.drawY = effect.y;
+            effect.drawAngle16 = effect.angle16;
+            effect.drawScaleX = effect.scaleX * remaining;
+            effect.drawScaleY = effect.scaleY * remaining;
+            effect.drawAlpha = effect.alpha;
+            effect.drawQueuedThisFrame = true;
+            if (age == effect.lifetime) {
+                effect.active = false;
+            }
+            break;
+        }
+        case 0x0d: {
+            // FUN_140070e40 handles type 0x0d inline: the impact afterimage
+            // keeps travelling along the shot heading, expands by 0.02 per
+            // frame on both axes, and fades linearly over exactly eight frames.
+            const double radians = fixedAngleToRadiansDouble(effect.angle16);
+            effect.x += static_cast<float>(std::cos(radians) * effect.scale0);
+            effect.y += static_cast<float>(std::sin(radians) * effect.scale0);
+            const double growth = static_cast<double>(age) * 0.02;
+            effect.drawX = effect.x;
+            effect.drawY = effect.y;
+            effect.drawAngle16 = effect.angle16;
+            effect.drawScaleX = effect.scaleX + growth;
+            effect.drawScaleY = effect.scaleY + growth;
+            effect.drawAlpha = effect.alpha - static_cast<int>(
+                static_cast<double>(effect.alpha) * 0.125 *
+                static_cast<double>(age));
+            effect.drawQueuedThisFrame = true;
+            if (age == 8) {
+                effect.active = false;
+            }
+            break;
+        }
         case 0x0e: {
             // FUN_1400732a0 keeps (global gameplay tick - age) stable, so this
             // random choice is fixed for the particle's whole life. It selects
@@ -6166,6 +6390,86 @@ void StageRuntime::updateStageEffects() {
             effect.drawQueuedThisFrame = true;
             break;
         }
+        case 0x15: {
+            // FUN_140078110 is the persistent Fever-ready orbit. It follows
+            // one third of the player delta, draws three palette-cycling
+            // nodes, and switches to a sixty-frame negative-age fade as soon
+            // as the gauge leaves the ready range.
+            constexpr std::array<std::array<int, 3>, 7> kFeverColors{{
+                {{0xff, 0x78, 0x78}}, {{0xff, 0xc8, 0x6e}},
+                {{0xff, 0xff, 0x78}}, {{0x78, 0xff, 0x78}},
+                {{0x78, 0xff, 0xff}}, {{0x78, 0x78, 0xff}},
+                {{0xdc, 0x78, 0xff}},
+            }};
+
+            double baseScale = 1.0;
+            int orbitRadius = 90;
+            int spinStep = 600;
+            if (age >= 0 && age < 30) {
+                const double entrance = std::sin(
+                    static_cast<double>(age) * kPi / 60.0);
+                baseScale = entrance;
+                orbitRadius = static_cast<int>(entrance * 90.0);
+                spinStep = 2000 - static_cast<int>(entrance * 1400.0);
+            }
+            else if (age >= -60 && age < 0) {
+                const double fade = 1.0 - std::sin(
+                    static_cast<double>(age + 60) * kPi / 120.0);
+                baseScale = fade;
+                orbitRadius = 90 - static_cast<int>((1.0 - fade) * 90.0);
+                spinStep = 2000;
+            }
+            if (player_.specialGauge < 0) {
+                spinStep = 1200;
+            }
+
+            effect.angle16 = normalizeAngle16(
+                static_cast<int>(effect.angle16) + spinStep);
+            effect.x += (player_.x - effect.x) / 3.0f;
+            effect.y += (player_.y - effect.y) / 3.0f;
+
+            const int colorClock = std::max(player_.drawAnimationClock, 0);
+            const int colorIndex =
+                (colorClock / 20) % static_cast<int>(kFeverColors.size());
+            const int nextColorIndex =
+                (colorIndex + 1) % static_cast<int>(kFeverColors.size());
+            const int colorStep = colorClock % 20;
+            const auto channel = [&](std::size_t index) {
+                const int current =
+                    kFeverColors[static_cast<std::size_t>(colorIndex)][index];
+                const int next =
+                    kFeverColors[static_cast<std::size_t>(nextColorIndex)][index];
+                return static_cast<int>(
+                    static_cast<double>(current) -
+                    (static_cast<double>(current - next) / 20.0) *
+                        static_cast<double>(colorStep));
+            };
+            effect.colorR = channel(0);
+            effect.colorG = channel(1);
+            effect.colorB = channel(2);
+            effect.scale0 = static_cast<double>(orbitRadius);
+            effect.drawX = effect.x;
+            effect.drawY = effect.y;
+            effect.drawAngle16 = normalizeAngle16(static_cast<int>(
+                std::sin(static_cast<double>(colorClock) * kPi / 45.0) *
+                2000.0));
+            const double pulse =
+                1.0 + std::sin(static_cast<double>(colorClock) * kPi / 45.0) * 0.1;
+            effect.drawScaleX = baseScale * pulse;
+            effect.drawScaleY = baseScale * pulse;
+            effect.drawAlpha = effect.alpha;
+            effect.drawQueuedThisFrame = true;
+
+            if (age == -1) {
+                effect.active = false;
+            }
+            else if (age >= 0 && player_.specialGauge < 50000) {
+                // The dispatcher increments age after the helper, so the next
+                // observed age is -59 exactly as in the original list walk.
+                effect.age = -60;
+            }
+            break;
+        }
         case 0x16: {
             // FUN_140070e40 queues this full-screen portrait through age 300.
             // Its renderer mode is top-left DrawGraph rather than the centered
@@ -6189,6 +6493,38 @@ void StageRuntime::updateStageEffects() {
             effect.drawScaleX = effect.scaleX;
             effect.drawScaleY = effect.scaleY;
             effect.drawAlpha = drawAlpha;
+            effect.drawQueuedThisFrame = true;
+            if (age == effect.lifetime) {
+                effect.active = false;
+            }
+            break;
+        }
+        case 0x17:
+        case 0x18: {
+            // FUN_140076130: type 0x17 is a vertically opening dual
+            // alpha/additive node; type 0x18 is the ordinary Fever trail.
+            const int lifetime = std::max(1, effect.lifetime);
+            const double entrance = age < 0
+                                        ? 0.0
+                                        : (age < 5
+                                               ? std::sin(static_cast<double>(age) *
+                                                          kPi / 10.0)
+                                               : 1.0);
+            const double radians = fixedAngleToRadiansDouble(effect.angle16);
+            effect.x += static_cast<float>(std::cos(radians) * effect.scale0);
+            effect.y += static_cast<float>(std::sin(radians) * effect.scale0);
+            effect.drawX = effect.x;
+            effect.drawY = effect.y;
+            effect.drawAngle16 = 0;
+            effect.drawScaleX = effect.type == 0x17
+                                    ? 1.0
+                                    : entrance * effect.scaleX;
+            effect.drawScaleY = entrance * effect.scaleY;
+            effect.drawAlpha = age >= lifetime - 8
+                                   ? static_cast<int>(sineEaseOut(
+                                         age - (lifetime - 8), 8,
+                                         static_cast<float>(effect.alpha)))
+                                   : effect.alpha;
             effect.drawQueuedThisFrame = true;
             if (age == effect.lifetime) {
                 effect.active = false;
@@ -6322,6 +6658,35 @@ void StageRuntime::updateStageEffects() {
             }
             break;
         }
+        case 0x20: {
+            // FUN_140072560 duplicates the first constructor scale into both
+            // renderer axes for type 0x20; the second stored scale is unused.
+            const int lifetime = std::max(1, effect.lifetime);
+            const double drawScale =
+                std::sin(static_cast<double>(age) * kPi /
+                         (2.0 * static_cast<double>(lifetime))) *
+                effect.scaleX;
+            int drawAlpha = effect.alpha;
+            if (age >= lifetime - 8) {
+                drawAlpha -= static_cast<int>(
+                    static_cast<double>((age - lifetime) + 8) *
+                    static_cast<double>(effect.alpha) * 0.125);
+            }
+            const double radians = fixedAngleToRadiansDouble(effect.angle16);
+            effect.x += static_cast<float>(std::cos(radians) * effect.scale0);
+            effect.y += static_cast<float>(std::sin(radians) * effect.scale0);
+            effect.drawX = effect.x;
+            effect.drawY = effect.y;
+            effect.drawAngle16 = effect.angle16;
+            effect.drawScaleX = drawScale;
+            effect.drawScaleY = drawScale;
+            effect.drawAlpha = drawAlpha;
+            effect.drawQueuedThisFrame = true;
+            if (age == effect.lifetime) {
+                effect.active = false;
+            }
+            break;
+        }
         case 0x41: {
             // FUN_140077cf0 resolves +0x54 as a stage-entity id on every update.
             // drawStageEffects expands this snapshot into the eleven trail nodes.
@@ -6391,6 +6756,7 @@ void StageRuntime::updateStageEffects() {
                         player_.specialGauge = 0;
                     }
                 }
+                hudSpecialGaugeFlashTimer_ = 60;
             }
 
             const double radians = fixedAngleToRadiansDouble(effect.angle16);
@@ -6765,7 +7131,8 @@ void StageRuntime::updateStageEffects() {
             effect.scaleY = effect.scaleX;
 
             const auto orbitAngle = normalizeAngle16(
-                static_cast<int>((static_cast<std::uint32_t>((frame_ + age) / 2) &
+                static_cast<int>((static_cast<std::uint32_t>(
+                                      (player_.animationClock + age) / 2) &
                                   0xffffu) *
                                  0x22bu));
             const double orbitRadians = fixedAngleToRadiansDouble(orbitAngle);
@@ -6821,7 +7188,7 @@ void StageRuntime::updateStageEffects() {
             const int lifetime = std::max(1, effect.lifetime);
             const int riseStart = 0x18;
             const int riseEnd = lifetime - 0x10;
-            int brightness = 0xff;
+            int brightness = 0;
             if (age >= riseStart && age < riseEnd) {
                 brightness = static_cast<int>(
                     std::sin(static_cast<double>(age - riseStart) * kPi /
@@ -6869,9 +7236,69 @@ void StageRuntime::updateStageEffects() {
             }
             break;
         }
+        case 0x42: {
+            // FUN_140076ec0: Stage 8's late-background motes move upward,
+            // expand quadratically, step through five layers, and share the
+            // stage-wide 6900..7400 alpha entrance.
+            const double radians = fixedAngleToRadiansDouble(effect.angle16);
+            effect.x += static_cast<float>(std::cos(radians) * effect.scale0);
+            effect.y += static_cast<float>(std::sin(radians) * effect.scale0);
+
+            const int lifetime = std::max(1, effect.lifetime);
+            const int fadeStart = 0x10;
+            const int fadeEnd = lifetime - 0x10;
+            int brightness = 0;
+            if (age >= fadeStart && age < fadeEnd) {
+                brightness = static_cast<int>(
+                    std::sin(static_cast<double>(age - fadeStart) * kPi /
+                             (2.0 * static_cast<double>(fadeEnd - fadeStart))) *
+                    255.0);
+            }
+            else if (age >= fadeEnd && age < lifetime) {
+                brightness = static_cast<int>(
+                    std::sin(static_cast<double>(age - (fadeEnd * 2 - lifetime)) *
+                             kPi /
+                             (2.0 * static_cast<double>(lifetime - fadeEnd))) *
+                    255.0);
+            }
+            else if (age >= lifetime) {
+                brightness = 0;
+            }
+
+            int stageAlpha = 0;
+            if (frame_ >= 0x1af4 && frame_ < 0x1ce8) {
+                stageAlpha = static_cast<int>(
+                    std::sin(static_cast<double>(frame_ - 0x1af4) * kPi / 1000.0) *
+                    static_cast<double>(effect.alpha));
+            }
+            else if (frame_ >= 0x1ce8) {
+                stageAlpha = effect.alpha;
+            }
+
+            effect.scaleX +=
+                (static_cast<double>(age) * 0.00003 + 0.0001) *
+                static_cast<double>(age);
+            effect.colorR = brightness;
+            effect.colorG = brightness;
+            effect.colorB = brightness;
+            effect.drawLayer = 5 + age / 0x18;
+            effect.drawX = effect.x;
+            effect.drawY = effect.y;
+            effect.drawAngle16 = 0;
+            effect.drawScaleX = effect.scaleX;
+            effect.drawScaleY = effect.scaleX;
+            effect.drawAlpha = stageAlpha;
+            effect.drawQueuedThisFrame = true;
+            if (age == lifetime) {
+                effect.active = false;
+            }
+            break;
+        }
         case 0x37:
         case 0x3a:
-            effect.y += 1.0f;
+            // FUN_140076b00 advances these vertical nodes by DAT_1407c77a4.
+            effect.y += static_cast<float>(
+                std::clamp(timeWindowDispatchCount_, 1, 4));
             effect.drawX = effect.x;
             effect.drawY = effect.y;
             effect.drawAngle16 = effect.angle16;
@@ -13233,6 +13660,32 @@ void StageRuntime::updateProjectiles() {
             continue;
         }
         projectile.drawAge = projectile.age;
+        // FUN_14006c620 uses 0x4f for the three entrance-speed families.
+        // FUN_14006ce40 promotes its emitter families to 0x51; all remaining
+        // enemy projectile helpers queue the base sprite at 0x50.
+        switch (projectile.projectileId) {
+        case 0x03:
+        case 0x04:
+        case 0x05:
+            projectile.drawLayer = 0x4f;
+            break;
+        case 0x18:
+        case 0x19:
+        case 0x1a:
+        case 0x1b:
+        case 0x1c:
+        case 0x1d:
+        case 0x1e:
+        case 0x2f:
+        case 0x30:
+        case 0x32:
+        case 0x3c:
+            projectile.drawLayer = 0x51;
+            break;
+        default:
+            projectile.drawLayer = 0x50;
+            break;
+        }
         bool helperQueuedDraw = false;
         switch (projectile.projectileId) {
         case 0x00:
@@ -13381,12 +13834,8 @@ void StageRuntime::updateProjectiles() {
                                        : -1;
                 const auto scale = projectileScaleForVisualSelector(
                     projectile.visualSelector, projectile.drawAge);
-                const int spinStep = projectileAgeSpinStepForVisualSelector(
-                    projectile.visualSelector);
-                const std::uint16_t drawAngle = spinStep == 0
-                                                    ? projectile.angle16
-                                                    : normalizeAngle16(
-                                                          projectile.drawAge * spinStep);
+                const std::uint16_t drawAngle = projectileDrawAngleForVisualSelector(
+                    projectile.visualSelector, projectile.drawAge, projectile.angle16);
                 spawnStageEffect(0x05, handle, 60, trailLayer,
                                  projectile.x, projectile.y, drawAngle,
                                  0.0, scale[0], scale[1], 0x0c,
@@ -14239,52 +14688,88 @@ void StageRuntime::updateRewardItems() {
         item.drawAge = item.age;
         const bool ordinaryScoreItem = item.itemType >= 0 && item.itemType <= 5;
         const bool specialRewardItem = item.itemType >= 6 && item.itemType <= 8;
+        const float preMoveX = item.x;
+        const float preMoveY = item.y;
+        float movementSpeed = item.speed;
         if (ordinaryScoreItem) {
-            // FUN_1400ca7b0 keeps score/cancel drops in their initial drift until
-            // the age gate around 0x20/0x21, then the node can snap into the
-            // homing path. Homing turns by at most 0x1000 fixed-angle units and
-            // uses a hard speed of 12.0 rather than the old runtime ramp.
             if (!item.homing) {
+                if (item.age < 0x21) {
+                    movementSpeed = item.speed * static_cast<float>(
+                        1.0 - std::sin(static_cast<double>(item.age) * kPi / 33.0));
+                }
                 if (item.age == 0x20) {
                     item.speed = 0.0f;
+                    const std::uint32_t random = stageScriptRandFromFrame(
+                        frame_ + static_cast<int>(preMoveX + preMoveY));
+                    item.angle16 = normalizeAngle16(
+                        static_cast<int>(random % 0x801u) + 0x3c00);
+                    if (player_.playerStateTimer < 0xb5) {
+                        if (item.itemType >= 3) {
+                            item.homing = true;
+                        }
+                        else {
+                            // The original writes 0x21 here before the common
+                            // tail increment, so ordinary tiers skip age 0x21.
+                            item.age = 0x21;
+                        }
+                    }
                 }
                 if (item.age > 0x20 && item.speed < 5.0f) {
-                    item.speed += 0.125f;
+                    item.speed = std::min(5.0f, item.speed + 0.05f);
                 }
                 if (item.age > 0x1f && player_.playerStateTimer < 0xb5 &&
-                    distanceSquared(item.x, item.y, player_.x, player_.y) <=
-                        static_cast<float>((item.radiusOrScale + 0x40) *
-                                           (item.radiusOrScale + 0x40))) {
+                    distanceSquared(preMoveX, preMoveY, player_.x, player_.y) <
+                        static_cast<float>((item.radiusOrScale + 160) *
+                                           (item.radiusOrScale + 160))) {
                     item.homing = true;
                 }
             }
             else {
-                item.angle16 = approachAngle16(item.angle16, radiansToFixedAngle(std::atan2(player_.y - item.y, player_.x - item.x)), 0x1000);
+                item.angle16 = approachAngle16(
+                    item.angle16,
+                    radiansToFixedAngleTrunc(std::atan2(
+                        static_cast<double>(player_.y - preMoveY),
+                        static_cast<double>(player_.x - preMoveX))),
+                    0x1000);
                 item.speed = 12.0f;
+                if (player_.playerStateTimer == 0x103) {
+                    item.age = 0x28;
+                    item.speed = 0.0f;
+                    item.homing = false;
+                    const std::uint32_t random = stageScriptRandFromFrame(
+                        frame_ + static_cast<int>(preMoveX + preMoveY));
+                    item.angle16 = normalizeAngle16(
+                        static_cast<int>(random % 0x801u) + 0x3c00);
+                }
             }
         }
         else if (specialRewardItem) {
-            // Types 6..8 use the separate FUN_1400ca7b0 path. They reflect inside
-            // the playfield through age 0x4af; homing still snaps to speed 12.0
-            // and uses the same 0x1000 fixed-angle turn cap.
             if (!item.homing) {
                 if (player_.playerStateTimer < 0xb5 &&
-                    distanceSquared(item.x, item.y, player_.x, player_.y) <=
-                        static_cast<float>((item.radiusOrScale + 0x48) *
-                                           (item.radiusOrScale + 0x48)) &&
+                    distanceSquared(preMoveX, preMoveY, player_.x, player_.y) <
+                        static_cast<float>((item.radiusOrScale + 80) *
+                                           (item.radiusOrScale + 80)) &&
                     (player_.tokenStock != 3 || item.itemType != 6)) {
                     item.homing = true;
-                    item.angle16 = radiansToFixedAngle(std::atan2(player_.y - item.y, player_.x - item.x));
+                    item.angle16 = radiansToFixedAngleTrunc(std::atan2(
+                        static_cast<double>(player_.y - preMoveY),
+                        static_cast<double>(player_.x - preMoveX)));
                 }
             }
             else {
-                item.angle16 = approachAngle16(item.angle16, radiansToFixedAngle(std::atan2(player_.y - item.y, player_.x - item.x)), 0x1000);
+                item.angle16 = approachAngle16(
+                    item.angle16,
+                    radiansToFixedAngleTrunc(std::atan2(
+                        static_cast<double>(player_.y - preMoveY),
+                        static_cast<double>(player_.x - preMoveX))),
+                    0x1000);
                 item.speed = 12.0f;
                 if (player_.playerStateTimer > 0xb4) {
                     item.homing = false;
                     item.speed = 4.0f;
                 }
             }
+            movementSpeed = item.speed;
         }
         else {
             item.active = false;
@@ -14292,26 +14777,38 @@ void StageRuntime::updateRewardItems() {
             continue;
         }
         const float angle = fixedAngleToRadians(item.angle16);
-        item.x += std::cos(angle) * item.speed;
-        item.y += std::sin(angle) * item.speed;
+        item.x = preMoveX + std::cos(angle) * movementSpeed;
+        item.y = preMoveY + std::sin(angle) * movementSpeed;
         if (specialRewardItem && item.age < 0x4b0) {
-            if (item.x < kPlayLeft + static_cast<float>(item.radiusOrScale) || item.x > kPlayRight - static_cast<float>(item.radiusOrScale)) {
-                item.angle16 = normalizeAngle16(-0x8000 - static_cast<int>(item.angle16));
-                item.x = clampFloat(item.x, kPlayLeft + static_cast<float>(item.radiusOrScale), kPlayRight - static_cast<float>(item.radiusOrScale));
+            const float horizontalOrigin = projectileHorizontalOrigin(player_.x);
+            const std::uint16_t originalAngle = item.angle16;
+            int reflectedAngle = -0x8000 - static_cast<int>(originalAngle);
+            if (item.x >= horizontalOrigin + 30.0f) {
+                reflectedAngle = originalAngle;
             }
-            if (item.y < kPlayTop + static_cast<float>(item.radiusOrScale) || item.y > kPlayBottom - static_cast<float>(item.radiusOrScale)) {
-                item.angle16 = normalizeAngle16(-static_cast<int>(item.angle16));
-                item.y = clampFloat(item.y, kPlayTop + static_cast<float>(item.radiusOrScale), kPlayBottom - static_cast<float>(item.radiusOrScale));
+            if (item.x > horizontalOrigin + 570.0f) {
+                reflectedAngle = -0x8000 - static_cast<int>(originalAngle);
             }
+            if (item.y < 30.0f || item.y > 690.0f) {
+                reflectedAngle = -static_cast<int>(originalAngle);
+            }
+            item.angle16 = normalizeAngle16(reflectedAngle);
+            item.x = clampFloat(item.x, horizontalOrigin + 30.0f,
+                                horizontalOrigin + 570.0f);
+            item.y = clampFloat(item.y, 30.0f, 690.0f);
         }
-        const int collectRadius = item.radiusOrScale + (player_.focused ? 5 : 8);
-        if (player_.playerStateTimer < 0xb5 &&
-            distanceSquared(item.x, item.y, player_.x, player_.y) <=
+        const int collectRadius = item.radiusOrScale + 36;
+        const bool collectionAgeReady = specialRewardItem || item.age > 0x20;
+        if (collectionAgeReady && player_.playerStateTimer < 0xb5 &&
+            distanceSquared(preMoveX, preMoveY, player_.x, player_.y) <
                 static_cast<float>(collectRadius * collectRadius)) {
             item.active = false;
             collectRewardItem(item);
         }
-        if (item.x < kPlayLeft - 160.0f || item.x > kPlayRight + 760.0f || item.y < kPlayTop - 160.0f || item.y > kPlayBottom + 880.0f) {
+        const float horizontalOrigin = projectileHorizontalOrigin(player_.x);
+        if (item.x < horizontalOrigin - 128.0f ||
+            item.x > horizontalOrigin + 728.0f ||
+            item.y < -128.0f || item.y > 848.0f) {
             item.active = false;
         }
         ++item.age;
@@ -14365,12 +14862,13 @@ void StageRuntime::addRunScore(std::int64_t amount) {
 }
 
 void StageRuntime::addSpecialGauge(int amount) {
-    // DAT_140e45d18 can be negative during cooldown and can also hold the forced
-    // full sentinel 9999999. Reward collection does not refill either state.
-    if (player_.specialGauge < 0 || player_.specialGauge == kSpecialGaugeForcedFull || amount <= 0) {
+    if (player_.specialGauge < 0 || amount <= 0) {
         return;
     }
-    player_.specialGauge = std::min(kSpecialGaugeReady, player_.specialGauge + amount);
+    player_.specialGauge += amount;
+    if (player_.specialGauge < 0) {
+        player_.specialGauge = 0;
+    }
 }
 
 void StageRuntime::processStockProgressAfterGain(int progressGain) {
@@ -14386,31 +14884,31 @@ void StageRuntime::processStockProgressAfterGain(int progressGain) {
 void StageRuntime::collectRewardItem(const RewardItem& item) {
     // FUN_1400ca7b0 reward collection table: 0/3 = 1x base, 1/4 = 5x,
     // 2/5 = 10x; 6 feeds Mental progress, 7 adds a life, and 8 grants both.
+    const double gaugeScale = std::max(
+        0.6, 1.0 - static_cast<double>(selectedStage_ / 2) * 0.1);
     switch (item.itemType) {
     case 0:
     case 3:
         addRunScore(player_.scoreItemBaseValue);
-        addSpecialGauge(300);
+        addSpecialGauge(static_cast<int>(gaugeScale * 10.0));
         playPlayerSound(item1SoundHandle_, 0x0c);
         break;
     case 1:
     case 4:
         addRunScore(player_.scoreItemBaseValue * 5);
-        addSpecialGauge(900);
+        addSpecialGauge(static_cast<int>(gaugeScale * 50.0));
         playPlayerSound(item1SoundHandle_, 0x0c);
         break;
     case 2:
     case 5:
         addRunScore(player_.scoreItemBaseValue * 10);
-        addSpecialGauge(1800);
+        addSpecialGauge(static_cast<int>(gaugeScale * 100.0));
         playPlayerSound(item1SoundHandle_, 0x0c);
         break;
     case 6:
         if (player_.tokenStock < 3) {
             player_.stockProgress += stockThresholdForCurrentConfig();
         }
-        addSpecialGauge(3000);
-        addRunScore(player_.scoreItemBaseValue * 10);
         playPlayerSound(item3SoundHandle_);
         break;
     case 7:
@@ -14424,8 +14922,6 @@ void StageRuntime::collectRewardItem(const RewardItem& item) {
         player_.lives = kLifeStockCap;
         break;
     default:
-        addRunScore(player_.scoreItemBaseValue);
-        addSpecialGauge(300);
         break;
     }
     hudSpecialGaugeFlashTimer_ = 60;
@@ -14725,10 +15221,28 @@ void StageRuntime::updatePostDeathCounterEntity(StageEnemy& enemy) {
 void StageRuntime::updateSpecialGaugeAction() {
     const bool bombDown = actionDown(InputAction::Bomb);
     const bool manualFever = config_.specialMode == 1;
+    const bool stageClearBombLock = [this]() {
+        switch (selectedStage_) {
+        case 1: return stage01ClearTransition_;
+        case 2: return stage02ClearTransition_;
+        case 3: return stage03ClearTransition_;
+        case 4: return stage04ClearTransition_;
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+            return lateStageClearStarted_;
+        default:
+            return false;
+        }
+    }();
     const bool triggerAllowed =
         player_.bombLock == 0 &&
         (player_.tokenStock != 0 ||
          (manualFever && player_.specialGauge >= kSpecialGaugeReady)) &&
+        !stageClearBombLock &&
         static_cast<std::uint32_t>(player_.playerStateTimer - 120) > 139U &&
         (player_.specialGauge >= 0 ||
          static_cast<std::uint32_t>(player_.invulnerableFrames - 1) > 278U);
@@ -14750,14 +15264,52 @@ void StageRuntime::updateSpecialGaugeAction() {
     }
 }
 
-void StageRuntime::updateSpecialGaugeState() {
+void StageRuntime::updateSpecialGaugeState(int shotTimerBeforeInput) {
     const bool manualFever = config_.specialMode == 1;
     if (player_.specialGauge < kSpecialGaugeReady) {
         if (player_.specialGauge < 0) {
-            ++player_.specialGauge;
+            // DAT_140e46b2c pauses Fever at empty stage boundaries and on
+            // alternating idle frames. Special/Time-window play uses its own
+            // elapsed counter for the parity test.
+            const bool hasLiveEnemy = std::any_of(
+                enemies_.begin(), enemies_.end(),
+                [](const StageEnemy& enemy) {
+                    return enemy.active && enemy.targetable;
+                });
+            const bool hasLiveProjectile = std::any_of(
+                enemyProjectiles_.begin(), enemyProjectiles_.end(),
+                [](const StageProjectile& projectile) {
+                    return projectile.active;
+                });
+            const int stageEnd = kStageEndFrames[
+                static_cast<std::size_t>(std::clamp(selectedStage_, 0, 10))];
+            bool timerPaused =
+                (frame_ < 0xf0 || frame_ >= stageEnd - 0x14a) &&
+                !hasLiveEnemy && !hasLiveProjectile;
+            const int idleParityClock = config_.specialStageFlag == 0
+                                            ? frame_
+                                            : timeWindowElapsedFrames_;
+            if (shotTimerBeforeInput == 0 && (idleParityClock & 1) != 0) {
+                timerPaused = true;
+            }
+            if (!timerPaused) {
+                ++player_.specialGauge;
+            }
+            if ((player_.drawAnimationClock & 0x0f) == 0 &&
+                player_.specialGauge < -60) {
+                spawnFeverTrailEffect();
+            }
             if (player_.specialGauge == 0) {
                 playPlayerSound(feverSoundHandles_[2], 0x13);
                 spawnPlayerSideObject(0x18, player_.x, player_.y, 0.0, 0, 0, 0.0f);
+            }
+        }
+        else if (player_.specialGauge > 0 && hudSpecialGaugeFlashTimer_ == 0) {
+            const double stageScale = std::max(
+                0.6, 1.0 - static_cast<double>(selectedStage_ / 2) * 0.1);
+            player_.specialGauge += static_cast<int>(stageScale * -50.0);
+            if (player_.specialGauge < 0) {
+                player_.specialGauge = 0;
             }
         }
     }
@@ -14832,6 +15384,7 @@ bool StageRuntime::settlePendingPlayerHit() {
         return false;
     }
 
+    player_.shotVariant = 0;
     if (phaseMode == 1) {
         bossPhaseRewardIndex_ = -1;
     }
@@ -14883,6 +15436,7 @@ void StageRuntime::startEquippedBomb() {
 
     const int group = std::clamp(config_.setupGroup, 0, 2);
     const int slot = std::clamp(config_.optionSlots[2], 0, 1);
+    const int stateTimerBeforeBomb = player_.playerStateTimer;
     const int phaseMode = selectedStage_ == 1 ? stage01BossPhaseMode_
                           : selectedStage_ == 2 ? stage02BossPhaseMode_
                           : selectedStage_ == 3 ? stage03BossPhaseMode_
@@ -14902,11 +15456,34 @@ void StageRuntime::startEquippedBomb() {
         kBombInvulnerability[static_cast<std::size_t>(group)][static_cast<std::size_t>(slot)];
     --player_.tokenStock;
     player_.stockProgress -= stockThresholdForCurrentConfig();
+
+    // FUN_140106be0 checks the pre-Bomb state timer. A normal activation uses
+    // PlayerFrame[3], while a deathbomb first emits the small terminal burst
+    // and uses PlayerFrame[7]. Both portraits remain for 180 frames.
+    const bool deathbombPresentation = stateTimerBeforeBomb >= 0x104;
+    if (deathbombPresentation) {
+        spawnStageEffect(0x36, -1, 0, 0x28,
+                         player_.x, player_.y, 0,
+                         0.0, 1.0, 1.0, 0,
+                         0xff, 0xff, 0xff, 0xff);
+    }
+    const int portraitIndex = (deathbombPresentation ? 7 : 3) + group * 10;
+    const int portraitHandle =
+        portraitIndex < static_cast<int>(playerFrameFrames_.size())
+            ? playerFrameFrames_[static_cast<std::size_t>(portraitIndex)]
+            : -1;
+    spawnStageEffect(0x16, portraitHandle, 0, 0x6f,
+                     0.0f, 0.0f, 0,
+                     0.0, 1.0, 1.0, 0xb4,
+                     0xff, 0xff, 0xff, 0xff);
+
     player_.playerStateTimer = 0;
-    playPlayerSound(bombSoundHandles_[0]);
     if (group == 0 && slot == 1) {
+        // Vivid Grenade's dedicated Bomb4 sound is queued before Bomb1 in the
+        // original input branch.
         playPlayerSound(bombSoundHandles_[3]);
     }
+    playPlayerSound(bombSoundHandles_[0]);
 }
 
 void StageRuntime::startFever(bool manualActivation) {
@@ -14920,13 +15497,66 @@ void StageRuntime::startFever(bool manualActivation) {
     player_.bombLock = -120;
     player_.invulnerableFrames = std::max(player_.invulnerableFrames, 150);
     spawnPlayerSideObject(0x18, player_.x, player_.y, 0.0, 0, 0, 0.0f);
+    if (!manualActivation) {
+        // Manual Fever created these nodes when it entered the armed sentinel;
+        // the auto path creates them at activation instead.
+        spawnFeverReadyEffects();
+    }
+    const int group = std::clamp(config_.setupGroup, 0, 2);
+    const int portraitIndex = 6 + group * 10;
+    const int portraitHandle =
+        portraitIndex < static_cast<int>(playerFrameFrames_.size())
+            ? playerFrameFrames_[static_cast<std::size_t>(portraitIndex)]
+            : -1;
+    spawnStageEffect(0x16, portraitHandle, 0, 0x6f,
+                     0.0f, 0.0f, 0,
+                     0.0, 1.0, 1.0, 0x78,
+                     0xff, 0xff, 0xff, 0xff);
     playPlayerSound(feverSoundHandles_[0]);
     playPlayerSound(feverSoundHandles_[1]);
 }
 
 void StageRuntime::armManualFever() {
-    player_.specialGauge = kSpecialGaugeForcedFull;
+    spawnFeverReadyEffects();
     playPlayerSound(feverSoundHandles_[3]);
+    player_.specialGauge = kSpecialGaugeForcedFull;
+}
+
+void StageRuntime::spawnFeverReadyEffects() {
+    const int orbitHandle = effectSmallFrames_.size() > 8
+                                ? effectSmallFrames_[8]
+                                : -1;
+    spawnStageEffect(0x15, orbitHandle, 100, 0x4a,
+                     player_.x, player_.y, 0,
+                     0.0, 1.0, 1.0, 0,
+                     0xff, 0xff, 0xff, 0xc0);
+
+    const int bannerHandle = stateFrames_.size() > 21
+                                 ? stateFrames_[21]
+                                 : -1;
+    const std::uint32_t random = stageScriptRandFromFrame(frame_);
+    const std::uint16_t angle = normalizeAngle16(
+        static_cast<int>(random % 0x2ee1u) - 0x5770);
+    spawnStageEffect(0x17, bannerHandle, 200, 0x4b,
+                     player_.x, player_.y - 120.0f, angle,
+                     1.0, 1.0, 1.0, 0x78,
+                     0xff, 0xff, 0xff, 0x80);
+}
+
+void StageRuntime::spawnFeverTrailEffect() {
+    const int handle = effectMediumFrames_.empty()
+                           ? -1
+                           : effectMediumFrames_[0];
+    const std::uint32_t random = stageScriptRandFromFrame(frame_);
+    const float x = static_cast<float>(random % 0x2d1u);
+    const std::uint16_t angle = normalizeAngle16(
+        static_cast<int>(random % 0x7d1u) - 0x43e8);
+    const double scale = scriptRandomHundredth(
+        static_cast<std::uint32_t>(frame_), 1.5, 3.0);
+    spawnStageEffect(0x18, handle, 200, 0x16,
+                     x, 1120.0f, angle,
+                     12.0, scale, scale, 0x168,
+                     0xff, 0xff, 0xff, 0x60);
 }
 
 void StageRuntime::playPlayerSound(int handle, int volumeMultiplier) const {
@@ -14975,6 +15605,23 @@ void StageRuntime::updatePlayerSideObjects() {
             object.angle16 = normalizeAngle16(reflectedAngle);
             object.x = clampFloat(object.x, horizontalOrigin + radius, horizontalOrigin + 600.0f - radius);
             object.y = clampFloat(object.y, radius, 720.0f - radius);
+        };
+        const auto spawnOrangeBombTrail = [this, &object, updateAge]() {
+            const int handle = effectSmallFrames_.empty()
+                                   ? -1
+                                   : effectSmallFrames_[0];
+            const std::uint32_t radiusRandom = stageScriptRandFromFrame(
+                frame_ + updateAge * 0x457);
+            const int offsetRadius = static_cast<int>(radiusRandom % 0x33u);
+            const std::uint16_t offsetAngle = scriptRandomAngle(
+                static_cast<std::uint32_t>(frame_ + updateAge * 0x6f));
+            const double radians = fixedAngleToRadiansDouble(offsetAngle);
+            spawnStageEffect(
+                0x08, handle, 100, 0x3b,
+                object.x + static_cast<float>(std::cos(radians) * offsetRadius),
+                object.y + static_cast<float>(std::sin(radians) * offsetRadius),
+                0, 0.0, 0.8, 0.8, 0x14,
+                0xff, 0xc0, 0x40, 0x80);
         };
 
         if (object.type >= 0 && object.type <= 0x0a) {
@@ -15048,6 +15695,9 @@ void StageRuntime::updatePlayerSideObjects() {
                     playPlayerSound(bombSoundHandles_[2]);
                     object.active = false;
                 }
+                // The original still appends this terminal-frame trail after
+                // it clears the projectile's active flag.
+                spawnOrangeBombTrail();
                 break;
             }
             case 0x0d:
@@ -15072,6 +15722,7 @@ void StageRuntime::updatePlayerSideObjects() {
                     object.speedOrScale = std::max(0.0, object.speedOrScale - 0.6);
                     moveAlongAngle();
                     reflectAndClamp();
+                    spawnOrangeBombTrail();
                 }
                 else {
                     if (updateAge == 30) {
@@ -15083,6 +15734,20 @@ void StageRuntime::updatePlayerSideObjects() {
                     object.collisionRadiusOrScale = updateAge < 40
                                                         ? sineEaseIn(updateAge - 30, 10, 250.0f)
                                                         : 250.0f;
+                    if (updateAge % 8 == 0) {
+                        const int frameIndex = 2 + ((updateAge & 0x0f) >> 3);
+                        const int handle =
+                            frameIndex < static_cast<int>(effectLargeFrames_.size())
+                                ? effectLargeFrames_[static_cast<std::size_t>(frameIndex)]
+                                : -1;
+                        spawnStageEffect(
+                            0x20, handle, 600, 0x3c,
+                            object.x, object.y, 0,
+                            0.0,
+                            static_cast<double>(object.collisionRadiusOrScale) / 150.0,
+                            static_cast<double>(object.collisionRadiusOrScale) / 120.0,
+                            0x28, 0xff, 0xff, 0xff, 0xff);
+                    }
                 }
                 if (updateAge == 180) {
                     object.active = false;
@@ -15098,6 +15763,15 @@ void StageRuntime::updatePlayerSideObjects() {
                     }
                     playPlayerSound(bombSoundHandles_[5], 0x10);
                 }
+                if (updateAge % 30 == 0) {
+                    const int handle = effectLargeFrames_.empty()
+                                           ? -1
+                                           : effectLargeFrames_[0];
+                    spawnStageEffect(0x13, handle, 600, 0x5b,
+                                     object.x, object.y, 0,
+                                     0.0, 0.0, 0.0, 0,
+                                     0xff, 0xff, 0xff, 0xff);
+                }
                 if (updateAge == 180) {
                     object.active = false;
                 }
@@ -15105,6 +15779,12 @@ void StageRuntime::updatePlayerSideObjects() {
             case 0x10:
                 moveAlongAngle();
                 object.drawAngle16 = object.angle16;
+                spawnStageEffect(
+                    0x05,
+                    effectMediumFrames_.size() > 7 ? effectMediumFrames_[7] : -1,
+                    200, 0x3b, object.x, object.y, object.angle16,
+                    0.0, 1.0, 1.0, 0x0c,
+                    0xff, 0xff, 0xff, 0x80);
                 if (object.y < -500.0f) {
                     object.active = false;
                 }
@@ -15120,6 +15800,13 @@ void StageRuntime::updatePlayerSideObjects() {
                 break;
             case 0x12:
                 if (updateAge % 40 == 0 && updateAge < 151) {
+                    const int handle = effectLargeFrames_.empty()
+                                           ? -1
+                                           : effectLargeFrames_[0];
+                    spawnStageEffect(0x13, handle, 600, 0x5b,
+                                     player_.x, player_.y, 0,
+                                     0.0, 0.0, 0.0, 0,
+                                     0xff, 0xff, 0xff, 0xff);
                     const auto randomAngle = normalizeAngle16(static_cast<int>(
                         deterministicUnit(frame_, static_cast<int>(objectIndex) * 0x457 + updateAge) *
                         static_cast<float>(kFixedAngleFullCircle)));
@@ -15462,6 +16149,7 @@ void StageRuntime::handlePlayerSideObjectEnemyCollisions() {
         if ((!enemy.active && !terminalExactEnemy) || !enemy.targetable) {
             continue;
         }
+        std::uint32_t collisionOrdinal = 0;
         for (std::size_t objectIndex = 0; objectIndex < playerSideObjects_.size(); ++objectIndex) {
             if (!playerSideObjectCanHitEnemy(playerSideObjects_[objectIndex])) {
                 continue;
@@ -15474,11 +16162,115 @@ void StageRuntime::handlePlayerSideObjectEnemyCollisions() {
             }
 
             const int objectType = object.type;
+            const std::uint32_t collisionSeed =
+                static_cast<std::uint32_t>(frame_) + ++collisionOrdinal;
+            const float dx = enemy.x - object.x;
+            const float dy = enemy.y - object.y;
+            const double contactAngle = std::atan2(
+                static_cast<double>(dy), static_cast<double>(dx));
+            const float unitX = static_cast<float>(std::cos(contactAngle));
+            const float unitY = static_cast<float>(std::sin(contactAngle));
+            const float objectContactX =
+                object.x + unitX * object.collisionRadiusOrScale;
+            const float objectContactY =
+                object.y + unitY * object.collisionRadiusOrScale;
+            const float enemyContactX = enemy.x - unitX * static_cast<float>(enemy.radius);
+            const float enemyContactY = enemy.y - unitY * static_cast<float>(enemy.radius);
+            const auto spawnHitSpark = [this, collisionSeed](float x, float y) {
+                const int sparkHandle = playerFrames_.size() > 14
+                                            ? playerFrames_[14]
+                                            : -1;
+                spawnStageEffect(
+                    0x0e, sparkHandle, 80, 0x48, x, y,
+                    scriptRandomAngle(collisionSeed * 0x42u),
+                    scriptRandomHundredth(collisionSeed * 0x2cu, 5.0, 8.0),
+                    0.3, 0.3, 0x0c,
+                    0xff, 0xff, 0xff, 0xff);
+            };
             if ((objectType >= 0 && objectType <= 0x0a) || objectType == 0x10) {
                 addRunScore(0x10);
                 player_.stockProgress += object.age < 0x11
                                              ? (0x15 - object.age) * 2
                                              : 10;
+
+                if (player_.specialGauge < 0) {
+                    const float dxToPlayer = player_.x - enemy.x;
+                    const float dyToPlayer = player_.y - enemy.y;
+                    const float playerDistance =
+                        std::sqrt(dxToPlayer * dxToPlayer + dyToPlayer * dyToPlayer);
+                    const int chanceMaximum = std::max(
+                        2, static_cast<int>(playerDistance -
+                                            static_cast<float>(enemy.radius)) /
+                                   60 +
+                               2);
+                    if (stageRandomIntInclusive(
+                            static_cast<std::uint32_t>(frame_) + collisionSeed,
+                            0, chanceMaximum) == 0) {
+                        spawnRewardItem(
+                            0, objectContactX, objectContactY,
+                            scriptRandomAngle(collisionSeed), 2.0f, 30);
+                    }
+                }
+
+                spawnHitSpark(objectContactX, objectContactY);
+                if (objectType <= 0x0a) {
+                    int frameIndex = playerSideObjectVisualFrame(object);
+                    if (config_.setupGroup == 2 && objectType < 2) {
+                        frameIndex = 0x3f;
+                    }
+                    else if (config_.setupGroup == 2 &&
+                             objectType >= 2 && objectType <= 4) {
+                        frameIndex = 0x40;
+                    }
+                    const int trailHandle =
+                        frameIndex >= 0 && frameIndex < static_cast<int>(playerFrames_.size())
+                            ? playerFrames_[static_cast<std::size_t>(frameIndex)]
+                            : -1;
+                    const double baseScale =
+                        objectType >= 2 && objectType <= 4 ? 1.5 : 1.0;
+                    double scaleX = baseScale;
+                    double scaleY = 1.0;
+                    if ((0x248u >> static_cast<unsigned>(objectType)) & 1u) {
+                        scaleX *= 1.5;
+                        scaleY = 1.5;
+                    }
+                    else if ((0x492u >> static_cast<unsigned>(objectType)) & 1u) {
+                        scaleX *= 2.0;
+                        scaleY = 2.0;
+                    }
+                    spawnStageEffect(
+                        0x0d, trailHandle, 80, 0x2d,
+                        object.x, object.y, object.angle16,
+                        object.speedOrScale / 5.0, scaleX, scaleY, 8,
+                        0xff, 0xff, 0xff, 0x60);
+                }
+                else {
+                    const std::uint32_t chanceRandom =
+                        stageScriptRandFromFrame(static_cast<int>(collisionSeed * 0x16u));
+                    if (chanceRandom % 6u == 0u) {
+                        const std::uint32_t graphRandom = stageScriptRandFromFrame(
+                            static_cast<int>(collisionSeed * 0xdeu));
+                        const int graphIndex = 8 + static_cast<int>(graphRandom & 3u);
+                        const int graphHandle =
+                            graphIndex < static_cast<int>(effectMediumFrames_.size())
+                                ? effectMediumFrames_[static_cast<std::size_t>(graphIndex)]
+                                : -1;
+                        spawnStageEffect(
+                            0x17, graphHandle, 200, 0x4b,
+                            objectContactX, objectContactY,
+                            scriptRandomAngle(collisionSeed * 0x8aeu),
+                            2.0, 1.0, 1.0, 0x18,
+                            0xff, 0xff, 0xff, 0x80);
+                    }
+                    const int trailHandle = effectMediumFrames_.size() > 7
+                                                ? effectMediumFrames_[7]
+                                                : -1;
+                    spawnStageEffect(
+                        0x0d, trailHandle, 200, 0x2d,
+                        object.x, object.y, object.angle16,
+                        object.speedOrScale / 5.0, 3.0, 2.0, 8,
+                        0xff, 0xff, 0xff, 0x60);
+                }
                 object.active = false;
             }
             else if (objectType == 0x0c) {
@@ -15493,6 +16285,12 @@ void StageRuntime::handlePlayerSideObjectEnemyCollisions() {
             }
             else if (objectType == 0x14) {
                 player_.stockProgress += 3;
+            }
+
+            if ((objectType == 0x0d || objectType == 0x0e ||
+                 objectType == 0x14 || objectType == 0x15) &&
+                enemy.age % 3 == 0) {
+                spawnHitSpark(enemyContactX, enemyContactY);
             }
 
             const int damage = playerSideObjectDamage(playerSideObjects_[objectIndex]);
@@ -15515,11 +16313,86 @@ void StageRuntime::handlePlayerSideObjectEnemyCollisions() {
                     }
                 }
             }
-            const bool usesHeavyHitSound = enemy.spawnType == 0xc3 ||
-                                           enemy.spawnType == 0x127 ||
-                                           enemy.spawnType == 0x136 ||
-                                           enemy.spawnType == 0x14e ||
-                                           enemy.spawnType == 0x150;
+            const auto typeBit = [](int type, int base, int count,
+                                    std::uint64_t mask) {
+                const int offset = type - base;
+                return offset >= 0 && offset < count &&
+                       ((mask >> static_cast<unsigned>(offset)) & 1ULL) != 0ULL;
+            };
+            const int enemyType = enemy.spawnType;
+            const bool usesHitFeedback =
+                (enemyType >= 0x138 && enemyType < 0x140) ||
+                typeBit(enemyType, 0x000, 0x2f, 0x400100010000ULL) ||
+                typeBit(enemyType, 0x02f, 0x28, 0xb1001b0003ULL) ||
+                (enemyType >= 0x143 && enemyType < 0x146) ||
+                typeBit(enemyType, 0x066, 0x1e, 0x2008001fULL) ||
+                typeBit(enemyType, 0x084, 0x29, 0x1670000000fULL) ||
+                (enemyType >= 0x0b8 && enemyType < 0x0bc) ||
+                (enemyType >= 0x146 && enemyType < 0x14b) ||
+                enemyType == 0x0c8 ||
+                typeBit(enemyType, 0x111, 0x3c, 0xc01800000000003ULL) ||
+                typeBit(enemyType, 0x0c3, 0x2f, 0x4c0000000001ULL) ||
+                typeBit(enemyType, 0x113, 0x0e, 0x3cf9ULL) ||
+                typeBit(enemyType, 0x121, 0x32, 0x2000000001073ULL);
+            if (usesHitFeedback && damage > 0) {
+                int feedbackPeriod = 12;
+                switch (objectType) {
+                case 0x0d: feedbackPeriod = 0xf0; break;
+                case 0x0e:
+                case 0x11: feedbackPeriod = 0x3c; break;
+                case 0x10: feedbackPeriod = 9; break;
+                case 0x14: feedbackPeriod = 0x168; break;
+                case 0x15: feedbackPeriod = 0x5a; break;
+                case 0x1b: feedbackPeriod = 0x78; break;
+                default: break;
+                }
+                if (stageRandomIntInclusive(
+                        static_cast<std::uint32_t>(frame_) + collisionSeed,
+                        0, feedbackPeriod) == 0) {
+                    const std::uint16_t pointAngle =
+                        scriptRandomUpperHalfAngle(collisionSeed);
+                    const int pointRadius = stageRandomIntInclusive(
+                        collisionSeed, 0, std::max(0, enemy.radius));
+                    const double pointRadians = fixedAngleToRadiansDouble(pointAngle);
+                    const float pointX = enemy.x + static_cast<float>(
+                        std::cos(pointRadians) * static_cast<double>(pointRadius));
+                    const float pointY = enemy.y - 100.0f + static_cast<float>(
+                        std::sin(pointRadians) * static_cast<double>(pointRadius));
+
+                    const float feedbackDeltaX = player_.x - enemy.x;
+                    const float feedbackDeltaY = player_.y - enemy.y;
+                    const float feedbackPlayerDistance = std::sqrt(
+                        feedbackDeltaX * feedbackDeltaX +
+                        feedbackDeltaY * feedbackDeltaY);
+                    const int surfaceDistance =
+                        static_cast<int>(feedbackPlayerDistance) - enemy.radius;
+                    int multiplier = 1;
+                    if (surfaceDistance < 0x97) {
+                        multiplier = 10;
+                    }
+                    else if (surfaceDistance < 0x1c2) {
+                        multiplier = (0x1c2 - surfaceDistance) / 0x1e;
+                    }
+                    if (player_.specialGauge < 0) {
+                        multiplier = 10;
+                    }
+                    else {
+                        multiplier = std::max(multiplier, 1);
+                    }
+
+                    const std::uint32_t feedbackAngleSeed =
+                        collisionSeed * 0x1bcu + static_cast<std::uint32_t>(frame_);
+                    spawnStageEffect(
+                        0x19, -1, 0, 0x42, pointX, pointY,
+                        scriptRandomUpperHalfAngle(feedbackAngleSeed),
+                        1.0, static_cast<double>(multiplier),
+                        static_cast<double>(multiplier) * 0.1 + 0.5,
+                        0x32, 0xff, 0xff, 0xff, 0xc0);
+                }
+            }
+            const bool usesHeavyHitSound =
+                enemyType == 0x0c3 ||
+                typeBit(enemyType, 0x127, 0x2a, 0x28000008001ULL);
             if (usesHeavyHitSound && objectType != 0x1e) {
                 playPlayerSound(shotHit2SoundHandle_, 9);
             }
@@ -15722,8 +16595,10 @@ void StageRuntime::spawnRewardItem(int itemType, float x, float y, std::uint16_t
     rewardItems_.push_back(item);
 }
 
-void StageRuntime::drawBackground() const {
-    DrawBox(0, 0, notes::kScreenWidth, notes::kScreenHeight, GetColor(10, 14, 28), TRUE);
+void StageRuntime::drawBackgroundLayer(int exactLayer) const {
+    // Keep the recovered formulas readable while evaluating them at the frame
+    // on which the original queued the nodes, before gameplay dispatch.
+    const int frame_ = this->backgroundDrawFrame_;
     constexpr double kOriginalPi = 3.14159265358979;
     const auto sineEnvelope = [](int frame, int enterStart, int enterEnd,
                                  int leaveStart, int leaveEnd,
@@ -15762,12 +16637,12 @@ void StageRuntime::drawBackground() const {
                    ? frames[static_cast<std::size_t>(index)]
                    : -1;
     };
-    const auto drawDedicatedTall = [](int handle, float logicalX, float y,
-                                      bool bottomAnchor,
+    const auto drawDedicatedTall = [this, exactLayer](int drawLayer, int handle,
+                                      float logicalX, float y, bool bottomAnchor,
                                       int red = 0xff, int green = 0xff,
                                       int blue = 0xff, int alpha = 0xff,
                                       bool additive = false) {
-        if (handle == -1) {
+        if (drawLayer != exactLayer || handle == -1) {
             return;
         }
         int width = 0;
@@ -15781,7 +16656,7 @@ void StageRuntime::drawBackground() const {
         SetDrawBlendMode(additive ? DX_BLENDMODE_ADD : DX_BLENDMODE_ALPHA,
                          std::clamp(alpha, 0, 255));
         DrawRotaGraph3F(
-            static_cast<float>(notes::gameplay_layout::kStageBackOrigin.x) + logicalX,
+            static_cast<float>(static_cast<int>(screenX(logicalX))),
             static_cast<float>(static_cast<int>(y)),
             static_cast<float>(width) * 0.5f,
             bottomAnchor ? static_cast<float>(height)
@@ -15791,15 +16666,19 @@ void StageRuntime::drawBackground() const {
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     };
     const bool advanceLateScroll = lateBackgroundScrollFrame_ != frame_;
-    const auto drawScrolledTall = [this, advanceLateScroll](
-                                      int slot, int handle, float x,
+    const auto drawScrolledTall = [this, advanceLateScroll, exactLayer](
+                                      int drawLayer, int slot, int handle, float x,
                                       int red, int green, int blue, int alpha,
                                       float speed, bool additive = false) {
-        if (slot < 0 || slot >= static_cast<int>(lateBackgroundScroll_.size())) {
+        if (drawLayer != exactLayer || slot < 0 ||
+            slot >= static_cast<int>(lateBackgroundScroll_.size())) {
             return;
         }
         if (advanceLateScroll) {
-            lateBackgroundScroll_[static_cast<std::size_t>(slot)] += speed;
+            // FUN_1400c2670 advances each scroll accumulator by
+            // DAT_1407c77a4 * speed before wrapping it at 0xa00.
+            lateBackgroundScroll_[static_cast<std::size_t>(slot)] +=
+                speed * static_cast<float>(std::clamp(timeWindowDispatchCount_, 1, 4));
         }
         if (handle == -1 || alpha <= 0) {
             return;
@@ -15817,8 +16696,15 @@ void StageRuntime::drawBackground() const {
                       std::clamp(blue, 0, 255));
         SetDrawBlendMode(additive ? DX_BLENDMODE_ADD : DX_BLENDMODE_ALPHA,
                          std::clamp(alpha, 0, 255));
-        const float drawX = static_cast<float>(static_cast<int>(
-            static_cast<float>(notes::gameplay_layout::kStageBackOrigin.x) + x));
+        float cameraOffset = 340.0f - player_.x / 6.0f;
+        if (drawLayer < 6) {
+            // FUN_1400c8530 applies layer-dependent horizontal parallax to
+            // modes 14..16. At layer 0 this is 280; layer 5 reaches cameraX.
+            cameraOffset = 340.0f - player_.x / 30.0f * drawLayer -
+                           static_cast<float>(5 - drawLayer) * 12.0f;
+        }
+        const float drawX = static_cast<float>(
+            static_cast<int>(cameraOffset + x));
         for (const int offset : {0, kOriginalTallHeight, -kOriginalTallHeight}) {
             DrawRotaGraph3F(drawX, static_cast<float>(scroll + offset),
                             static_cast<float>(width) * 0.5f,
@@ -15832,9 +16718,9 @@ void StageRuntime::drawBackground() const {
     if (selectedStage_ == 1) {
         const float speed = sineEnvelope(frame_, 600, 0x348, 5400, 5700,
                                          10.0f, 2.5f);
-        drawScrolledTall(1, frameHandle(stageBack1Frames_, 4), 360.0f,
+        drawScrolledTall(1, 1, frameHandle(stageBack1Frames_, 4), 360.0f,
                          255, 255, 255, 255, speed * 0.5f);
-        drawScrolledTall(2, frameHandle(stageBack1Frames_, 5), 360.0f,
+        drawScrolledTall(3, 2, frameHandle(stageBack1Frames_, 5), 360.0f,
                          255, 255, 255, 255, speed);
         if (frame_ <= 600) {
             int alpha = 0;
@@ -15846,46 +16732,40 @@ void StageRuntime::drawBackground() const {
                     std::sin(static_cast<double>(frame_) * kOriginalPi / 600.0) *
                     255.0);
             }
-            drawScrolledTall(0, frameHandle(stageBack1Frames_, 2), 360.0f,
+            drawScrolledTall(4, 0, frameHandle(stageBack1Frames_, 2), 360.0f,
                              255, 255, 255, alpha, speed * 2.0f);
         }
-        drawScrolledTall(3, frameHandle(stageBack1Frames_, 3), 360.0f,
-                         255, 255, 255, 128, speed * 3.0f, true);
+        drawScrolledTall(5, 3, frameHandle(stageBack1Frames_, 3), 360.0f,
+                         255, 255, 255, 128, speed * 3.0f);
     }
     else if (selectedStage_ == 2) {
         const float speed = sineEnvelope(frame_, 0, 300, 9700, 10300,
                                          20.0f, 1.0f);
-        drawScrolledTall(0, frameHandle(stageBack1Frames_, 6), 360.0f,
+        drawScrolledTall(2, 0, frameHandle(stageBack1Frames_, 6), 360.0f,
                          255, 255, 255, 255, speed * 0.5f);
-        drawScrolledTall(1, frameHandle(stageBack1Frames_, 7), 360.0f,
+        drawScrolledTall(4, 1, frameHandle(stageBack1Frames_, 7), 360.0f,
                          255, 255, 255, 255, speed * 0.75f);
         if (frame_ >= 750 && frame_ <= 10000) {
-            drawDedicatedTall(stage2BackHandle_, 360.0f,
+            drawDedicatedTall(0x14, stage2BackHandle_, 360.0f,
                               static_cast<float>(frame_) - 4970.0f,
                               false, 0, 0, 0, 0x30);
-            drawDedicatedTall(stage2BackHandle_, 360.0f,
+            drawDedicatedTall(0x14, stage2BackHandle_, 360.0f,
                               static_cast<float>(frame_) - 5000.0f,
                               false);
         }
     }
     else if (selectedStage_ == 3) {
-        drawScrolledTall(0, frameHandle(stageBack1Frames_, 8), 360.0f,
+        drawScrolledTall(2, 0, frameHandle(stageBack1Frames_, 8), 360.0f,
                          255, 255, 255, 255, 6.0f);
-        drawScrolledTall(1, frameHandle(stageBack1Frames_, 9), 360.0f,
-                         255, 255, 255, 255, 12.0f, true);
-        if (frame_ >= 0x5dc && frame_ <= 9500) {
-            drawDedicatedTall(stage3BackHandle_, 360.0f,
-                              static_cast<float>(frame_ - 0x5dc), true);
-        }
 
         // FUN_1400be7a0 case 3 appends these 21 mode-8 nodes every frame.
         // Effect_l[5] is mirrored along both playfield axes with the original
         // 150/200 pixel spacing and fixed 2x1 scale.
         const int particle = frameHandle(effectLargeFrames_, 5);
-        if (particle != -1) {
-            const int animationFrame = std::max(frame_, 0);
+        if (exactLayer == 3 && particle != -1) {
+            const int animationFrame = std::max(player_.drawAnimationClock, 0);
             const float originX = static_cast<float>(
-                notes::gameplay_layout::kStageBackOrigin.x);
+                static_cast<int>(screenX(0.0f)));
             SetDrawBright(0, 0xff, 0xc0);
             SetDrawBlendMode(DX_BLENDMODE_ADD, 0x30);
             for (int i = 0; i < 7; ++i) {
@@ -15904,6 +16784,12 @@ void StageRuntime::drawBackground() const {
             SetDrawBright(255, 255, 255);
             SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         }
+        drawScrolledTall(4, 1, frameHandle(stageBack1Frames_, 9), 360.0f,
+                         255, 255, 255, 255, 12.0f, true);
+        if (frame_ >= 0x5dc && frame_ <= 9500) {
+            drawDedicatedTall(0x14, stage3BackHandle_, 360.0f,
+                              static_cast<float>(frame_ - 0x5dc), true);
+        }
     }
     else if (selectedStage_ == 4) {
         const double fade = frame_ >= 0 && frame_ < 11700
@@ -15912,9 +16798,9 @@ void StageRuntime::drawBackground() const {
                                 : (frame_ < 0 ? 1.0 : 0.0);
         const int redGreen = 32 + static_cast<int>(fade * 223.0);
         const int blue = 96 + static_cast<int>(fade * 159.0);
-        drawScrolledTall(0, frameHandle(stageBack1bFrames_, 0), 360.0f,
+        drawScrolledTall(1, 0, frameHandle(stageBack1bFrames_, 0), 360.0f,
                          redGreen, redGreen, blue, 255, -0.7f);
-        drawScrolledTall(1, frameHandle(stageBack1bFrames_, 1), 360.0f,
+        drawScrolledTall(3, 1, frameHandle(stageBack1bFrames_, 1), 360.0f,
                          redGreen, redGreen, blue, 0x48, -1.5f, true);
     }
     else if (selectedStage_ == 5) {
@@ -15940,13 +16826,13 @@ void StageRuntime::drawBackground() const {
                                             kOriginalPi / 1200.0) *
                                    2.8);
             }
-            drawScrolledTall(0, frameHandle(stageBack1bFrames_, 2), 360.0f,
+            drawScrolledTall(1, 0, frameHandle(stageBack1bFrames_, 2), 360.0f,
                              alpha, alpha, alpha, 255, speed);
-            drawScrolledTall(1, frameHandle(stageBack1bFrames_, 3), 360.0f,
+            drawScrolledTall(2, 1, frameHandle(stageBack1bFrames_, 3), 360.0f,
                              alpha, alpha, alpha, 255, speed * 2.2f);
-            drawScrolledTall(2, frameHandle(stageBack1bFrames_, 4), 360.0f,
+            drawScrolledTall(3, 2, frameHandle(stageBack1bFrames_, 4), 360.0f,
                              alpha, alpha, alpha, 255, speed * 3.4f);
-            drawScrolledTall(3, frameHandle(stageBack1bFrames_, 5), 360.0f,
+            drawScrolledTall(4, 3, frameHandle(stageBack1bFrames_, 5), 360.0f,
                              alpha, alpha, alpha, 255, speed * 4.6f);
         }
     }
@@ -15969,16 +16855,37 @@ void StageRuntime::drawBackground() const {
         else if (frame_ >= kEndFrame + 900) {
             speed = 10.0f;
         }
-        drawScrolledTall(0, frameHandle(stageBack1bFrames_, 6), 360.0f,
+        drawScrolledTall(1, 0, frameHandle(stageBack1bFrames_, 6), 360.0f,
                          255, 255, 255, 255, speed * 0.5f);
-        drawScrolledTall(1, frameHandle(stageBack1bFrames_, 7), 360.0f,
+        drawScrolledTall(2, 1, frameHandle(stageBack1bFrames_, 7), 360.0f,
                          128, 128, 255, 0x32, speed * 0.7f, true);
-        drawScrolledTall(2, frameHandle(stageBack1bFrames_, 8), 360.0f,
+        drawScrolledTall(3, 2, frameHandle(stageBack1bFrames_, 8), 360.0f,
                          192, 192, 255, 0x4b, speed, true);
-        drawScrolledTall(3, frameHandle(stageBack1bFrames_, 9), 360.0f,
+        drawScrolledTall(4, 3, frameHandle(stageBack1bFrames_, 9), 360.0f,
                          255, 255, 255, 100, speed * 1.4f, true);
+        if (exactLayer == 10 && frame_ >= 6500 && frame_ <= kEndFrame + 120) {
+            float y = 150.0f;
+            const int riseEnd = kEndFrame + 60;
+            if (frame_ < riseEnd) {
+                y = -120.0f + static_cast<float>(
+                    std::sin(static_cast<double>(frame_ - 6500) *
+                             kOriginalPi /
+                             (2.0 * static_cast<double>(riseEnd - 6500))) *
+                    270.0);
+            }
+            const int handle = frameHandle(enemyMediumFrames_, 109);
+            if (handle != -1) {
+                SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0xc0);
+                drawOriginalMode7Node(
+                    handle,
+                    static_cast<float>(static_cast<int>(screenX(480.0f))),
+                    static_cast<float>(static_cast<int>(y)),
+                    0, 1.0, 1.0, false);
+                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            }
+        }
         if (frame_ > 0x419 && frame_ <= kEndFrame + 300) {
-            drawDedicatedTall(stage6BackHandle_, 360.0f,
+            drawDedicatedTall(0x14, stage6BackHandle_, 360.0f,
                               static_cast<float>(frame_ - 0x44c), true);
         }
     }
@@ -15988,7 +16895,7 @@ void StageRuntime::drawBackground() const {
             {{120, 255, 120}}, {{120, 255, 255}}, {{120, 120, 255}},
             {{220, 120, 255}},
         }};
-        const int animationFrame = std::max(frame_, 0);
+        const int animationFrame = std::max(player_.drawAnimationClock, 0);
         const int paletteIndex = (animationFrame / 300) % static_cast<int>(kPalette.size());
         const int paletteNext = (paletteIndex + 1) % static_cast<int>(kPalette.size());
         const int paletteLocal = animationFrame % 300;
@@ -16000,11 +16907,11 @@ void StageRuntime::drawBackground() const {
                 static_cast<double>(current) -
                 (static_cast<double>(current - next) / 300.0) * paletteLocal);
         }
-        drawScrolledTall(0, frameHandle(stageBack1cFrames_, 0), 360.0f,
+        drawScrolledTall(1, 0, frameHandle(stageBack1cFrames_, 0), 360.0f,
                          color[0], color[1], color[2], 255, 8.0f);
-        drawScrolledTall(1, frameHandle(stageBack1cFrames_, 1), 360.0f,
+        drawScrolledTall(2, 1, frameHandle(stageBack1cFrames_, 1), 360.0f,
                          color[0] / 3, color[1] / 3, color[2] / 3, 255, 4.8f);
-        drawScrolledTall(2, frameHandle(stageBack1Frames_, 3), 360.0f,
+        drawScrolledTall(4, 2, frameHandle(stageBack1Frames_, 3), 360.0f,
                          128, 128, 128, 192, 12.8f, true);
         if (frame_ < 12500 - 480) {
             const int fade = frame_ < 0
@@ -16015,7 +16922,7 @@ void StageRuntime::drawBackground() const {
                                         : 255);
             const float x = 360.0f + 80.0f * static_cast<float>(
                 std::sin(static_cast<double>(frame_) * kTau / 3300.0));
-            drawScrolledTall(2, frameHandle(stageBack1cFrames_, 2), x,
+            drawScrolledTall(0x14, 2, frameHandle(stageBack1cFrames_, 2), x,
                              fade, fade, fade, 255, 16.0f);
         }
         if (frame_ >= 12500 - 600 && frame_ < 12500 - 300) {
@@ -16023,7 +16930,7 @@ void StageRuntime::drawBackground() const {
             const double envelope = local < 120
                                         ? std::sin(static_cast<double>(local) * kPi / 240.0)
                                         : std::sin(static_cast<double>(300 - local) * kPi / 360.0);
-            drawScrolledTall(3, frameHandle(stageBack1Frames_, 2), 360.0f,
+            drawScrolledTall(0x18, 3, frameHandle(stageBack1Frames_, 2), 360.0f,
                              128, 128, 128,
                              static_cast<int>(255.0 * std::max(0.0, envelope)), 32.0f);
         }
@@ -16052,22 +16959,52 @@ void StageRuntime::drawBackground() const {
                 speed = 1.0f;
             }
             if (frame_ < 6001) {
-                drawScrolledTall(1, frameHandle(stageBack1Frames_, 4), 360.0f,
+                drawScrolledTall(1, 1, frameHandle(stageBack1Frames_, 4), 360.0f,
                                  255, 255, 255, 255, speed * 0.5f);
-                drawScrolledTall(2, frameHandle(stageBack1Frames_, 3), 360.0f,
+                drawScrolledTall(3, 2, frameHandle(stageBack1Frames_, 3), 360.0f,
                                  255, 255, 128, 128, speed * 7.0f);
             }
             if (frame_ < 401) {
-                drawScrolledTall(0, frameHandle(stageBack1Frames_, 2), 360.0f,
+                drawScrolledTall(4, 0, frameHandle(stageBack1Frames_, 2), 360.0f,
                                  128, 128, 128, layerAlpha, 32.0f);
             }
             if (frame_ >= 400) {
-                drawDedicatedTall(stage8Back1Handle_, 360.0f,
+                drawDedicatedTall(0x14, stage8Back1Handle_, 360.0f,
                                   static_cast<float>(frame_ - 400), true);
+            }
+
+            // case 8 queues StageBack2[4] as an additive, centered layer from
+            // frame 6000 through its 150-frame exit ending at frame 6900.
+            if (frame_ >= 6000) {
+                const int transition = frameHandle(stageBack2Frames_, 4);
+                int alpha = 0xff;
+                if (frame_ >= 0x1a5e) {
+                    alpha = static_cast<int>(
+                        std::sin(static_cast<double>(frame_ - 6600) *
+                                 kOriginalPi / 300.0) *
+                        255.0);
+                }
+                if (exactLayer == 1 && transition != -1 && alpha > 0) {
+                    int width = 0;
+                    int height = 0;
+                    if (GetGraphSize(transition, &width, &height) == 0 &&
+                        width > 0 && height > 0) {
+                        SetDrawBlendMode(DX_BLENDMODE_ADD,
+                                         std::clamp(alpha, 0, 255));
+                        DrawRotaGraph3F(
+                            static_cast<float>(
+                                static_cast<int>(screenX(360.0f))),
+                            360.0f,
+                            static_cast<float>(width) * 0.5f,
+                            static_cast<float>(height) * 0.5f,
+                            1.005, 1.005, 0.0, transition, TRUE);
+                        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+                    }
+                }
             }
         }
         if (frame_ >= 0x29cc) {
-            if (frame_ == 0x29cc && advanceLateScroll) {
+            if (exactLayer == 0 && frame_ == 0x29cc && advanceLateScroll) {
                 lateBackgroundScroll_.fill(0.0f);
             }
             int alpha = 0;
@@ -16086,8 +17023,17 @@ void StageRuntime::drawBackground() const {
                                   std::sin(static_cast<double>(
                                                frame_ - (kEndFrame - 720)) *
                                            kOriginalPi / 240.0) *
-                                  255.0)
+                                           255.0)
                             : 0;
+            }
+            if (frame_ >= kEndFrame - 300) {
+                alpha = frame_ < kEndFrame
+                            ? static_cast<int>(
+                                  std::sin(static_cast<double>(
+                                               frame_ - (kEndFrame - 300)) *
+                                           kOriginalPi / 600.0) *
+                                  255.0)
+                            : 255;
             }
             float speed = 0.0f;
             if (frame_ > 0x29cc && frame_ < 0x300c) {
@@ -16104,35 +17050,33 @@ void StageRuntime::drawBackground() const {
                                      1.0f, 12.0f);
             }
             if (frame_ >= kEndFrame) {
-                const auto boss = std::find_if(enemies_.begin(), enemies_.end(),
-                                               [](const StageEnemy& enemy) {
-                                                   return enemy.active &&
-                                                          enemy.spawnType == 0x13f;
-                                               });
-                if (boss != enemies_.end() && boss->helperState > 10) {
+                if (backgroundStageGateOpen_ &&
+                    backgroundStage08BossState_ > 10) {
                     speed = 10.0f;
-                    if (boss->helperState == 11 && boss->helperTimer >= 0 &&
-                        boss->helperTimer < 300) {
+                    if (backgroundStage08BossState_ == 11 &&
+                        backgroundStage08BossTimer_ >= 0 &&
+                        backgroundStage08BossTimer_ < 300) {
                         speed = 1.0f + static_cast<float>(
-                                           std::sin(static_cast<double>(boss->helperTimer) *
+                                           std::sin(static_cast<double>(
+                                                        backgroundStage08BossTimer_) *
                                                     kOriginalPi / 600.0) *
                                            9.0);
                     }
                 }
             }
-            drawScrolledTall(0, frameHandle(stageBack1cFrames_, 3), 360.0f,
+            drawScrolledTall(1, 0, frameHandle(stageBack1cFrames_, 3), 360.0f,
                              255, 255, 255, alpha, speed * 0.3f);
             if (frame_ < kEndFrame - 480) {
-                drawScrolledTall(1, frameHandle(stageBack1cFrames_, 4), 360.0f,
+                drawScrolledTall(2, 1, frameHandle(stageBack1cFrames_, 4), 360.0f,
                                  255, 255, 255,
                                  static_cast<int>(alpha * 0.6), speed * 0.5f);
                 constexpr std::array<int, 4> kVariantFrames{{5, 6, 10, 11}};
                 const int variant = kVariantFrames[static_cast<std::size_t>(
                     std::clamp(config_.language, 0, 3))];
-                drawScrolledTall(2, frameHandle(stageBack1cFrames_, variant), 360.0f,
+                drawScrolledTall(3, 2, frameHandle(stageBack1cFrames_, variant), 360.0f,
                                  255, 255, 255,
                                  static_cast<int>(alpha * 0.8), speed * 0.7f);
-                drawScrolledTall(3, frameHandle(stageBack1Frames_, 1), 360.0f,
+                drawScrolledTall(4, 3, frameHandle(stageBack1Frames_, 1), 360.0f,
                                  64, 255, 192,
                                  static_cast<int>(alpha * 0.3), speed * 1.5f);
             }
@@ -16142,22 +17086,56 @@ void StageRuntime::drawBackground() const {
                                                          frame_ - (kEndFrame - 300)) *
                                                      kOriginalPi / 600.0)
                                           : 1.0;
-                drawScrolledTall(3, frameHandle(stageBack1cFrames_, 7), 360.0f,
+                drawScrolledTall(2, 3, frameHandle(stageBack1cFrames_, 7), 360.0f,
                                  0, static_cast<int>(amount * 255.0 * 0.3),
                                  static_cast<int>(amount * 192.0 * 0.3), 255,
                                  speed * 0.5f);
-                drawScrolledTall(2, frameHandle(stageBack1cFrames_, 8), 360.0f,
+                drawScrolledTall(3, 2, frameHandle(stageBack1cFrames_, 8), 360.0f,
                                  0, static_cast<int>(amount * 255.0 * 0.55),
                                  static_cast<int>(amount * 192.0 * 0.55), 255,
                                  speed * 0.8f);
-                drawScrolledTall(1, frameHandle(stageBack1cFrames_, 9), 360.0f,
+                drawScrolledTall(4, 1, frameHandle(stageBack1cFrames_, 9), 360.0f,
                                  0, static_cast<int>(amount * 255.0 * 0.8),
                                  static_cast<int>(amount * 192.0 * 0.8), 255,
                                  speed * 1.2f);
             }
             if (frame_ >= 0x2a30 && frame_ <= kEndFrame) {
-                drawDedicatedTall(stage8Back2Handle_, 360.0f,
+                drawDedicatedTall(0x14, stage8Back2Handle_, 360.0f,
                                   static_cast<float>(frame_ - 0x2a30), true);
+            }
+
+            // The original appends four mode-7 Effect_l[5] nodes for each of
+            // seven offsets. Unlike the Stage 3/9 family these are normal
+            // alpha-blended and include both top and bottom mirrors.
+            const int particle = frameHandle(effectLargeFrames_, 5);
+            const int particleAlpha = alpha / 10;
+            if (exactLayer == 6 && particle != -1 && particleAlpha > 0) {
+                const int animationFrame =
+                    std::max(player_.drawAnimationClock, 0);
+                const float originX = static_cast<float>(
+                    static_cast<int>(screenX(0.0f)));
+                SetDrawBright(0x40, 0xff, 0xff);
+                SetDrawBlendMode(DX_BLENDMODE_ALPHA, particleAlpha);
+                for (int i = 0; i < 7; ++i) {
+                    const float edge = static_cast<float>(
+                        animationFrame % 0x78 + i * 0x78);
+                    const float vertical = static_cast<float>(
+                        animationFrame % 0xa0 + i * 0xa0);
+                    DrawRotaGraph3F(originX + edge, 360.0f,
+                                    300.0f, 300.0f, 2.0, 1.0,
+                                    kPi * 0.5, particle, TRUE);
+                    DrawRotaGraph3F(originX + 720.0f - edge, 360.0f,
+                                    300.0f, 300.0f, 2.0, 1.0,
+                                    kPi * 0.5, particle, TRUE);
+                    DrawRotaGraph3F(originX + 360.0f, vertical,
+                                    300.0f, 300.0f, 2.0, 1.0,
+                                    0.0, particle, TRUE);
+                    DrawRotaGraph3F(originX + 360.0f, 720.0f - vertical,
+                                    300.0f, 300.0f, 2.0, 1.0,
+                                    0.0, particle, TRUE);
+                }
+                SetDrawBright(255, 255, 255);
+                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
             }
         }
     }
@@ -16176,7 +17154,8 @@ void StageRuntime::drawBackground() const {
         }
         if (colorIndex >= 0 && frame_ < 16099) {
             const auto& target = kTargets[static_cast<std::size_t>(colorIndex)];
-            const int defeatFrame = stage09BossDefeatFrames_[static_cast<std::size_t>(colorIndex)];
+            const int defeatFrame =
+                backgroundStage09BossDefeatFrames_[static_cast<std::size_t>(colorIndex)];
             const bool returning = defeatFrame >= 0 && frame_ >= defeatFrame;
             const int local = returning ? frame_ - defeatFrame
                                         : frame_ - kColorStart[static_cast<std::size_t>(colorIndex)];
@@ -16201,56 +17180,81 @@ void StageRuntime::drawBackground() const {
                 alpha = static_cast<int>(255.0 * std::sin(
                     static_cast<double>(frame_ - (kEndFrame - 720)) * kPi / 240.0));
             }
-            drawScrolledTall(0, frameHandle(stageBack1dFrames_, 0), 360.0f,
+            drawScrolledTall(1, 0, frameHandle(stageBack1dFrames_, 0), 360.0f,
                              color[0], color[1], color[2], alpha, 3.0);
-            drawScrolledTall(1, frameHandle(stageBack1dFrames_, 1), 360.0f,
+            drawScrolledTall(2, 1, frameHandle(stageBack1dFrames_, 1), 360.0f,
                              color[0], color[1], color[2], alpha, 7.0);
-            drawScrolledTall(2, frameHandle(stageBack1dFrames_, 2), 360.0f,
+            drawScrolledTall(4, 2, frameHandle(stageBack1dFrames_, 2), 360.0f,
                              color[0], color[1], color[2], alpha, 10.0);
         }
         else {
-            const auto boss = std::find_if(enemies_.begin(), enemies_.end(),
-                                           [](const StageEnemy& enemy) {
-                                               return enemy.active && enemy.spawnType == 0x140;
-                                           });
-            if (boss != enemies_.end() && boss->helperState >= 11) {
-                double speed = 16.0;
-                if ((boss->helperState == 11 || boss->helperState == 111) &&
-                    boss->helperTimer < 300) {
-                    speed = 16.0 * std::sin(
-                                       static_cast<double>(std::max(0, boss->helperTimer)) *
-                                       kPi / 600.0);
-                }
-                drawScrolledTall(0, frameHandle(stageBack1dFrames_, 0), 360.0f,
-                                 kBase[0], kBase[1], kBase[2], 255, 0.3 * speed);
-                drawScrolledTall(1, frameHandle(stageBack1cFrames_, 7), 360.0f,
-                                 static_cast<int>(kBase[0] * 0.3),
-                                 static_cast<int>(kBase[1] * 0.3),
-                                 static_cast<int>(kBase[2] * 0.3), 255, 0.5 * speed);
-                drawScrolledTall(2, frameHandle(stageBack1cFrames_, 8), 360.0f,
-                                 static_cast<int>(kBase[0] * 0.55),
-                                 static_cast<int>(kBase[1] * 0.55),
-                                 static_cast<int>(kBase[2] * 0.55), 255, 0.8 * speed);
-                drawScrolledTall(3, frameHandle(stageBack1cFrames_, 9), 360.0f,
-                                 static_cast<int>(kBase[0] * 0.8),
-                                 static_cast<int>(kBase[1] * 0.8),
-                                 static_cast<int>(kBase[2] * 0.8), 255, 1.2 * speed);
+            double amount = 0.0;
+            if (frame_ >= kEndFrame) {
+                amount = 1.0;
             }
+            else if (frame_ >= kEndFrame - 300) {
+                amount = std::sin(
+                    static_cast<double>(frame_ - (kEndFrame - 300)) *
+                    kOriginalPi / 600.0);
+            }
+
+            double speed = 10.0 - 10.0 * std::sin(
+                static_cast<double>(frame_ - (kEndFrame - 480)) *
+                kOriginalPi / 960.0);
+            if (frame_ >= kEndFrame) {
+                speed = 0.0;
+            }
+            if (frame_ >= kEndFrame && backgroundStageGateOpen_ &&
+                backgroundStage09BossState_ >= 11) {
+                speed = 16.0;
+                if ((backgroundStage09BossState_ == 11 ||
+                     backgroundStage09BossState_ == 111) &&
+                    backgroundStage09BossTimer_ < 300) {
+                    speed = 16.0 * std::sin(
+                                       static_cast<double>(std::max(
+                                           0, backgroundStage09BossTimer_)) *
+                                       kOriginalPi / 600.0);
+                }
+            }
+
+            drawScrolledTall(1, 0, frameHandle(stageBack1dFrames_, 0), 360.0f,
+                             kBase[0], kBase[1], kBase[2],
+                             static_cast<int>(amount * 255.0),
+                             static_cast<float>(0.3 * speed));
+            drawScrolledTall(2, 1, frameHandle(stageBack1cFrames_, 7), 360.0f,
+                             static_cast<int>(kBase[0] * amount * 0.3),
+                             static_cast<int>(kBase[1] * amount * 0.3),
+                             static_cast<int>(kBase[2] * amount * 0.3), 255,
+                             static_cast<float>(0.5 * speed));
+            drawScrolledTall(3, 2, frameHandle(stageBack1cFrames_, 8), 360.0f,
+                             static_cast<int>(kBase[0] * amount * 0.55),
+                             static_cast<int>(kBase[1] * amount * 0.55),
+                             static_cast<int>(kBase[2] * amount * 0.55), 255,
+                             static_cast<float>(0.8 * speed));
+            drawScrolledTall(4, 3, frameHandle(stageBack1cFrames_, 9), 360.0f,
+                             static_cast<int>(kBase[0] * amount * 0.8),
+                             static_cast<int>(kBase[1] * amount * 0.8),
+                             static_cast<int>(kBase[2] * amount * 0.8), 255,
+                             static_cast<float>(1.2 * speed));
         }
 
         const int particle = frameHandle(effectLargeFrames_, 5);
-        if (particle != -1) {
+        if (exactLayer == 5 && particle != -1) {
             SetDrawBright(color[0], color[1], color[2]);
             SetDrawBlendMode(DX_BLENDMODE_ADD, 48);
+            const int animationFrame =
+                std::max(player_.drawAnimationClock, 0);
             for (int i = 0; i < 7; ++i) {
-                const float edge = static_cast<float>((std::max(frame_, 0) * 2) % 150 + i * 150);
-                const float top = static_cast<float>((std::max(frame_, 0) * 15) % 200 + i * 200);
+                const float edge = static_cast<float>(
+                    (animationFrame * 2) % 150 + i * 150);
+                const float top = static_cast<float>(
+                    (animationFrame * 15) % 200 + i * 200);
                 const float originX = static_cast<float>(
-                    notes::gameplay_layout::kStageBackOrigin.x);
+                    static_cast<int>(screenX(0.0f)));
                 DrawRotaGraph3F(originX + edge, 360.0f, 300.0f, 300.0f,
-                                2.0, 1.0, 0.0, particle, TRUE);
+                                2.0, 1.0, kPi * 0.5, particle, TRUE);
                 DrawRotaGraph3F(originX + 720.0f - edge, 360.0f, 300.0f, 300.0f,
-                                2.0, 1.0, 0.0, particle, TRUE);
+                                2.0, 1.0, kPi * 0.5, particle, TRUE);
                 DrawRotaGraph3F(originX + 360.0f, top, 300.0f, 300.0f,
                                 2.0, 1.0, 0.0, particle, TRUE);
             }
@@ -16265,41 +17269,38 @@ void StageRuntime::drawBackground() const {
                                         ? 10.0 - 8.0 * std::sin(
                                               static_cast<double>(frame_) * kPi / 960.0)
                                         : 2.0);
-        drawScrolledTall(0, frameHandle(stageBack1dFrames_, 3), 360.0f,
+        drawScrolledTall(1, 0, frameHandle(stageBack1dFrames_, 3), 360.0f,
                          255, 255, 255, 255, static_cast<float>(speed * 0.4));
-        drawScrolledTall(1, frameHandle(stageBack1dFrames_, 4), 360.0f,
+        drawScrolledTall(1, 1, frameHandle(stageBack1dFrames_, 4), 360.0f,
                          255, 255, 255, 255, static_cast<float>(speed));
-        drawScrolledTall(2, frameHandle(stageBack1dFrames_, 5), 360.0f,
+        drawScrolledTall(3, 2, frameHandle(stageBack1dFrames_, 5), 360.0f,
                          255, 255, 255, 255, 16.0f);
     }
 
-    lateBackgroundScrollFrame_ = frame_;
+    if (exactLayer == 0x18) {
+        lateBackgroundScrollFrame_ = frame_;
+    }
 
-    if (!stageFrameFrames_.empty() && stageFrameFrames_.front() != -1) {
-        const int frameIndex = (config_.routeMode == 2 && stageFrameFrames_.size() > 1) ? 1 : 0;
-        DrawGraph(notes::gameplay_layout::kStageFrameRect.x, notes::gameplay_layout::kStageFrameRect.y, stageFrameFrames_[static_cast<std::size_t>(frameIndex)], TRUE);
-    }
-    else {
-        DrawBox(notes::gameplay_layout::kStageFrameRect.x, notes::gameplay_layout::kStageFrameRect.y,
-                notes::gameplay_layout::kStageFrameRect.right(), notes::gameplay_layout::kStageFrameRect.bottom(),
-                GetColor(12, 12, 28), FALSE);
-    }
 }
 
-void StageRuntime::drawPlayerSideObjects() const {
+void StageRuntime::drawPlayerSideObjects(PlayerSideDrawPass pass) const {
     const auto frameHandle = [](const std::vector<int>& frames, int index) {
         return index >= 0 && index < static_cast<int>(frames.size())
                    ? frames[static_cast<std::size_t>(index)]
                    : -1;
     };
     const auto drawEffect = [&](const std::vector<int>& frames, int index, float x, float y,
-                                double scale, std::uint16_t angle16, int alpha) {
+                                double scale, std::uint16_t angle16, int alpha,
+                                bool additive = false) {
         const int handle = frameHandle(frames, index);
         if (handle == -1 || alpha <= 0 || scale <= 0.0) {
             return;
         }
-        SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(alpha, 0, 255));
-        DrawRotaGraphF(x, y, scale, fixedAngleToRadians(angle16), handle, TRUE);
+        SetDrawBlendMode(additive ? DX_BLENDMODE_ADD : DX_BLENDMODE_ALPHA,
+                         std::clamp(alpha, 0, 255));
+        DrawRotaGraphF(static_cast<float>(static_cast<int>(x)),
+                       static_cast<float>(static_cast<int>(y)),
+                       scale, fixedAngleToRadians(angle16), handle, TRUE);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     };
     const auto drawWhiteFlash = [this](int alpha) {
@@ -16325,14 +17326,17 @@ void StageRuntime::drawPlayerSideObjects() const {
         SetDrawBright(std::clamp(red, 0, 255), std::clamp(green, 0, 255),
                       std::clamp(blue, 0, 255));
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(alpha, 0, 255));
-        DrawRotaGraph3F(x, y, static_cast<float>(width) * 0.5f,
+        DrawRotaGraph3F(static_cast<float>(static_cast<int>(x)),
+                        static_cast<float>(static_cast<int>(y)),
+                        static_cast<float>(width) * 0.5f,
                         static_cast<float>(height) * 0.5f,
                         scaleX, scaleY, fixedAngleToRadians(angle16), handle, TRUE);
         SetDrawBright(255, 255, 255);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     };
 
-    if (pauseFlowState_ != PauseFlowState::GameOverDelay &&
+    if (pass == PlayerSideDrawPass::Normal &&
+        pauseFlowState_ != PauseFlowState::GameOverDelay &&
         pauseFlowState_ != PauseFlowState::GameOverPresentation) {
         constexpr std::array<int, 4> kGroup1OptionFrames{{0x5f, 0x60, 0x61, 0x60}};
         const int group = std::clamp(config_.setupGroup, 0, 2);
@@ -16354,6 +17358,23 @@ void StageRuntime::drawPlayerSideObjects() const {
     }
 
     for (const auto& object : playerSideObjects_) {
+        const bool normalType = object.type >= 0 && object.type <= 0x0a;
+        const bool flashType = object.type == 0x0b || object.type == 0x0e ||
+                               object.type == 0x0f || object.type == 0x11 ||
+                               object.type == 0x12 || object.type == 0x15;
+        const bool coreType = object.type == 0x0c || object.type == 0x0d ||
+                              object.type == 0x0e || object.type == 0x10 ||
+                              object.type == 0x14 || object.type == 0x15 ||
+                              object.type == 0x16;
+        const bool ringType = object.type >= 0x17 && object.type <= 0x1a;
+        const bool selected =
+            (pass == PlayerSideDrawPass::Normal && normalType) ||
+            (pass == PlayerSideDrawPass::Flash && flashType) ||
+            (pass == PlayerSideDrawPass::Core && coreType) ||
+            (pass == PlayerSideDrawPass::Ring && ringType);
+        if (!selected) {
+            continue;
+        }
         const float x = screenX(object.x);
         const float y = screenY(object.y);
         const int drawAge = std::max(0, object.age - 1);
@@ -16400,11 +17421,13 @@ void StageRuntime::drawPlayerSideObjects() const {
                                  object.drawAngle16,
                                  red, green, blue, alpha);
             }
-            else {
-                const int color = object.type <= 1 ? GetColor(120, 220, 255) : GetColor(180, 255, 180);
-                DrawCircle(static_cast<int>(x), static_cast<int>(y),
-                           object.type <= 1 ? 6 : 4, color, TRUE);
-            }
+            continue;
+        }
+        if (pass == PlayerSideDrawPass::Flash) {
+            const int lifetime = object.type == 0x11
+                                     ? 600
+                                     : (object.type == 0x15 ? 240 : 180);
+            drawWhiteFlash(rootFlashAlpha(drawAge, lifetime));
             continue;
         }
 
@@ -16415,27 +17438,21 @@ void StageRuntime::drawPlayerSideObjects() const {
         case 0x0c: {
             const double scale = drawAge < 8 ? sineEaseIn(drawAge, 8, 1.0f) : 1.0;
             drawEffect(effectMediumFrames_, 6, x, y, scale,
-                       normalizeAngle16(frame_ * 999), 255);
+                       normalizeAngle16(player_.drawAnimationClock * 999), 255);
             break;
         }
         case 0x0d:
             drawEffect(effectLargeFrames_, 1, x, y,
                        object.collisionRadiusOrScale / 180.0,
-                       normalizeAngle16(frame_ * 2000), 192);
+                       normalizeAngle16(player_.drawAnimationClock * 2000), 192);
             break;
         case 0x0e:
-            drawWhiteFlash(rootFlashAlpha(drawAge, 180));
             if (drawAge < 30) {
                 const double scale = drawAge < 20
                                          ? sineEaseIn(drawAge, 20, 1.0f)
                                          : sineEaseOut(drawAge - 20, 10, 1.0f);
                 drawEffect(effectMediumFrames_, 6, x, y, scale,
-                           normalizeAngle16(frame_ * 999), 255);
-            }
-            else {
-                drawEffect(effectLargeFrames_, 2 + ((drawAge / 8) & 1), x, y,
-                           object.collisionRadiusOrScale / 250.0,
-                           normalizeAngle16(drawAge * 0x400), 255);
+                           normalizeAngle16(player_.drawAnimationClock * 999), 255);
             }
             break;
         case 0x0f:
@@ -16458,27 +17475,41 @@ void StageRuntime::drawPlayerSideObjects() const {
                                   : static_cast<int>(sineEaseOut(drawAge - 24, 6, 192.0f));
             drawEffect(effectMediumFrames_, 12, x, y,
                        object.collisionRadiusOrScale / 75.0,
-                       object.angle16, alpha);
+                       object.angle16, alpha, true);
             break;
         }
         case 0x15: {
-            const int ambientAlpha = rootFlashAlpha(drawAge, 240);
             const int fieldAlpha = drawAge < 32
                                        ? static_cast<int>(sineEaseIn(drawAge, 32, 48.0f))
                                        : (drawAge >= 224
                                               ? static_cast<int>(sineEaseOut(drawAge - 224, 16, 48.0f))
                                               : 48);
-            drawWhiteFlash(ambientAlpha);
-            SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(fieldAlpha, 0, 255));
+            SetDrawBlendMode(DX_BLENDMODE_ADD, std::clamp(fieldAlpha, 0, 255));
             const int edgeHandle = frameHandle(effectLargeFrames_, 5);
             if (edgeHandle != -1) {
                 for (int i = 0; i < 7; ++i) {
                     const float horizontal = static_cast<float>((drawAge * 3) % 120 + i * 120);
                     const float vertical = static_cast<float>((drawAge * 3) % 160 + i * 160);
-                    DrawRotaGraphF(screenX(horizontal), screenY(360.0f), 1.0, kPi * 0.5f, edgeHandle, TRUE);
-                    DrawRotaGraphF(screenX(720.0f - horizontal), screenY(360.0f), 1.0, kPi * 0.5f, edgeHandle, TRUE);
-                    DrawRotaGraphF(screenX(360.0f), screenY(vertical), 1.0, 0.0, edgeHandle, TRUE);
-                    DrawRotaGraphF(screenX(360.0f), screenY(720.0f - vertical), 1.0, 0.0, edgeHandle, TRUE);
+                    DrawRotaGraph3F(
+                                    static_cast<float>(static_cast<int>(screenX(horizontal))),
+                                    static_cast<float>(static_cast<int>(screenY(360.0f))),
+                                    300.0f, 300.0f, 2.0, 1.0,
+                                    kPi * 0.5f, edgeHandle, TRUE);
+                    DrawRotaGraph3F(
+                                    static_cast<float>(static_cast<int>(screenX(720.0f - horizontal))),
+                                    static_cast<float>(static_cast<int>(screenY(360.0f))),
+                                    300.0f, 300.0f, 2.0, 1.0,
+                                    kPi * 0.5f, edgeHandle, TRUE);
+                    DrawRotaGraph3F(
+                                    static_cast<float>(static_cast<int>(screenX(360.0f))),
+                                    static_cast<float>(static_cast<int>(screenY(vertical))),
+                                    300.0f, 300.0f, 2.0, 1.0,
+                                    0.0, edgeHandle, TRUE);
+                    DrawRotaGraph3F(
+                                    static_cast<float>(static_cast<int>(screenX(360.0f))),
+                                    static_cast<float>(static_cast<int>(screenY(720.0f - vertical))),
+                                    300.0f, 300.0f, 2.0, 1.0,
+                                    0.0, edgeHandle, TRUE);
                 }
             }
             SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
@@ -16496,7 +17527,7 @@ void StageRuntime::drawPlayerSideObjects() const {
                            x + std::cos(angle) * radius,
                            y + std::sin(angle) * radius,
                            object.collisionRadiusOrScale / 250.0,
-                           normalizeAngle16(drawAge * 0x29a), 255);
+                           normalizeAngle16(drawAge * 0x29a), 255, true);
             }
             break;
         }
@@ -16506,10 +17537,10 @@ void StageRuntime::drawPlayerSideObjects() const {
                                   : static_cast<int>(sineEaseOut(drawAge - 80, 16, 255.0f));
             drawEffect(effectLargeFrames_, 6, x, y,
                        object.collisionRadiusOrScale / 200.0,
-                       normalizeAngle16(drawAge * 0x400), alpha);
+                       normalizeAngle16(drawAge * 0x400), alpha, true);
             drawEffect(effectLargeFrames_, 6, x, y,
                        object.collisionRadiusOrScale / 200.0,
-                       normalizeAngle16(-drawAge * 0x400), alpha);
+                       normalizeAngle16(-drawAge * 0x400), alpha, true);
             break;
         }
         case 0x17:
@@ -16518,7 +17549,7 @@ void StageRuntime::drawPlayerSideObjects() const {
                                   ? 255
                                   : static_cast<int>(sineEaseOut(drawAge - 32, 16, 255.0f));
             drawEffect(effectLargeFrames_, 0, x, y,
-                       object.collisionRadiusOrScale / 250.0, 0, alpha);
+                       object.collisionRadiusOrScale / 250.0, 0, alpha, true);
             break;
         }
         case 0x19: {
@@ -16526,7 +17557,7 @@ void StageRuntime::drawPlayerSideObjects() const {
                                   ? 255
                                   : static_cast<int>(sineEaseOut(drawAge - 16, 8, 255.0f));
             drawEffect(effectLargeFrames_, 0, x, y,
-                       object.collisionRadiusOrScale / 250.0, 0, alpha);
+                       object.collisionRadiusOrScale / 250.0, 0, alpha, true);
             break;
         }
         case 0x1a: {
@@ -16534,28 +17565,106 @@ void StageRuntime::drawPlayerSideObjects() const {
                                   ? 96
                                   : static_cast<int>(sineEaseOut(drawAge - 16, 8, 96.0f));
             drawEffect(effectMediumFrames_, 5, x, y,
-                       object.collisionRadiusOrScale / 75.0, 0, alpha);
+                       object.collisionRadiusOrScale / 75.0, 0, alpha, true);
             break;
         }
         default:
-            DrawCircle(static_cast<int>(x), static_cast<int>(y),
-                       std::max(1, static_cast<int>(object.collisionRadiusOrScale)),
-                       GetColor(180, 255, 180), FALSE);
             break;
         }
     }
 }
 
-void StageRuntime::drawPlayer() const {
+void StageRuntime::drawPlayerBody() const {
     if (pauseFlowState_ == PauseFlowState::GameOverDelay ||
-        pauseFlowState_ == PauseFlowState::GameOverPresentation) {
+        pauseFlowState_ == PauseFlowState::GameOverPresentation ||
+        (player_.playerStateTimer >= 180 && player_.playerStateTimer < 260)) {
         return;
     }
-    if (player_.playerStateTimer >= 180 && player_.playerStateTimer < 260) {
+    const int frameIndex = player_.visualFrame;
+    if (frameIndex < 0 || frameIndex >= static_cast<int>(playerFrames_.size())) {
         return;
     }
-    const float x = screenX(player_.x);
-    const float y = screenY(player_.y);
+    const int frame = playerFrames_[static_cast<std::size_t>(frameIndex)];
+    if (frame == -1) {
+        return;
+    }
+    // FUN_1400c8530 truncates mode-7/8 coordinates after applying the stage
+    // camera translation. Keep that final integer point for every player node.
+    const float x = static_cast<float>(static_cast<int>(screenX(player_.x)));
+    const float y = static_cast<float>(static_cast<int>(screenY(player_.y)));
+    DrawRotaGraphF(x, y, 1.0, 0.0, frame, TRUE);
+
+    if (player_.specialGauge < 0 || player_.specialGauge >= 50000) {
+        constexpr std::array<std::array<int, 3>, 7> kFeverColors{{
+            {{255, 120, 120}}, {{255, 200, 110}}, {{255, 255, 120}},
+            {{120, 255, 120}}, {{120, 255, 255}}, {{120, 120, 255}},
+            {{220, 120, 255}},
+        }};
+        const int colorClock = std::max(player_.drawAnimationClock, 0);
+        const int colorIndex =
+            (colorClock / 20) % static_cast<int>(kFeverColors.size());
+        const int nextColorIndex =
+            (colorIndex + 1) % static_cast<int>(kFeverColors.size());
+        const int colorStep = colorClock % 20;
+        const auto channel = [&](std::size_t index) {
+            const int current =
+                kFeverColors[static_cast<std::size_t>(colorIndex)][index];
+            const int next =
+                kFeverColors[static_cast<std::size_t>(nextColorIndex)][index];
+            return static_cast<int>(
+                static_cast<double>(current) -
+                (static_cast<double>(current - next) / 20.0) *
+                    static_cast<double>(colorStep));
+        };
+        const int alpha = 0x60 - static_cast<int>(
+            std::sin(static_cast<double>(colorClock) *
+                     static_cast<double>(kPi) / 15.0) * -96.0);
+        SetDrawBright(channel(0), channel(1), channel(2));
+        SetDrawBlendMode(DX_BLENDMODE_ADD, std::clamp(alpha, 0, 255));
+        DrawRotaGraphF(x, y, 1.0, 0.0, frame, TRUE);
+        SetDrawBright(0xff, 0xff, 0xff);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    }
+
+    if (player_.drawInvulnerabilityOverlay) {
+        const int overlayIndex = frameIndex + 15;
+        if (overlayIndex >= 0 &&
+            overlayIndex < static_cast<int>(playerFrames_.size())) {
+            const int overlay =
+                playerFrames_[static_cast<std::size_t>(overlayIndex)];
+            if (overlay != -1) {
+                DrawRotaGraphF(x, y, 1.0, 0.0, overlay, TRUE);
+            }
+        }
+    }
+
+    if (player_.playerStateTimer > 259 && effectMediumFrames_.size() > 4) {
+        const int hitEntryOverlay = effectMediumFrames_[4];
+        if (hitEntryOverlay != -1) {
+            const double scale =
+                static_cast<double>(player_.playerStateTimer - 260) * 0.05;
+            SetDrawBright(0xff, 0, 0);
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0xff);
+            DrawRotaGraphF(x, y, scale, 0.0, hitEntryOverlay, TRUE);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            SetDrawBright(0xff, 0xff, 0xff);
+        }
+    }
+}
+
+void StageRuntime::drawPlayer(PlayerOverlayDrawPass pass) const {
+    if (pauseFlowState_ == PauseFlowState::GameOverPresentation) {
+        return;
+    }
+    if (pauseFlowState_ == PauseFlowState::GameOverDelay ||
+        (player_.playerStateTimer >= 180 && player_.playerStateTimer < 260)) {
+        if (pass == PlayerOverlayDrawPass::MarkerRing) {
+            drawPlayerSideObjects(PlayerSideDrawPass::Ring);
+        }
+        return;
+    }
+    const float x = static_cast<float>(static_cast<int>(screenX(player_.x)));
+    const float y = static_cast<float>(static_cast<int>(screenY(player_.y)));
     const auto frameHandle = [this](int index) {
         return index >= 0 && index < static_cast<int>(playerFrames_.size())
                    ? playerFrames_[static_cast<std::size_t>(index)]
@@ -16581,29 +17690,10 @@ void StageRuntime::drawPlayer() const {
     const std::array<int, 3> feverColor{{
         feverChannel(0), feverChannel(1), feverChannel(2),
     }};
-    const int frame = frameHandle(player_.visualFrame);
-    if (frame != -1) {
-        DrawRotaGraphF(x, y, 1.0, 0.0, frame, TRUE);
-    }
-    if (frame != -1 && (player_.specialGauge < 0 || player_.specialGauge >= 50000)) {
-        const int alpha = 0x60 - static_cast<int>(
-            std::sin(static_cast<double>(colorClock) *
-                     static_cast<double>(kPi) / 15.0) * -96.0);
-        SetDrawBright(feverColor[0], feverColor[1], feverColor[2]);
-        SetDrawBlendMode(DX_BLENDMODE_ADD, std::clamp(alpha, 0, 255));
-        DrawRotaGraphF(x, y, 1.0, 0.0, frame, TRUE);
-        SetDrawBright(255, 255, 255);
-        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-    }
-    if (player_.drawInvulnerabilityOverlay) {
-        const int overlay = frameHandle(player_.visualFrame + 15);
-        if (overlay != -1) {
-            DrawRotaGraphF(x, y, 1.0, 0.0, overlay, TRUE);
-        }
-    }
-
+    int stageShade = 0xff;
+    double bandPercent = 100.0;
+    std::array<int, 3> gaugeFillColor{{stageShade, stageShade, stageShade}};
     if (!dreamGaugeFrames_.empty()) {
-        int stageShade = 0xff;
         if (selectedStage_ == 2 || selectedStage_ == 6 || selectedStage_ == 10) {
             stageShade = 0x60;
         }
@@ -16614,7 +17704,6 @@ void StageRuntime::drawPlayer() const {
         const int mentalLevel = std::clamp(player_.tokenStock, 0, 3);
         const int threshold = stockThresholdForCurrentConfig();
         const int bandFloor = mentalLevel * threshold;
-        double bandPercent = 100.0;
         if (mentalLevel < 3 && threshold > 0) {
             bandPercent = std::clamp(
                 static_cast<double>(player_.stockProgress - bandFloor) /
@@ -16622,174 +17711,190 @@ void StageRuntime::drawPlayer() const {
                 0.0, 100.0);
         }
 
-        int fillRed = stageShade;
-        int fillGreen = stageShade;
-        int fillBlue = stageShade;
+        gaugeFillColor = {{stageShade, stageShade, stageShade}};
         if (mentalLevel == 1) {
-            fillRed = 0x80;
-            fillGreen = 0xff;
-            fillBlue = 0x80;
+            gaugeFillColor = {{0x80, 0xff, 0x80}};
         }
         else if (mentalLevel == 2) {
-            fillRed = 0x80;
-            fillGreen = 0xff;
-            fillBlue = 0xff;
+            gaugeFillColor = {{0x80, 0xff, 0xff}};
         }
         else if (mentalLevel == 3) {
-            fillRed = (player_.drawAnimationClock & 1) == 0 ? 0x80 : 0xff;
-            fillGreen = 0xff;
-            fillBlue = 0xff;
+            gaugeFillColor = {{
+                (player_.drawAnimationClock & 1) == 0 ? 0x80 : 0xff,
+                0xff,
+                0xff,
+            }};
+        }
+    }
+
+    if (pass == PlayerOverlayDrawPass::MarkerRing) {
+        if (std::clamp(config_.setupGroup, 0, 2) == 0 &&
+            config_.optionSlots[1] == 0 && player_.focused &&
+            effectMediumFrames_.size() > 16 && effectMediumFrames_[16] != -1) {
+            SetDrawBright(0xff, 0x40, 0x40);
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x40);
+            for (int targetId : player_.optionTargetEntityIds) {
+                if (targetId == 0) {
+                    continue;
+                }
+                const auto target = std::find_if(
+                    enemies_.begin(), enemies_.end(),
+                    [targetId](const StageEnemy& enemy) {
+                        return enemy.entityId == targetId;
+                    });
+                if (target == enemies_.end() || !target->active ||
+                    !target->targetable) {
+                    continue;
+                }
+                const double scale =
+                    static_cast<double>(std::max(0, target->radius)) / 100.0 *
+                    (1.0 + 0.1 * std::sin(
+                        static_cast<double>(player_.drawAnimationClock) *
+                        static_cast<double>(kPi) / 5.0));
+                if (scale > 0.0) {
+                    DrawRotaGraphF(
+                        static_cast<float>(static_cast<int>(screenX(target->x))),
+                        static_cast<float>(static_cast<int>(screenY(target->y))), scale,
+                        fixedAngleToRadians(normalizeAngle16(
+                            player_.drawAnimationClock * 0x29a)),
+                        effectMediumFrames_[16], TRUE);
+                }
+            }
+            SetDrawBright(0xff, 0xff, 0xff);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         }
 
-        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x80);
+        drawPlayerSideObjects(PlayerSideDrawPass::Ring);
+        return;
+    }
+
+    if (pass == PlayerOverlayDrawPass::GaugeFill) {
         if (dreamGaugeFrames_.size() > 1 && dreamGaugeFrames_[1] != -1) {
-            SetDrawBright(fillRed, fillGreen, fillBlue);
+            SetDrawBright(gaugeFillColor[0], gaugeFillColor[1], gaugeFillColor[2]);
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x80);
             DrawCircleGauge(static_cast<int>(x), static_cast<int>(y), bandPercent,
                             dreamGaugeFrames_[1]);
+            SetDrawBright(0xff, 0xff, 0xff);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         }
-        if (dreamGaugeFrames_[0] != -1) {
+        return;
+    }
+
+    if (pass == PlayerOverlayDrawPass::GaugeFrame) {
+        if (!dreamGaugeFrames_.empty() && dreamGaugeFrames_[0] != -1) {
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x80);
             SetDrawBright(stageShade, stageShade, stageShade);
             DrawRotaGraphF(
                 x, y, 1.0,
                 fixedAngleToRadians(normalizeAngle16(
                     -player_.drawAnimationClock * 0x100)),
                 dreamGaugeFrames_[0], TRUE);
+            SetDrawBright(0xff, 0xff, 0xff);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         }
-        SetDrawBright(0xff, 0xff, 0xff);
-        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        return;
     }
 
-    if (enemyGaugeFillHandle_ != -1) {
-        int gaugeWidth = 0;
-        int gaugeHeight = 0;
-        if (GetGraphSize(enemyGaugeFillHandle_, &gaugeWidth, &gaugeHeight) == 0 &&
-            gaugeWidth > 0 && gaugeHeight > 0) {
-            const auto drawAura = [&](double scaleX, int red, int green, int blue) {
-                if (scaleX <= 0.0) {
-                    return;
+    if (pass == PlayerOverlayDrawPass::Aura) {
+        if (enemyGaugeFillHandle_ != -1) {
+            int gaugeWidth = 0;
+            int gaugeHeight = 0;
+            if (GetGraphSize(enemyGaugeFillHandle_, &gaugeWidth, &gaugeHeight) == 0 &&
+                gaugeWidth > 0 && gaugeHeight > 0) {
+                const auto drawAura = [&](double scaleX, float yOffset,
+                                          int red, int green, int blue) {
+                    if (scaleX <= 0.0) {
+                        return;
+                    }
+                    SetDrawBright(red, green, blue);
+                    SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255);
+                    DrawRotaGraph3F(
+                        x,
+                        static_cast<float>(static_cast<int>(
+                            screenY(player_.y + yOffset))),
+                        static_cast<float>(gaugeWidth) * 0.5f,
+                        static_cast<float>(gaugeHeight) * 0.5f,
+                        scaleX, 1.0, 0.0, enemyGaugeFillHandle_, TRUE);
+                    SetDrawBright(255, 255, 255);
+                    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+                };
+                drawAura(player_.shotVariantAuraScale, 80.0f, 255, 64, 64);
+                if (player_.specialGauge < 0) {
+                    drawAura(-static_cast<double>(player_.specialGauge) / 600.0,
+                             80.0f,
+                             feverColor[0], feverColor[1], feverColor[2]);
                 }
-                SetDrawBright(red, green, blue);
-                SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255);
-                DrawRotaGraph3F(
-                    x, screenY(player_.y + 80.0f),
-                    static_cast<float>(gaugeWidth) * 0.5f,
-                    static_cast<float>(gaugeHeight) * 0.5f,
-                    scaleX, 1.0, 0.0, enemyGaugeFillHandle_, TRUE);
-                SetDrawBright(255, 255, 255);
-                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-            };
-            drawAura(player_.shotVariantAuraScale, 255, 64, 64);
-            if (player_.specialGauge < 0) {
-                drawAura(-static_cast<double>(player_.specialGauge) / 600.0,
-                         feverColor[0], feverColor[1], feverColor[2]);
             }
         }
+        return;
     }
 
-    const int group = std::clamp(config_.setupGroup, 0, 2);
-    const int hitbox = frameHandle(group * 30 + 13);
-    if (hitbox != -1 && player_.hitboxScale > 0.0f) {
-        DrawRotaGraphF(x, y, player_.hitboxScale,
-                       fixedAngleToRadians(player_.hitboxAngle16), hitbox, TRUE);
+    if (pass == PlayerOverlayDrawPass::Hitbox) {
+        const int hitbox = frameHandle(13);
+        if (hitbox != -1 && player_.hitboxScale > 0.0f) {
+            DrawRotaGraphF(x, y, player_.hitboxScale,
+                           fixedAngleToRadians(player_.hitboxAngle16), hitbox, TRUE);
+        }
     }
 }
 
-void StageRuntime::drawEnemies() const {
-    const auto isStage01BackSatellite = [](const StageEnemy& enemy) {
-        return enemy.spawnType == 0x09 &&
-               static_cast<std::uint16_t>(
-                   static_cast<int>(enemy.secondaryAngle16) + 0xc000) <= 0x7fff;
-    };
-    const auto isStage04BackSatellite = [](const StageEnemy& enemy) {
-        return enemy.spawnType == 0x41 && enemy.parentSpawnType == 0x13b &&
-               enemy.secondaryAngle16 > 0x8000;
-    };
-
-    // FUN_14001ac40 queues the orbiting body at layer 0x1c for the rear half
-    // of its orbit and 0x1f for the front half. Boss children are appended
-    // after their root, so only the rear half needs an early draw pass here.
-    for (const auto& enemy : enemies_) {
-        if (isStage04BackSatellite(enemy)) {
-            drawStage04BossExact(enemy, screenX(enemy.x), screenY(enemy.y));
-        }
-    }
-    // FUN_140083db0 chooses layer 0x25 or 0x27 from the inner orbit angle;
-    // layer 0x25 satellites must be queued before their layer-0x26 parent.
-    for (const auto& enemy : enemies_) {
-        if (isStage01BackSatellite(enemy)) {
-            drawStage01MarkerExact(enemy, screenX(enemy.x), screenY(enemy.y));
-        }
-    }
-
-    // FUN_140007960 queues 0x13/0x14 at layer 0x1c and 0x12 at layer 0x1d,
-    // all behind the root's layer-0x1e body.
-    for (const auto& enemy : enemies_) {
-        if (enemy.spawnType == 0x13 || enemy.spawnType == 0x14) {
-            drawStage01BossExact(enemy, screenX(enemy.x), screenY(enemy.y));
-        }
-    }
-    drawStageEffects(true, 0x1d);
-    for (const auto& enemy : enemies_) {
-        if (enemy.spawnType == 0x12) {
-            drawStage01BossExact(enemy, screenX(enemy.x), screenY(enemy.y));
-        }
-    }
-
+void StageRuntime::drawEnemies(int exactLayer) const {
     for (const auto& enemy : enemies_) {
         if (enemy.spawnType == 0x137 || enemy.spawnType == 0x153) {
             continue;
         }
-        if (isStage01BackSatellite(enemy) || isStage04BackSatellite(enemy)) {
-            continue;
-        }
-        if (isStage01BossDecorationType(enemy.spawnType)) {
-            continue;
-        }
         const float x = screenX(enemy.x);
         const float y = screenY(enemy.y);
-        if (drawStage01BossExact(enemy, x, y)) {
+        if (drawStage01BossExact(enemy, x, y, exactLayer)) {
             continue;
         }
-        if (drawStage02BossExact(enemy, x, y)) {
+        if (drawStage02BossExact(enemy, x, y, exactLayer)) {
             continue;
         }
-        if (drawStage02Type19Exact(enemy, x, y) ||
-             drawStage02Type1AExact(enemy, x, y) ||
-             drawStage02Type1BExact(enemy, x, y) ||
-             drawStage02Type1CExact(enemy, x, y) ||
-             drawStage02Type1DOr1EExact(enemy, x, y) ||
-             drawStage02Type1FExact(enemy, x, y) ||
-             drawStage02Type20Exact(enemy, x, y) || drawStage02Type21Exact(enemy, x, y)) {
+        if (drawStage02Type19Exact(enemy, x, y, exactLayer) ||
+            drawStage02Type1AExact(enemy, x, y, exactLayer) ||
+            drawStage02Type1BExact(enemy, x, y, exactLayer) ||
+            drawStage02Type1CExact(enemy, x, y, exactLayer) ||
+            drawStage02Type1DOr1EExact(enemy, x, y, exactLayer) ||
+            drawStage02Type1FExact(enemy, x, y, exactLayer) ||
+            drawStage02Type20Exact(enemy, x, y, exactLayer) ||
+            drawStage02Type21Exact(enemy, x, y, exactLayer)) {
             continue;
         }
-        if (drawStage03EnemyExact(enemy, x, y)) {
+        if (drawStage03EnemyExact(enemy, x, y, exactLayer)) {
             continue;
         }
-        if (drawStage04BossExact(enemy, x, y)) {
+        if (drawStage04BossExact(enemy, x, y, exactLayer)) {
             continue;
         }
-        if (drawLateStageBoss(enemy, x, y)) {
+        if (drawStage04EnemyExact(enemy, x, y, exactLayer)) {
             continue;
         }
-        if (drawStage01MarkerExact(enemy, x, y)) {
+        if (drawLateStageBoss(enemy, x, y, exactLayer)) {
             continue;
         }
-        if (drawType0AExact(enemy, x, y)) {
+        if (drawStage01MarkerExact(enemy, x, y, exactLayer)) {
             continue;
         }
-        if (drawStage01Type0EExact(enemy, x, y)) {
+        if (drawType0AExact(enemy, x, y, exactLayer)) {
             continue;
         }
-        if (drawStage01Type0FExact(enemy, x, y)) {
+        if (drawStage01Type0EExact(enemy, x, y, exactLayer)) {
             continue;
         }
-        if (drawStage01Type10Or11Exact(enemy, x, y)) {
+        if (drawStage01Type0FExact(enemy, x, y, exactLayer)) {
             continue;
         }
-        if (drawStage01SmallEnemyExact(enemy, x, y)) {
+        if (drawStage01Type10Or11Exact(enemy, x, y, exactLayer)) {
             continue;
         }
-        if (drawLateStageEnemy(enemy, x, y)) {
+        if (drawStage01SmallEnemyExact(enemy, x, y, exactLayer)) {
+            continue;
+        }
+        if (drawLateStageEnemy(enemy, x, y, exactLayer)) {
+            continue;
+        }
+        if (exactLayer != 0x23) {
             continue;
         }
         const auto& frames = (enemy.spawnType >= 0x138 && enemy.spawnType <= 0x13b)
@@ -16799,9 +17904,6 @@ void StageRuntime::drawEnemies() const {
         const int index = frames.empty() ? -1 : std::min(visualFrame, static_cast<int>(frames.size()) - 1);
         const int handle = index < 0 ? -1 : frames[static_cast<std::size_t>(index)];
         if (handle != -1) {
-            if (drawStage04EnemyExact(enemy, x, y)) {
-                continue;
-            }
             const double scale = enemyUsesMediumFrame(enemy) ? 0.42 : 0.55;
             if (enemy.spawnType == 0x35) {
                 SetDrawBlendMode(DX_BLENDMODE_ALPHA, 110);
@@ -16820,11 +17922,14 @@ void StageRuntime::drawEnemies() const {
             DrawCircle(static_cast<int>(x), static_cast<int>(y), enemy.radius, GetColor(255, 96, 160), TRUE);
         }
     }
-    drawStageEffects(true, 0x20);
 }
 
-bool StageRuntime::drawStage01BossExact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawStage01BossExact(const StageEnemy& enemy, float x, float y,
+                                        int exactLayer) const {
     if (enemy.spawnType == 0x138) {
+        if (exactLayer != 0x1e) {
+            return true;
+        }
         const int state = enemy.drawHelperState;
         const int timer = enemy.drawHelperTimer;
         int frame = -1;
@@ -16896,6 +18001,10 @@ bool StageRuntime::drawStage01BossExact(const StageEnemy& enemy, float x, float 
     }
 
     if (isStage01BossDecorationType(enemy.spawnType)) {
+        const int drawLayer = enemy.spawnType == 0x12 ? 0x1d : 0x1c;
+        if (exactLayer != drawLayer) {
+            return true;
+        }
         if (!enemy.drawBodyThisFrame) {
             return true;
         }
@@ -16948,6 +18057,9 @@ bool StageRuntime::drawStage01BossExact(const StageEnemy& enemy, float x, float 
     if (!isStage01BossChildType(enemy.spawnType)) {
         return false;
     }
+    if (exactLayer != 0x23) {
+        return true;
+    }
     if (!enemy.drawBodyThisFrame || enemySmallFrames_.empty()) {
         return true;
     }
@@ -16987,7 +18099,8 @@ bool StageRuntime::drawStage01BossExact(const StageEnemy& enemy, float x, float 
     return true;
 }
 
-bool StageRuntime::drawStage02BossExact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawStage02BossExact(const StageEnemy& enemy, float x, float y,
+                                        int exactLayer) const {
     const bool root = enemy.spawnType == 0x139;
     const bool child = enemy.spawnType >= 0x22 && enemy.spawnType <= 0x24 &&
                        enemy.parentSpawnType == 0x139;
@@ -17028,15 +18141,23 @@ bool StageRuntime::drawStage02BossExact(const StageEnemy& enemy, float x, float 
             else if (enemy.drawHelperState == 0 && timer < 50) {
                 coreScale = std::sin(static_cast<double>(timer - 30) * kPi / 40.0);
             }
-            if (medium != -1) {
+            if (medium != -1 && exactLayer == 0x1e) {
                 SetDrawBlendMode(DX_BLENDMODE_ALPHA, 64);
                 SetDrawBright(0, 0, 0);
                 drawNode(medium, x, y - 50.0f, 0, bodyScaleX, bodyScaleY);
                 SetDrawBright(255, 255, 255);
                 SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            }
+            if (medium != -1 && exactLayer == 0x23) {
                 drawNode(medium, x, y + 50.0f, 0, bodyScaleX, bodyScaleY);
             }
-            drawNode(core, x, y - 60.0f, 0, coreScale, coreScale);
+            if (exactLayer == 0x23) {
+                drawNode(core, x, y - 60.0f, 0, coreScale, coreScale);
+            }
+            return true;
+        }
+
+        if (exactLayer != 0x1d) {
             return true;
         }
 
@@ -17060,6 +18181,7 @@ bool StageRuntime::drawStage02BossExact(const StageEnemy& enemy, float x, float 
     const int state = enemy.drawHelperState;
     const int timer = enemy.drawHelperTimer;
     if (state <= 3 || (state == 4 && timer < 130)) {
+        const int baseLayer = state == 0 ? 0x0f : 0x1e;
         const float yShift = state > 2 || (state == 2 && timer > 100)
                                  ? -160.0f
                                  : 0.0f;
@@ -17103,38 +18225,52 @@ bool StageRuntime::drawStage02BossExact(const StageEnemy& enemy, float x, float 
             }
         };
 
-        for (int i = 0; i < 4; ++i) {
-            drawNode(largeRotor, x, y + yShift + 250.0f,
-                     normalizeAngle16(frame_ * 600 + i * 0x4000),
-                     1.0, 1.0);
+        if (exactLayer == baseLayer) {
+            for (int i = 0; i < 4; ++i) {
+                drawNode(largeRotor, x, y + yShift + 250.0f,
+                         normalizeAngle16(frame_ * 600 + i * 0x4000),
+                         1.0, 1.0);
+            }
+            drawNode(largeMiddle, x, y + yShift + 160.0f, 0, 1.0, 1.0);
         }
-        drawNode(largeMiddle, x, y + yShift + 160.0f, 0, 1.0, 1.0);
 
         if (state < 2 || (state == 2 && timer <= 100)) {
-            drawOrbitHalf(true);
-            drawNode(largeBody, x, y, 0, 1.0, 1.0);
-            // The two upper ellipse nodes share the body layer. The lower four
-            // and the mount are one layer forward in the original queue.
-            drawDecorations(4, 6);
-            drawOrbitHalf(false);
-            drawNode(mediumMount, x, y - 90.0f, 0, 1.0, 1.0);
-            drawDecorations(0, 4);
+            if (exactLayer == baseLayer + 1) {
+                drawOrbitHalf(true);
+            }
+            if (exactLayer == baseLayer + 2) {
+                drawNode(largeBody, x, y, 0, 1.0, 1.0);
+                drawDecorations(4, 6);
+                drawOrbitHalf(false);
+            }
+            if (exactLayer == baseLayer + 3) {
+                drawNode(mediumMount, x, y - 90.0f, 0, 1.0, 1.0);
+                drawDecorations(0, 4);
+            }
         }
         else {
             const int upper = handleAt(bossFrames_, 10 + (timer / 5) % 3);
-            if (upper != -1) {
+            if (upper != -1 && exactLayer == baseLayer + 1) {
                 SetDrawBlendMode(DX_BLENDMODE_ALPHA, 64);
                 SetDrawBright(0, 0, 0);
                 drawNode(upper, x, y + yShift, 0, 1.0, 1.0);
                 SetDrawBright(255, 255, 255);
                 SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
             }
-            drawOrbitHalf(true);
-            if (upper != -1) {
+            if (exactLayer == baseLayer + 1) {
+                drawOrbitHalf(true);
+            }
+            if (upper != -1 && exactLayer == baseLayer + 2) {
                 drawNode(upper, x, y + yShift, 0, 1.0, 1.0);
             }
-            drawOrbitHalf(false);
+            if (exactLayer == baseLayer + 2) {
+                drawOrbitHalf(false);
+            }
         }
+        return true;
+    }
+
+    if (exactLayer != 0x1e) {
         return true;
     }
 
@@ -18331,8 +19467,10 @@ void StageRuntime::drawStageBannerText() const {
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 }
 
-void StageRuntime::drawEnemyGaugeExact(const StageEnemy& enemy, int mode, float x, float y) const {
-    if (mode < 0 || mode >= static_cast<int>(enemyGaugeFrames_.size()) ||
+void StageRuntime::drawEnemyGaugeExact(const StageEnemy& enemy, int mode, float x,
+                                       float y, int exactLayer) const {
+    if (exactLayer != 0x32 ||
+        mode < 0 || mode >= static_cast<int>(enemyGaugeFrames_.size()) ||
         enemy.hp < 0 || enemy.maxHp <= 0) {
         return;
     }
@@ -18375,12 +19513,13 @@ void StageRuntime::drawEnemyGaugeExact(const StageEnemy& enemy, int mode, float 
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 }
 
-bool StageRuntime::drawStage02Type1BExact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawStage02Type1BExact(const StageEnemy& enemy, float x, float y,
+                                          int exactLayer) const {
     if (enemy.spawnType != 0x1b) {
         return false;
     }
 
-    if (enemy.drawMarkerThisFrame) {
+    if (enemy.drawMarkerThisFrame && exactLayer == 0x32) {
         const int marker = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
         if (marker != -1) {
             const double scale = std::max(
@@ -18390,6 +19529,13 @@ bool StageRuntime::drawStage02Type1BExact(const StageEnemy& enemy, float x, floa
         }
     }
     if (!enemy.drawBodyThisFrame) {
+        return true;
+    }
+    if (exactLayer == 0x32) {
+        drawEnemyGaugeExact(enemy, 1, x, y, exactLayer);
+        return true;
+    }
+    if (exactLayer != 0x20) {
         return true;
     }
 
@@ -18415,16 +19561,16 @@ bool StageRuntime::drawStage02Type1BExact(const StageEnemy& enemy, float x, floa
             1.0 + 0.05 * std::sin(static_cast<double>(timer) * 2.0 * kPiDouble / 72.0);
         drawOriginalMode7Node(center, x, y, 0, 1.0, scaleY, false);
     }
-    drawEnemyGaugeExact(enemy, 1, x, y);
     return true;
 }
 
-bool StageRuntime::drawStage02Type1CExact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawStage02Type1CExact(const StageEnemy& enemy, float x, float y,
+                                          int exactLayer) const {
     if (enemy.spawnType != 0x1c) {
         return false;
     }
 
-    if (enemy.drawMarkerThisFrame) {
+    if (enemy.drawMarkerThisFrame && exactLayer == 0x32) {
         const int marker = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
         if (marker != -1) {
             const double scale = std::max(
@@ -18434,6 +19580,13 @@ bool StageRuntime::drawStage02Type1CExact(const StageEnemy& enemy, float x, floa
         }
     }
     if (!enemy.drawBodyThisFrame) {
+        return true;
+    }
+    if (exactLayer == 0x32) {
+        drawEnemyGaugeExact(enemy, 1, x, y, exactLayer);
+        return true;
+    }
+    if (exactLayer != 0x20) {
         return true;
     }
 
@@ -18463,15 +19616,22 @@ bool StageRuntime::drawStage02Type1CExact(const StageEnemy& enemy, float x, floa
         drawOriginalMode7Node(rotor, x, y - 50.0f, normalizeAngle16(angle - 0x5556),
                               1.0, 1.0, false);
     }
-    drawEnemyGaugeExact(enemy, 1, x, y);
     return true;
 }
 
-bool StageRuntime::drawStage02Type1DOr1EExact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawStage02Type1DOr1EExact(const StageEnemy& enemy, float x,
+                                              float y, int exactLayer) const {
     if (enemy.spawnType != 0x1d && enemy.spawnType != 0x1e) {
         return false;
     }
     if (!enemy.drawBodyThisFrame) {
+        return true;
+    }
+    if (exactLayer == 0x32) {
+        drawEnemyGaugeExact(enemy, 2, x, y, exactLayer);
+        return true;
+    }
+    if (exactLayer != 0x18 && exactLayer != 0x19) {
         return true;
     }
 
@@ -18482,10 +19642,12 @@ bool StageRuntime::drawStage02Type1DOr1EExact(const StageEnemy& enemy, float x, 
             scaleX = 1.0 + 0.05 * std::sin(static_cast<double>(timer) * kTau / 10.0);
         }
         const int body = enemySmallFrames_.size() > 19 ? enemySmallFrames_[19] : -1;
-        if (body != -1) {
+        if (body != -1 && exactLayer == 0x18) {
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, 64);
             drawOriginalMode7Node(body, x, y, 0, scaleX, 1.0, false);
             SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        }
+        if (body != -1 && exactLayer == 0x19) {
             drawOriginalMode7Node(body, x, y, 0, scaleX, 1.0, false);
         }
     }
@@ -18495,25 +19657,27 @@ bool StageRuntime::drawStage02Type1DOr1EExact(const StageEnemy& enemy, float x, 
         const int mediumBody = mediumIndex >= 0 && mediumIndex < static_cast<int>(enemyMediumFrames_.size())
                                    ? enemyMediumFrames_[static_cast<std::size_t>(mediumIndex)]
                                    : -1;
-        if (mediumBody != -1) {
+        if (mediumBody != -1 && exactLayer == 0x18) {
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, 64);
             drawOriginalMode7Node(mediumBody, x, y - 50.0f, 0, scaleX, 1.0, false);
             SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        }
+        if (mediumBody != -1 && exactLayer == 0x19) {
             drawOriginalMode7Node(mediumBody, x, y - 50.0f, 0, scaleX, 1.0, false);
         }
         const int smallIndex = 20 + (timer / 3) % 3;
         const int smallBody = smallIndex >= 0 && smallIndex < static_cast<int>(enemySmallFrames_.size())
                                   ? enemySmallFrames_[static_cast<std::size_t>(smallIndex)]
                                   : -1;
-        if (smallBody != -1) {
+        if (smallBody != -1 && exactLayer == 0x19) {
             drawOriginalMode7Node(smallBody, x, y - 60.0f, 0, 1.0, 1.0, false);
         }
     }
-    drawEnemyGaugeExact(enemy, 2, x, y);
     return true;
 }
 
-bool StageRuntime::drawStage02Type1FExact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawStage02Type1FExact(const StageEnemy& enemy, float x, float y,
+                                          int exactLayer) const {
     if (enemy.spawnType != 0x1f) {
         return false;
     }
@@ -18528,24 +19692,27 @@ bool StageRuntime::drawStage02Type1FExact(const StageEnemy& enemy, float x, floa
     const double scale = enemy.drawHelperState == 2
                              ? 1.0 + 0.15 * std::sin(static_cast<double>(timer) * kTau / 9.0)
                              : 1.0 - 0.05 * std::sin(static_cast<double>(timer) * kTau / 50.0);
-    if (body != -1) {
+    if (body != -1 && exactLayer == 0x18) {
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, 64);
         drawOriginalMode7Node(body, x, y, 0, scale, 1.0, false);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    }
+    if (body != -1 && exactLayer == 0x1a) {
         drawOriginalMode7Node(body, x, y, 0, scale, 1.0, false);
     }
     if (enemy.targetable) {
-        drawEnemyGaugeExact(enemy, 1, x, y);
+        drawEnemyGaugeExact(enemy, 1, x, y, exactLayer);
     }
     return true;
 }
 
-bool StageRuntime::drawStage02Type19Exact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawStage02Type19Exact(const StageEnemy& enemy, float x, float y,
+                                          int exactLayer) const {
     if (enemy.spawnType != 0x19) {
         return false;
     }
 
-    if (enemy.drawMarkerThisFrame) {
+    if (enemy.drawMarkerThisFrame && exactLayer == 0x32) {
         const int marker = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
         if (marker != -1) {
             const double scale = std::max(
@@ -18555,6 +19722,13 @@ bool StageRuntime::drawStage02Type19Exact(const StageEnemy& enemy, float x, floa
         }
     }
     if (!enemy.drawBodyThisFrame) {
+        return true;
+    }
+    if (exactLayer == 0x32) {
+        drawEnemyGaugeExact(enemy, 2, x, y, exactLayer);
+        return true;
+    }
+    if (exactLayer != 0x23) {
         return true;
     }
 
@@ -18580,16 +19754,16 @@ bool StageRuntime::drawStage02Type19Exact(const StageEnemy& enemy, float x, floa
                              0.1 * std::sin(static_cast<double>(timer) * kTau / 51.0);
         drawOriginalMode7Node(center, x, y, 0, scale, scale, false);
     }
-    drawEnemyGaugeExact(enemy, 2, x, y);
     return true;
 }
 
-bool StageRuntime::drawStage02Type1AExact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawStage02Type1AExact(const StageEnemy& enemy, float x, float y,
+                                          int exactLayer) const {
     if (enemy.spawnType != 0x1a) {
         return false;
     }
 
-    if (enemy.drawMarkerThisFrame) {
+    if (enemy.drawMarkerThisFrame && exactLayer == 0x32) {
         const int marker = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
         if (marker != -1) {
             const double scale = std::max(
@@ -18599,6 +19773,13 @@ bool StageRuntime::drawStage02Type1AExact(const StageEnemy& enemy, float x, floa
         }
     }
     if (!enemy.drawBodyThisFrame) {
+        return true;
+    }
+    if (exactLayer == 0x32) {
+        drawEnemyGaugeExact(enemy, 2, x, y, exactLayer);
+        return true;
+    }
+    if (exactLayer != 0x23) {
         return true;
     }
 
@@ -18614,11 +19795,11 @@ bool StageRuntime::drawStage02Type1AExact(const StageEnemy& enemy, float x, floa
     if (center != -1) {
         drawOriginalMode7Node(center, x, y, 0, 1.0, 1.0, false);
     }
-    drawEnemyGaugeExact(enemy, 2, x, y);
     return true;
 }
 
-bool StageRuntime::drawStage02Type20Exact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawStage02Type20Exact(const StageEnemy& enemy, float x, float y,
+                                          int exactLayer) const {
     if (enemy.spawnType != 0x20) {
         return false;
     }
@@ -18635,22 +19816,25 @@ bool StageRuntime::drawStage02Type20Exact(const StageEnemy& enemy, float x, floa
                              : 1.0 - 0.05 * std::sin(static_cast<double>(timer) * kTau / 101.0);
     const float bob = 2.0f * std::sin(static_cast<float>(timer) * kTau / 72.0f);
 
-    if (largeBody != -1) {
+    if (largeBody != -1 && exactLayer == 0x18) {
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, 64);
         drawOriginalMode7Node(largeBody, x, y - 125.0f, 0, scale, 0.6, false);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    }
+    if (largeBody != -1 && exactLayer == 0x1a) {
         drawOriginalMode7Node(largeBody, x, y - 120.0f, 0, scale, 1.0, false);
     }
-    if (mediumBody != -1) {
+    if (mediumBody != -1 && exactLayer == 0x1a) {
         drawOriginalMode7Node(mediumBody, x, y + 50.0f + bob, 0, 1.0, 1.0, false);
     }
     if (enemy.targetable) {
-        drawEnemyGaugeExact(enemy, 0, x, y);
+        drawEnemyGaugeExact(enemy, 0, x, y, exactLayer);
     }
     return true;
 }
 
-bool StageRuntime::drawStage02Type21Exact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawStage02Type21Exact(const StageEnemy& enemy, float x, float y,
+                                          int exactLayer) const {
     if (enemy.spawnType != 0x21 || enemy.parentSpawnType != 0x20) {
         return false;
     }
@@ -18662,18 +19846,21 @@ bool StageRuntime::drawStage02Type21Exact(const StageEnemy& enemy, float x, floa
     const int timer = enemy.drawHelperTimer;
     const double scale = 1.0 - 0.05 * std::sin(static_cast<double>(timer) * kTau / 72.0);
     const float bodyY = y - 60.0f;
-    if (body != -1) {
+    if (body != -1 && exactLayer == 0x18) {
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, 64);
         drawOriginalMode7Node(body, x, bodyY, 0, scale, 1.0, false);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    }
+    if (body != -1 && exactLayer == 0x19) {
         drawOriginalMode7Node(body, x, bodyY, 0, scale, 1.0, false);
     }
 
-    drawEnemyGaugeExact(enemy, 1, x, y);
+    drawEnemyGaugeExact(enemy, 1, x, y, exactLayer);
     return true;
 }
 
-bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float y,
+                                         int exactLayer) const {
     if (!isStage03FocusedType(enemy.spawnType) &&
         !isStage03BossNodeType(enemy.spawnType)) {
         return false;
@@ -18700,13 +19887,13 @@ bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float
             drawOriginalMode7Node(handle, drawX, drawY, angle, scaleX, scaleY, reverse);
         }
     };
-    const auto drawGauge = [this, &enemy, x, y](int mode) {
+    const auto drawGauge = [this, &enemy, x, y, exactLayer](int mode) {
         StageEnemy gaugeSnapshot = enemy;
         gaugeSnapshot.hp = enemy.drawHp;
-        drawEnemyGaugeExact(gaugeSnapshot, mode, x, y);
+        drawEnemyGaugeExact(gaugeSnapshot, mode, x, y, exactLayer);
     };
 
-    if (enemy.drawMarkerThisFrame) {
+    if (enemy.drawMarkerThisFrame && exactLayer == 0x32) {
         const int marker = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
         double scale = 3.0 - static_cast<double>(enemy.markerDrawTimer) * 0.15;
         if (enemy.spawnType == 0x25) {
@@ -18727,10 +19914,14 @@ bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float
     case 0x13a: {
         const int state = enemy.drawHelperState;
         if (state <= 3 || (state == 4 && timer < 130)) {
-            draw(large(13), x, y, 0);
-            for (int i = 0; i < 4; ++i) {
-                draw(large(15), x, y - 255.0f,
-                     normalizeAngle16(frame_ * 0x500 + i * 0x4000));
+            if (exactLayer == 0x20) {
+                draw(large(13), x, y, 0);
+            }
+            if (exactLayer == 0x22) {
+                for (int i = 0; i < 4; ++i) {
+                    draw(large(15), x, y - 255.0f,
+                         normalizeAngle16(frame_ * 0x500 + i * 0x4000));
+                }
             }
             break;
         }
@@ -18742,18 +19933,20 @@ bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float
         else if (state == 6 || (state == 8 && timer < 240)) {
             bossFrame = 23 + (timer / 5) % 2;
         }
-        if (bossFrame >= 0 && bossFrame < static_cast<int>(bossFrames_.size())) {
+        if (exactLayer == 0x1e && bossFrame >= 0 &&
+            bossFrame < static_cast<int>(bossFrames_.size())) {
             draw(bossFrames_[static_cast<std::size_t>(bossFrame)], x, y, 0);
         }
         break;
     }
     case 0x30: {
-        if (enemy.drawHelperState <= 2) {
+        if (exactLayer == 0x1f && enemy.drawHelperState <= 2) {
             const int bodyFrame = enemy.drawHelperState == 2 ? 16 : 14;
             draw(large(bodyFrame), x, y, 0, 1.0, 1.0,
                  enemy.originX < 0.0f);
         }
-        if (!effectSmallFrames_.empty() && effectSmallFrames_[0] != -1) {
+        if (exactLayer == 0x1e && !effectSmallFrames_.empty() &&
+            effectSmallFrames_[0] != -1) {
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, 192);
             if (timer % 4 >= 2) {
                 SetDrawBright(255, 128, 0);
@@ -18766,12 +19959,14 @@ bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float
         if (enemy.targetable) {
             StageEnemy gaugeSnapshot = enemy;
             gaugeSnapshot.hp = enemy.drawHp;
-            drawEnemyGaugeExact(gaugeSnapshot, 1, x, y);
+            drawEnemyGaugeExact(gaugeSnapshot, 1, x, y, exactLayer);
         }
         break;
     }
     case 0x31:
-        draw(medium(62), x, y, enemy.sourceAngle16);
+        if (exactLayer == 0x21) {
+            draw(medium(62), x, y, enemy.sourceAngle16);
+        }
         break;
     case 0x32:
     case 0x33:
@@ -18787,27 +19982,29 @@ bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float
                 innerScale = sineEaseIn(timer - 10, 30, 1.0f);
             }
         }
-        draw(small(30), x, y, 0, outerScale, outerScale);
-        draw(small(29), x, y, 0, innerScale, innerScale);
-        static constexpr std::array<int, 5> kLeafOffset{{
-            0, 0x3333, 0x6666, -0x6667, -0x3334,
-        }};
-        const auto queuedLeafAngle = normalizeAngle16(
-            static_cast<int>(enemy.secondaryAngle16) - 2000);
-        for (const int offset : kLeafOffset) {
-            draw(small(31), x, y - 30.0f,
-                 normalizeAngle16(static_cast<int>(queuedLeafAngle) + offset),
-                 innerScale, innerScale);
+        if (exactLayer == 0x23) {
+            draw(small(30), x, y, 0, outerScale, outerScale);
+            draw(small(29), x, y, 0, innerScale, innerScale);
+            static constexpr std::array<int, 5> kLeafOffset{{
+                0, 0x3333, 0x6666, -0x6667, -0x3334,
+            }};
+            const auto queuedLeafAngle = normalizeAngle16(
+                static_cast<int>(enemy.secondaryAngle16) - 2000);
+            for (const int offset : kLeafOffset) {
+                draw(small(31), x, y - 30.0f,
+                     normalizeAngle16(static_cast<int>(queuedLeafAngle) + offset),
+                     innerScale, innerScale);
+            }
         }
         if (enemy.targetable) {
             StageEnemy gaugeSnapshot = enemy;
             gaugeSnapshot.hp = enemy.drawHp;
-            drawEnemyGaugeExact(gaugeSnapshot, 2, x, y);
+            drawEnemyGaugeExact(gaugeSnapshot, 2, x, y, exactLayer);
         }
         break;
     }
     case 0x25: {
-        if (!effectSmallFrames_.empty()) {
+        if (exactLayer == 0x23 && !effectSmallFrames_.empty()) {
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, 192);
             if (timer % 4 >= 2) {
                 SetDrawBright(255, 128, 0);
@@ -18817,12 +20014,14 @@ bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float
             SetDrawBright(255, 255, 255);
             SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         }
-        draw(small(24), x, y, 0);
+        if (exactLayer == 0x23) {
+            draw(small(24), x, y, 0);
+        }
         drawGauge(2);
         break;
     }
     case 0x26: {
-        if (!effectSmallFrames_.empty()) {
+        if (exactLayer == 0x20 && !effectSmallFrames_.empty()) {
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, 192);
             if (timer % 4 >= 2) SetDrawBright(255, 128, 0);
             draw(effectSmallFrames_[0], x + 50.0f, y - 55.0f, 0, 0.8, 0.8);
@@ -18830,9 +20029,11 @@ bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float
             SetDrawBright(255, 255, 255);
             SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         }
-        draw(medium(50), x + 50.0f, y + 10.0f, 0);
-        draw(medium(50), x - 50.0f, y + 10.0f, 0, 1.0, 1.0, true);
-        draw(medium(49), x, y, 0);
+        if (exactLayer == 0x20) {
+            draw(medium(50), x + 50.0f, y + 10.0f, 0);
+            draw(medium(50), x - 50.0f, y + 10.0f, 0, 1.0, 1.0, true);
+            draw(medium(49), x, y, 0);
+        }
         drawGauge(1);
         break;
     }
@@ -18840,22 +20041,28 @@ bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float
     case 0x29: {
         const bool type27 = enemy.spawnType == 0x27;
         const float bob = 5.0f * std::sin(static_cast<float>(timer) * kTau / 48.0f);
-        if ((timer & 1) == 0) {
-            draw(medium(type27 ? 52 : 54), x + 70.0f,
-                 y + bob - (type27 ? 10.0f : 0.0f), 0);
-            draw(medium(type27 ? 52 : 54), x - 70.0f,
-                 y + bob - (type27 ? 10.0f : 0.0f), 0, 1.0, 1.0, true);
+        if (exactLayer == 0x22) {
+            if ((timer & 1) == 0) {
+                draw(medium(type27 ? 52 : 54), x + 70.0f,
+                     y + bob - (type27 ? 10.0f : 0.0f), 0);
+                draw(medium(type27 ? 52 : 54), x - 70.0f,
+                     y + bob - (type27 ? 10.0f : 0.0f), 0, 1.0, 1.0, true);
+            }
+            draw(medium(type27 ? 51 : 53), x, y, 0);
         }
-        draw(medium(type27 ? 51 : 53), x, y, 0);
         drawGauge(1);
         break;
     }
     case 0x28:
-        draw(small(27), x, y, 0, 1.0,
-             1.0 + std::sin(static_cast<double>(timer) * kPi / 16.0) * 0.1);
+        if (exactLayer == 0x22) {
+            draw(small(27), x, y, 0, 1.0,
+                 1.0 + std::sin(static_cast<double>(timer) * kPi / 16.0) * 0.1);
+        }
         break;
     case 0x2a:
-        draw(small(28), x, y, normalizeAngle16(timer * 0x14d));
+        if (exactLayer == 0x22) {
+            draw(small(28), x, y, normalizeAngle16(timer * 0x14d));
+        }
         break;
     case 0x2b: {
         const float wave0 = 2.0f * std::sin(static_cast<float>(timer) * kTau / 38.0f);
@@ -18863,13 +20070,15 @@ bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float
         const float wave18 = 2.0f * std::sin(static_cast<float>(timer - 18) * kTau / 38.0f);
         const int rotA = static_cast<int>(std::sin(static_cast<double>(timer) * kTau / 9.0) * 3800.0);
         const int rotB = static_cast<int>(std::sin(static_cast<double>(timer - 4) * kTau / 9.0) * 3800.0);
-        draw(large(10), x + 10.0f, y - 40.0f + wave9, normalizeAngle16(rotB));
-        draw(large(10), x - 10.0f, y - 40.0f + wave9, normalizeAngle16(-rotB), 1.0, 1.0, true);
-        draw(large(9), x + 10.0f, y - 45.0f + wave9, normalizeAngle16(rotA));
-        draw(large(9), x - 10.0f, y - 45.0f + wave9, normalizeAngle16(-rotA), 1.0, 1.0, true);
-        draw(medium(57), x, y + 50.0f + wave18, 0);
-        draw(medium(56), x, y + wave9, 0, 1.0, 1.0, true);
-        draw(medium(55), x, y - 70.0f + wave0, 0);
+        if (exactLayer == 0x1e) {
+            draw(large(10), x + 10.0f, y - 40.0f + wave9, normalizeAngle16(rotB));
+            draw(large(10), x - 10.0f, y - 40.0f + wave9, normalizeAngle16(-rotB), 1.0, 1.0, true);
+            draw(large(9), x + 10.0f, y - 45.0f + wave9, normalizeAngle16(rotA));
+            draw(large(9), x - 10.0f, y - 45.0f + wave9, normalizeAngle16(-rotA), 1.0, 1.0, true);
+            draw(medium(57), x, y + 50.0f + wave18, 0);
+            draw(medium(56), x, y + wave9, 0, 1.0, 1.0, true);
+            draw(medium(55), x, y - 70.0f + wave0, 0);
+        }
         drawGauge(1);
         if (enemy.targetable) {
             // FUN_14008d230 deliberately calls the shared gauge helper twice
@@ -18880,31 +20089,41 @@ bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float
     }
     case 0x2c: {
         const double radians = fixedAngleToRadiansDouble(enemy.sourceAngle16);
-        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 64);
-        draw(small(25), x + 8.0f, y + 5.0f, enemy.sourceAngle16);
-        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-        draw(small(25), x, y, enemy.sourceAngle16);
-        draw(small(26), x + static_cast<float>(std::cos(radians) * 35.0),
-             y + static_cast<float>(std::sin(radians) * 35.0), enemy.sourceAngle16);
+        if (exactLayer == 0x18) {
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 64);
+            draw(small(25), x + 8.0f, y + 5.0f, enemy.sourceAngle16);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        }
+        if (exactLayer == 0x19) {
+            draw(small(25), x, y, enemy.sourceAngle16);
+            draw(small(26), x + static_cast<float>(std::cos(radians) * 35.0),
+                 y + static_cast<float>(std::sin(radians) * 35.0), enemy.sourceAngle16);
+        }
         drawGauge(2);
         break;
     }
     case 0x2d: {
         const double radians = fixedAngleToRadiansDouble(enemy.sourceAngle16);
-        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 64);
-        draw(medium(58), x + 16.0f, y + 10.0f, enemy.sourceAngle16);
-        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-        draw(medium(58), x, y, enemy.sourceAngle16);
-        draw(medium(59), x + static_cast<float>(std::cos(radians) * 100.0),
-             y + static_cast<float>(std::sin(radians) * 100.0), enemy.sourceAngle16);
+        if (exactLayer == 0x18) {
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 64);
+            draw(medium(58), x + 16.0f, y + 10.0f, enemy.sourceAngle16);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        }
+        if (exactLayer == 0x1a) {
+            draw(medium(58), x, y, enemy.sourceAngle16);
+            draw(medium(59), x + static_cast<float>(std::cos(radians) * 100.0),
+                 y + static_cast<float>(std::sin(radians) * 100.0), enemy.sourceAngle16);
+        }
         drawGauge(1);
         break;
     }
     case 0x2e: {
         const float wave = 3.0f * std::sin(static_cast<float>(frame_) * kTau / 68.0f) - 24.0f;
-        draw(large(12), x + 180.0f, y + 80.0f + wave, 0);
-        draw(large(12), x - 180.0f, y + 80.0f + wave, 0, 1.0, 1.0, true);
-        draw(large(11), x, y + 80.0f, 0);
+        if (exactLayer == 0x20) {
+            draw(large(12), x + 180.0f, y + 80.0f + wave, 0);
+            draw(large(12), x - 180.0f, y + 80.0f + wave, 0, 1.0, 1.0, true);
+            draw(large(11), x, y + 80.0f, 0);
+        }
         break;
     }
     case 0x2f: {
@@ -18915,7 +20134,7 @@ bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float
                 break;
             }
         }
-        if (parent != nullptr) {
+        if (parent != nullptr && exactLayer == 0x21) {
             const float anchorX = screenX(parent->x + enemy.originX);
             const float anchorY = screenY(parent->y + enemy.originY);
             const auto angle = radiansToFixedAngleTrunc(
@@ -18924,7 +20143,9 @@ bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float
             draw(medium(61), (anchorX + x) * 0.5f, (anchorY + y) * 0.5f,
                  normalizeAngle16(static_cast<int>(angle) - 0x4000));
         }
-        draw(medium(60), x, y, 0);
+        if (exactLayer == 0x22) {
+            draw(medium(60), x, y, 0);
+        }
         if (enemy.targetable) {
             drawGauge(0);
         }
@@ -18937,7 +20158,7 @@ bool StageRuntime::drawStage03EnemyExact(const StageEnemy& enemy, float x, float
 }
 
 bool StageRuntime::drawStage04BossExact(const StageEnemy& enemy, float x,
-                                        float y) const {
+                                        float y, int exactLayer) const {
     const bool root = enemy.spawnType == 0x13b;
     const bool child = enemy.spawnType >= 0x40 && enemy.spawnType <= 0x43 &&
                        enemy.parentSpawnType == 0x13b;
@@ -18984,8 +20205,12 @@ bool StageRuntime::drawStage04BossExact(const StageEnemy& enemy, float x,
                                        int brightness, int alpha) {
             SetDrawBright(brightness, brightness, brightness);
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(alpha, 0, 255));
-            draw(large(19), x, y, 0, scale0, scale0);
-            draw(large(20), x, y, 0, scale1, scale1);
+            if (exactLayer == 0x1e) {
+                draw(large(19), x, y, 0, scale0, scale0);
+            }
+            if (exactLayer == 0x1b) {
+                draw(large(20), x, y, 0, scale1, scale1);
+            }
             SetDrawBright(255, 255, 255);
             SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         };
@@ -19085,7 +20310,9 @@ bool StageRuntime::drawStage04BossExact(const StageEnemy& enemy, float x,
         else if (state == 11 && timer < 240) {
             bossFrame = 38 + (timer / 5) % 2;
         }
-        draw(boss(bossFrame), x, y, 0, scale, scale);
+        if (exactLayer == 0x1e) {
+            draw(boss(bossFrame), x, y, 0, scale, scale);
+        }
         return true;
     }
 
@@ -19103,7 +20330,7 @@ bool StageRuntime::drawStage04BossExact(const StageEnemy& enemy, float x,
         static constexpr std::array<float, 6> kChainY{{
             150.0f, 150.0f, 140.0f, 140.0f, 120.0f, 120.0f,
         }};
-        if (parent != nullptr) {
+        if (parent != nullptr && exactLayer == 0x1c) {
             const int index = std::clamp(enemy.childIndex, 0, 5);
             const float anchorX = parent->x + kChainX[static_cast<std::size_t>(index)];
             const float anchorY = parent->y + kChainY[static_cast<std::size_t>(index)];
@@ -19132,7 +20359,7 @@ bool StageRuntime::drawStage04BossExact(const StageEnemy& enemy, float x,
             }
         }
 
-        if (state != -1) {
+        if (state != -1 && exactLayer == 0x23) {
             double bodyScale = 1.0;
             if (state == 0) {
                 if (timer < 40) {
@@ -19157,7 +20384,8 @@ bool StageRuntime::drawStage04BossExact(const StageEnemy& enemy, float x,
         if (enemy.targetable) {
             StageEnemy gaugeSnapshot = enemy;
             gaugeSnapshot.hp = enemy.drawHp;
-            drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 80.0f);
+            drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 80.0f,
+                                exactLayer);
         }
         return true;
     }
@@ -19175,6 +20403,10 @@ bool StageRuntime::drawStage04BossExact(const StageEnemy& enemy, float x,
         entryScale = std::sin(static_cast<double>(timer) * kPi / 100.0);
     }
     if (enemy.spawnType == 0x41) {
+        const int bodyLayer = enemy.secondaryAngle16 > 0x8000 ? 0x1c : 0x1f;
+        if (exactLayer != bodyLayer) {
+            return true;
+        }
         const double base = entryScale *
             (0.9 + 0.1 * std::sin(fixedAngleToRadiansDouble(
                                 enemy.secondaryAngle16)));
@@ -19192,19 +20424,23 @@ bool StageRuntime::drawStage04BossExact(const StageEnemy& enemy, float x,
     const double pulse12 = entryScale * (1.0 + 0.1 * std::sin(
         static_cast<double>(parentTimer - 12) * kPi / 33.0));
     const double headingRadians = fixedAngleToRadiansDouble(enemy.sourceAngle16);
-    draw(medium(77),
-         x + static_cast<float>(std::cos(headingRadians) * 30.0 * entryScale),
-         y + static_cast<float>(std::sin(headingRadians) * 30.0 * entryScale),
-         enemy.sourceAngle16, entryScale, pulse12);
-    draw(medium(76), x, y, 0, entryScale, pulse0);
+    if (exactLayer == 0x23) {
+        draw(medium(77),
+             x + static_cast<float>(std::cos(headingRadians) * 30.0 * entryScale),
+             y + static_cast<float>(std::sin(headingRadians) * 30.0 * entryScale),
+             enemy.sourceAngle16, entryScale, pulse12);
+        draw(medium(76), x, y, 0, entryScale, pulse0);
+    }
     return true;
 }
 
-bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float y) const {
-    const auto drawGauge = [this, &enemy](int mode, float drawX, float drawY) {
+bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float y,
+                                         int exactLayer) const {
+    const auto drawGauge = [this, &enemy, exactLayer](int mode, float drawX,
+                                                       float drawY) {
         StageEnemy gaugeSnapshot = enemy;
         gaugeSnapshot.hp = enemy.drawHp;
-        drawEnemyGaugeExact(gaugeSnapshot, mode, drawX, drawY);
+        drawEnemyGaugeExact(gaugeSnapshot, mode, drawX, drawY, exactLayer);
     };
     if (enemy.spawnType == 0x3f) {
         const int smallBody = enemySmallFrames_.size() > 42 ? enemySmallFrames_[42] : -1;
@@ -19215,7 +20451,7 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
         const double chainPhase = static_cast<double>(frame_) * kTauDouble / 136.0;
         const double chainSin = std::sin(chainPhase);
         const double chainCos = std::cos(chainPhase);
-        if (smallBody != -1) {
+        if (smallBody != -1 && exactLayer == 0x20) {
             const int spinUnit = static_cast<int>(chainSin * 444.0);
             for (int i = 0; i < 11; ++i) {
                 const double distance = static_cast<double>(i) * 25.0;
@@ -19233,17 +20469,17 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
         const double pulse = std::sin(static_cast<double>(frame_) * kTauDouble / 120.0) * 0.05 + 1.0;
         const int sideAngle = static_cast<int>(
             std::sin(static_cast<double>(frame_) * kTauDouble / 66.0) * 777.0);
-        if (sideBody != -1) {
+        if (sideBody != -1 && exactLayer == 0x20) {
             drawOriginalMode7Node(sideBody, x + static_cast<float>(pulse * 60.0), y + 230.0f,
                                   normalizeAngle16(sideAngle), 1.0, 1.0, false);
             drawOriginalMode7Node(sideBody, x - static_cast<float>(pulse * 60.0), y + 230.0f,
                                   normalizeAngle16(-sideAngle), 1.0, 1.0, true);
         }
-        if (centerBody != -1) {
+        if (centerBody != -1 && exactLayer == 0x20) {
             drawOriginalMode7Node(centerBody, x, y + 70.0f, 0, pulse, pulse, false);
         }
 
-        if (enemy.drawHp >= 0 && enemy.maxHp > 0) {
+        if (exactLayer == 0x32 && enemy.drawHp >= 0 && enemy.maxHp > 0) {
             const double ratio = static_cast<double>(enemy.drawHp) / static_cast<double>(enemy.maxHp);
             const int gauge = enemyGaugeFrames_.empty() ? -1 : enemyGaugeFrames_[0];
             int red = 0;
@@ -19282,14 +20518,15 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
 
         if (enemy.spawnType == 0x3e) {
             const int childBody = mediumHandle(72);
-            if (enemy.drawBodyThisFrame && childBody != -1) {
+            if (exactLayer == 0x1e && enemy.drawBodyThisFrame &&
+                childBody != -1) {
                 drawOriginalMode7Node(childBody, x, y, enemy.sourceAngle16,
                                       1.0, 1.0, false);
             }
             return true;
         }
 
-        if (enemy.drawMarkerThisFrame) {
+        if (enemy.drawMarkerThisFrame && exactLayer == 0x32) {
             const int marker = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
             if (marker != -1) {
                 const double markerScale = 4.0 - static_cast<double>(enemy.markerDrawTimer) * 0.2;
@@ -19309,7 +20546,7 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
         const double sideScale = std::sin(static_cast<double>(enemy.drawHelperTimer) *
                                           (2.0 * kPiDouble / 19.0));
         const int sideBody = mediumHandle(73);
-        if (sideBody != -1) {
+        if (sideBody != -1 && exactLayer == 0x1e) {
             drawOriginalMode7Node(sideBody, sideX, sideY, 0xc000,
                                   sideScale, 1.0, true);
             drawOriginalMode7Node(sideBody, sideX, sideY, 0xc000,
@@ -19317,11 +20554,11 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
         }
 
         const int centerBody = enemyLargeFrames_.size() > 17 ? enemyLargeFrames_[17] : -1;
-        if (centerBody != -1) {
+        if (centerBody != -1 && exactLayer == 0x1e) {
             drawOriginalMode7Node(centerBody, x, y, 0, 1.0, 1.0, entryFromLeft);
         }
 
-        if (enemy.drawHp >= 0 && enemy.maxHp > 0) {
+        if (exactLayer == 0x32 && enemy.drawHp >= 0 && enemy.maxHp > 0) {
             const double ratio = static_cast<double>(enemy.drawHp) / static_cast<double>(enemy.maxHp);
             const int gauge = enemyGaugeFrames_.empty() ? -1 : enemyGaugeFrames_[0];
             int red = 0;
@@ -19359,7 +20596,7 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
             const float markerY = screenY(clampFloat(enemy.y, -50.0f, 770.0f));
             const double markerScale = std::max(0.0, 3.0 - enemy.drawHelperTimer * 0.15);
             const int marker = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
-            if (marker != -1) {
+            if (marker != -1 && exactLayer == 0x32) {
                 drawOriginalMode7Node(marker, markerX, markerY, 0, markerScale, markerScale, false);
             }
             return true;
@@ -19379,14 +20616,16 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
         const float bodyWave = static_cast<float>(2.0 * std::sin((timer - 23) * kTau / 63.0f));
         const int rot65 = static_cast<int>(std::sin(timer * kTau / 50.0f) * 1500.0f);
         const int rot66 = static_cast<int>(std::sin((timer - 25) * kTau / 50.0f) * 1500.0f);
-        drawMedium(66, x + 30.0f, y + bodyWave, normalizeAngle16(rot66), false);
-        drawMedium(66, x - 30.0f, y + bodyWave, normalizeAngle16(-rot66), true);
-        drawMedium(65, x + 25.0f, y + bodyWave + 80.0f, normalizeAngle16(rot65), false);
-        drawMedium(65, x - 25.0f, y + bodyWave + 80.0f, normalizeAngle16(-rot65), true);
-        drawMedium(64, x, y + bodyWave, 0, false);
-        drawMedium(63, x, y + rearWave, 0, false);
+        if (exactLayer == 0x20) {
+            drawMedium(66, x + 30.0f, y + bodyWave, normalizeAngle16(rot66), false);
+            drawMedium(66, x - 30.0f, y + bodyWave, normalizeAngle16(-rot66), true);
+            drawMedium(65, x + 25.0f, y + bodyWave + 80.0f, normalizeAngle16(rot65), false);
+            drawMedium(65, x - 25.0f, y + bodyWave + 80.0f, normalizeAngle16(-rot65), true);
+            drawMedium(64, x, y + bodyWave, 0, false);
+            drawMedium(63, x, y + rearWave, 0, false);
+        }
 
-        if (enemy.drawHp >= 0 && enemy.maxHp > 0) {
+        if (exactLayer == 0x32 && enemy.drawHp >= 0 && enemy.maxHp > 0) {
             const double ratio = static_cast<double>(enemy.drawHp) / static_cast<double>(enemy.maxHp);
             const int gauge = enemyGaugeFrames_.size() > 1 ? enemyGaugeFrames_[1] : -1;
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, 192);
@@ -19440,11 +20679,11 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
                 const float markerX = screenX(clampFloat(enemy.x, horizontalOrigin - 50.0f,
                                                          horizontalOrigin + 650.0f));
                 const float markerY = screenY(clampFloat(enemy.y, -50.0f, 770.0f));
-                if (marker != -1) {
+                if (marker != -1 && exactLayer == 0x32) {
                     drawOriginalMode7Node(marker, markerX, markerY, enemy.sourceAngle16,
                                           markerScale, markerScale, false);
                 }
-                else {
+                else if (exactLayer == 0x32) {
                     drawMedium(68, markerX, markerY, enemy.sourceAngle16, markerScale, markerScale, false);
                 }
                 return true;
@@ -19453,6 +20692,9 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
                 return true;
             }
 
+            if (exactLayer != 0x1d) {
+                return true;
+            }
             const int spin = static_cast<int>(std::sin(static_cast<double>(drawTimer) *
                                                        590.4144144144144 * static_cast<double>(kPi) /
                                                        32768.0) * 2400.0);
@@ -19470,13 +20712,17 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
             return true;
         }
         if (enemy.spawnType == 0x3b) {
-            drawMedium(70, x, y, enemy.sourceAngle16, 1.0, pulse, false);
+            if (exactLayer == 0x1c) {
+                drawMedium(70, x, y, enemy.sourceAngle16, 1.0, pulse, false);
+            }
             return true;
         }
 
         const float angle = fixedAngleToRadians(enemy.sourceAngle16);
-        drawMedium(71, x + std::cos(angle) * 45.0f, y + std::sin(angle) * 45.0f,
-                   enemy.sourceAngle16, 1.0, pulse, false);
+        if (exactLayer == 0x1c) {
+            drawMedium(71, x + std::cos(angle) * 45.0f, y + std::sin(angle) * 45.0f,
+                       enemy.sourceAngle16, 1.0, pulse, false);
+        }
         return true;
     }
 
@@ -19513,20 +20759,22 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
             const float markerX = screenX(clampFloat(enemy.x, horizontalOrigin - 20.0f,
                                                      horizontalOrigin + 620.0f));
             const float markerY = screenY(clampFloat(enemy.y, -20.0f, 740.0f));
-            if (marker != -1) {
+            if (marker != -1 && exactLayer == 0x32) {
                 drawOriginalMode7Node(marker, markerX, markerY, enemy.sourceAngle16,
                                       markerScale, markerScale, false);
             }
-            else {
+            else if (exactLayer == 0x32) {
                 draw(32, markerX, markerY, markerScale, enemy.sourceAngle16);
             }
             return true;
         }
-        draw(32, x, y, 1.0, 0);
-        const std::uint16_t base = normalizeAngle16(enemy.drawHelperTimer * 2000);
-        draw(33, x, y - 35.0f, 1.0, base);
-        draw(33, x, y - 35.0f, 1.0, normalizeAngle16(static_cast<int>(base) + 0x5555));
-        draw(33, x, y - 35.0f, 1.0, normalizeAngle16(static_cast<int>(base) - 0x5556));
+        if (exactLayer == 0x23) {
+            draw(32, x, y, 1.0, 0);
+            const std::uint16_t base = normalizeAngle16(enemy.drawHelperTimer * 2000);
+            draw(33, x, y - 35.0f, 1.0, base);
+            draw(33, x, y - 35.0f, 1.0, normalizeAngle16(static_cast<int>(base) + 0x5555));
+            draw(33, x, y - 35.0f, 1.0, normalizeAngle16(static_cast<int>(base) - 0x5556));
+        }
         drawGauge(2, x, y);
         return true;
     }
@@ -19539,11 +20787,11 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
             const float markerX = screenX(clampFloat(enemy.x, horizontalOrigin - 20.0f,
                                                      horizontalOrigin + 620.0f));
             const float markerY = screenY(clampFloat(enemy.y, -20.0f, 740.0f));
-            if (marker != -1) {
+            if (marker != -1 && exactLayer == 0x32) {
                 drawOriginalMode7Node(marker, markerX, markerY, enemy.sourceAngle16,
                                       markerScale, markerScale, false);
             }
-            else {
+            else if (exactLayer == 0x32) {
                 draw(34, markerX, markerY, markerScale, enemy.sourceAngle16);
             }
             return true;
@@ -19565,6 +20813,7 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
             static_cast<int>(enemy.sourceAngle16) + 0x4000);
         const auto negativeSide = normalizeAngle16(
             static_cast<int>(enemy.sourceAngle16) - 0x4000);
+        if (exactLayer == 0x23) {
         drawScaled(39,
                    x + static_cast<float>(std::cos(fixedAngleToRadiansDouble(positiveSide)) * 10.0),
                    y + static_cast<float>(std::sin(fixedAngleToRadiansDouble(positiveSide)) * 10.0),
@@ -19583,6 +20832,7 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
                    x + static_cast<float>(std::cos(heading) * 20.0),
                    y + static_cast<float>(std::sin(heading) * 20.0),
                    1.0, bodyPulse, enemy.sourceAngle16);
+        }
         if (enemy.targetable) {
             drawGauge(2, x, y);
         }
@@ -19598,16 +20848,19 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
     const double scaleX = scale * (0.9 + pulsePhase * 0.3);
     const double scaleY = scale * (1.2 - pulsePhase * 0.3);
     const double visualHeading = fixedAngleToRadiansDouble(enemy.secondaryAngle16);
-    if (enemy.drawHelperState == 0) {
+    const int bodyLayer = enemy.drawHelperState == 0 ? 0x0c : 0x23;
+    if (exactLayer == bodyLayer && enemy.drawHelperState == 0) {
         SetDrawBlendMode(DX_BLENDMODE_ALPHA,
                          std::clamp(static_cast<int>(timer * 2.125), 0, 255));
     }
+    if (exactLayer == bodyLayer) {
     drawScaled(41,
                x - static_cast<float>(std::cos(visualHeading) * 40.0 * scale),
                y - static_cast<float>(std::sin(visualHeading) * 40.0 * scale),
                scaleX, scaleY, enemy.secondaryAngle16);
     drawScaled(40, x, y, scale, scaleY, enemy.secondaryAngle16);
-    if (enemy.drawHelperState == 0) {
+    }
+    if (exactLayer == bodyLayer && enemy.drawHelperState == 0) {
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     }
     if (enemy.targetable) {
@@ -19616,12 +20869,13 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
     return true;
 }
 
-bool StageRuntime::drawStage01Type0EExact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawStage01Type0EExact(const StageEnemy& enemy, float x, float y,
+                                          int exactLayer) const {
     if (enemy.spawnType != 0x0e) {
         return false;
     }
 
-    if (enemy.drawMarkerThisFrame) {
+    if (enemy.drawMarkerThisFrame && exactLayer == 0x32) {
         const int marker = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
         if (marker != -1) {
             const double scale = std::max(
@@ -19632,6 +20886,15 @@ bool StageRuntime::drawStage01Type0EExact(const StageEnemy& enemy, float x, floa
         }
     }
     if (!enemy.drawBodyThisFrame) {
+        return true;
+    }
+    if (exactLayer == 0x32) {
+        StageEnemy gaugeSnapshot = enemy;
+        gaugeSnapshot.hp = enemy.drawHp;
+        drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 120.0f, exactLayer);
+        return true;
+    }
+    if (exactLayer != 0x20) {
         return true;
     }
 
@@ -19689,19 +20952,16 @@ bool StageRuntime::drawStage01Type0EExact(const StageEnemy& enemy, float x, floa
                normalizeAngle16(1000 - bodyAngle), true);
     drawMedium(16, x, y + frontY, 0, false);
 
-    StageEnemy gaugeSnapshot = enemy;
-    gaugeSnapshot.hp = enemy.drawHp;
-    // FUN_140079c10(entity, 1, ..., xOffset=0, yOffset=-120).
-    drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 120.0f);
     return true;
 }
 
-bool StageRuntime::drawStage01Type0FExact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawStage01Type0FExact(const StageEnemy& enemy, float x, float y,
+                                          int exactLayer) const {
     if (enemy.spawnType != 0x0f) {
         return false;
     }
 
-    if (enemy.drawMarkerThisFrame) {
+    if (enemy.drawMarkerThisFrame && exactLayer == 0x32) {
         const int marker = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
         if (marker != -1) {
             const double scale = std::max(
@@ -19712,6 +20972,15 @@ bool StageRuntime::drawStage01Type0FExact(const StageEnemy& enemy, float x, floa
         }
     }
     if (!enemy.drawBodyThisFrame) {
+        return true;
+    }
+    if (exactLayer == 0x32) {
+        StageEnemy gaugeSnapshot = enemy;
+        gaugeSnapshot.hp = enemy.drawHp;
+        drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 120.0f, exactLayer);
+        return true;
+    }
+    if (exactLayer != 0x20) {
         return true;
     }
 
@@ -19751,14 +21020,11 @@ bool StageRuntime::drawStage01Type0FExact(const StageEnemy& enemy, float x, floa
     drawMedium(23, x, y + middleWave, 0, false);
     drawMedium(22, x, y + frontWave, 0, false);
 
-    StageEnemy gaugeSnapshot = enemy;
-    gaugeSnapshot.hp = enemy.drawHp;
-    drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 120.0f);
     return true;
 }
 
 bool StageRuntime::drawStage01Type10Or11Exact(const StageEnemy& enemy, float x,
-                                              float y) const {
+                                              float y, int exactLayer) const {
     if (enemy.spawnType != 0x10 && enemy.spawnType != 0x11) {
         return false;
     }
@@ -19780,6 +21046,18 @@ bool StageRuntime::drawStage01Type10Or11Exact(const StageEnemy& enemy, float x,
     constexpr double kOriginalPi = 3.14159265358979323846;
     if (enemy.spawnType == 0x10) {
         if (!enemy.drawBodyThisFrame) {
+            return true;
+        }
+        if (exactLayer == 0x32) {
+            if (enemy.targetable) {
+                StageEnemy gaugeSnapshot = enemy;
+                gaugeSnapshot.hp = enemy.drawHp;
+                drawEnemyGaugeExact(gaugeSnapshot, 0, x, y - 160.0f,
+                                    exactLayer);
+            }
+            return true;
+        }
+        if (exactLayer != 0x20) {
             return true;
         }
 
@@ -19807,11 +21085,6 @@ bool StageRuntime::drawStage01Type10Or11Exact(const StageEnemy& enemy, float x,
         drawMedium(30, x - 105.0f, y + wave30 * 4.0f - 40.0f, 4000);
         drawMedium(31, x + 90.0f, y + wave30 * 4.0f + 40.0f, 0);
 
-        if (enemy.targetable) {
-            StageEnemy gaugeSnapshot = enemy;
-            gaugeSnapshot.hp = enemy.drawHp;
-            drawEnemyGaugeExact(gaugeSnapshot, 0, x, y - 160.0f);
-        }
         return true;
     }
 
@@ -19828,32 +21101,36 @@ bool StageRuntime::drawStage01Type10Or11Exact(const StageEnemy& enemy, float x,
     const float directionY = static_cast<float>(std::sin(oppositeRadians));
     const int rotorAngle = timer * 2000;
 
-    drawMedium(32, x + directionX * 30.0f, y + directionY * 30.0f,
-               enemy.sourceAngle16);
-    drawMedium(33, x + directionX * 125.0f, y + directionY * 125.0f,
-               normalizeAngle16(rotorAngle));
-    drawMedium(33, x + directionX * 125.0f, y + directionY * 125.0f,
-               normalizeAngle16(rotorAngle + 0x5555));
-    drawMedium(33, x + directionX * 125.0f, y + directionY * 125.0f,
-               normalizeAngle16(rotorAngle - 0x5556));
+    if (exactLayer == 0x20) {
+        drawMedium(32, x + directionX * 30.0f, y + directionY * 30.0f,
+                   enemy.sourceAngle16);
+    }
+    if (exactLayer == 0x23) {
+        drawMedium(33, x + directionX * 125.0f, y + directionY * 125.0f,
+                   normalizeAngle16(rotorAngle));
+        drawMedium(33, x + directionX * 125.0f, y + directionY * 125.0f,
+                   normalizeAngle16(rotorAngle + 0x5555));
+        drawMedium(33, x + directionX * 125.0f, y + directionY * 125.0f,
+                   normalizeAngle16(rotorAngle - 0x5556));
+    }
 
     if (enemy.targetable) {
         StageEnemy gaugeSnapshot = enemy;
         gaugeSnapshot.hp = enemy.drawHp;
-        drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 110.0f);
+        drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 110.0f, exactLayer);
     }
     return true;
 }
 
 bool StageRuntime::drawStage01MarkerExact(const StageEnemy& enemy, float x,
-                                          float y) const {
+                                          float y, int exactLayer) const {
     const bool root = enemy.spawnType >= 0x06 && enemy.spawnType <= 0x08;
     const bool satellite = enemy.spawnType == 0x09;
     if (!root && !satellite) {
         return false;
     }
 
-    if (root && enemy.drawMarkerThisFrame) {
+    if (root && enemy.drawMarkerThisFrame && exactLayer == 0x32) {
         const int marker = effectMediumFrames_.size() > 4
                                ? effectMediumFrames_[4]
                                : -1;
@@ -19875,6 +21152,14 @@ bool StageRuntime::drawStage01MarkerExact(const StageEnemy& enemy, float x,
                    : -1;
     };
     if (satellite) {
+        const int bodyLayer =
+            static_cast<std::uint16_t>(
+                static_cast<int>(enemy.secondaryAngle16) + 0xc000) <= 0x7fff
+                ? 0x25
+                : 0x27;
+        if (exactLayer != bodyLayer) {
+            return true;
+        }
         const int handle = mediumHandle(11);
         if (handle != -1) {
             const double scale = 1.1 + 0.1 * std::sin(
@@ -19882,6 +21167,16 @@ bool StageRuntime::drawStage01MarkerExact(const StageEnemy& enemy, float x,
                 static_cast<double>(kPi) / 32.0);
             drawOriginalMode7Node(handle, x, y, 0, scale, scale, false);
         }
+        return true;
+    }
+
+    if (exactLayer == 0x32) {
+        StageEnemy gaugeSnapshot = enemy;
+        gaugeSnapshot.hp = enemy.drawHp;
+        drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 80.0f, exactLayer);
+        return true;
+    }
+    if (exactLayer != 0x26) {
         return true;
     }
 
@@ -19936,15 +21231,26 @@ bool StageRuntime::drawStage01MarkerExact(const StageEnemy& enemy, float x,
         drawOriginalMode7Node(coreHandle, x, y, 0,
                               bodyScale, 1.0, false);
     }
-    StageEnemy gaugeSnapshot = enemy;
-    gaugeSnapshot.hp = enemy.drawHp;
-    drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 80.0f);
     return true;
 }
 
-bool StageRuntime::drawType0AExact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawType0AExact(const StageEnemy& enemy, float x, float y,
+                                   int exactLayer) const {
     if (enemy.spawnType != 0x0a || enemyMediumFrames_.empty()) {
         return false;
+    }
+
+    if (exactLayer == 0x32) {
+        if (enemy.targetable) {
+            StageEnemy gaugeSnapshot = enemy;
+            gaugeSnapshot.hp = enemy.drawHp;
+            drawEnemyGaugeExact(gaugeSnapshot, 2, x, y - 80.0f, exactLayer);
+        }
+        return true;
+    }
+    const int bodyLayer = enemy.drawHelperState == 0 ? 0x07 : 0x23;
+    if (exactLayer != bodyLayer) {
+        return true;
     }
 
     const auto mediumHandle = [this](int frame) {
@@ -19975,16 +21281,11 @@ bool StageRuntime::drawType0AExact(const StageEnemy& enemy, float x, float y) co
                normalizeAngle16(-static_cast<int>(wingAngle)), scale, true);
     drawMedium(enemy.visualFrame, x, y, 0, scale, false);
 
-    if (enemy.targetable) {
-        // FUN_140079c10(entity, 2, ..., xOffset=0, yOffset=-80).
-        StageEnemy gaugeSnapshot = enemy;
-        gaugeSnapshot.hp = enemy.drawHp;
-        drawEnemyGaugeExact(gaugeSnapshot, 2, x, y - 80.0f);
-    }
     return true;
 }
 
-bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, float y) const {
+bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x,
+                                              float y, int exactLayer) const {
     const bool sharedType0BTo0D = enemy.spawnType >= 0x0b && enemy.spawnType <= 0x0d;
     if (enemyUsesMediumFrame(enemy) || enemySmallFrames_.empty()) {
         return false;
@@ -20005,7 +21306,7 @@ bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, 
     };
 
     if (sharedType0BTo0D) {
-        if (enemy.drawMarkerThisFrame) {
+        if (enemy.drawMarkerThisFrame && exactLayer == 0x32) {
             const int marker = effectMediumFrames_.size() > 4 ? effectMediumFrames_[4] : -1;
             if (marker != -1) {
                 const double scale = std::max(
@@ -20025,6 +21326,15 @@ bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, 
 
     switch (enemy.spawnType) {
     case 0x0b: {
+        if (exactLayer == 0x32) {
+            StageEnemy gaugeSnapshot = enemy;
+            gaugeSnapshot.hp = enemy.drawHp;
+            drawEnemyGaugeExact(gaugeSnapshot, 2, x, y - 50.0f, exactLayer);
+            return true;
+        }
+        if (exactLayer != 0x23) {
+            return true;
+        }
         // FUN_14007d4e0: DAT_140e44670 body, then four DAT_140e44674 wing/orbit nodes.
         // The manual nodes are literal 0x48 render queue nodes at decompile lines 244-350.
         constexpr double kBodyWaveStep = 0.12319971190548208;
@@ -20041,12 +21351,18 @@ bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, 
         drawSmall(5, x, y - kWingOffsetY, normalizeAngle16(static_cast<int>(wingBase) + 0x4000), 1.0, 1.0, false);
         drawSmall(5, x, y - kWingOffsetY, normalizeAngle16(static_cast<int>(wingBase) - 0x8000), 1.0, 1.0, false);
         drawSmall(5, x, y - kWingOffsetY, normalizeAngle16(static_cast<int>(wingBase) - 0x4000), 1.0, 1.0, false);
-        StageEnemy gaugeSnapshot = enemy;
-        gaugeSnapshot.hp = enemy.drawHp;
-        drawEnemyGaugeExact(gaugeSnapshot, 2, x, y - 50.0f);
         return true;
     }
     case 0x0c: {
+        if (exactLayer == 0x32) {
+            StageEnemy gaugeSnapshot = enemy;
+            gaugeSnapshot.hp = enemy.drawHp;
+            drawEnemyGaugeExact(gaugeSnapshot, 2, x, y - 50.0f, exactLayer);
+            return true;
+        }
+        if (exactLayer != 0x26) {
+            return true;
+        }
         // FUN_14007dfb0 lines 309-321: frame 8, mirrored frame 8, frame 7, frame 6.
         constexpr double kYOffsetStep = 0.1698158191129618;  // _DAT_14053aa00 * pi * (1/32768).
         constexpr double kAngleStep = 1.2566370614359172;    // DAT_14053abc0 * pi * (1/32768).
@@ -20066,12 +21382,18 @@ bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, 
         drawSmall(8, x, wingY, static_cast<std::uint16_t>(-wingAngle), 1.0, 1.0, true);
         drawSmall(7, x, wingY - kFrontBodyYOffset, bodyAngle16, 1.0, 1.0, false);
         drawSmall(6, x, backBodyWaveY - kBackBodyYOffset, bodyAngle16, 1.0, 1.0, false);
-        StageEnemy gaugeSnapshot = enemy;
-        gaugeSnapshot.hp = enemy.drawHp;
-        drawEnemyGaugeExact(gaugeSnapshot, 2, x, y - 50.0f);
         return true;
     }
     case 0x0d: {
+        if (exactLayer == 0x32) {
+            StageEnemy gaugeSnapshot = enemy;
+            gaugeSnapshot.hp = enemy.drawHp;
+            drawEnemyGaugeExact(gaugeSnapshot, 2, x, y - 50.0f, exactLayer);
+            return true;
+        }
+        if (exactLayer != 0x23) {
+            return true;
+        }
         // FUN_14007ea30 lines 233-257: two frame 10 side nodes, then frame 9 body.
         constexpr double kScaleWaveStep = 0.19039955476301776; // _DAT_14053aa10 * pi * (1/32768).
         constexpr double kAngleStep = 0.09519977738150888;     // _DAT_14053a8e8 * pi * (1/32768), applied to age % 33.
@@ -20098,9 +21420,6 @@ bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x, 
             drawSmall(10, x + kSideOffset, y - kSecondWingYOffset, secondAngle, scale, scale, false);
         }
         drawSmall(9, x, y, 0, scale, scale, sourceBelowC000);
-        StageEnemy gaugeSnapshot = enemy;
-        gaugeSnapshot.hp = enemy.drawHp;
-        drawEnemyGaugeExact(gaugeSnapshot, 2, x, y - 50.0f);
         return true;
     }
     default:
@@ -20115,7 +21434,9 @@ void StageRuntime::drawOriginalMode7Node(int handle, float x, float y, std::uint
     int width = 0;
     int height = 0;
     GetGraphSize(handle, &width, &height);
-    DrawRotaGraph3F(x, y, static_cast<float>(width) * 0.5f,
+    DrawRotaGraph3F(static_cast<float>(static_cast<int>(x)),
+                    static_cast<float>(static_cast<int>(y)),
+                    static_cast<float>(width) * 0.5f,
                     static_cast<float>(height) * 0.5f, scaleX, scaleY,
                     fixedAngleToRadiansDouble(angle16), handle, TRUE,
                     reverseX ? TRUE : FALSE);
@@ -20133,6 +21454,7 @@ void StageRuntime::drawStageEffects(bool foreground, int exactLayer) const {
             }
         }
         else if ((effect.drawLayer >= 0x18) != foreground ||
+                 effect.drawLayer == 0x27 ||
                  effect.drawLayer == 0x1d || effect.drawLayer == 0x20 ||
                  effect.drawLayer == 0x6f || effect.drawLayer == 0x72 ||
                  effect.drawLayer == 0x73) {
@@ -20192,11 +21514,13 @@ void StageRuntime::drawStageEffects(bool foreground, int exactLayer) const {
             int height = 0;
             GetGraphSize(effect.graphHandle, &width, &height);
             SetDrawBlendMode(DX_BLENDMODE_ADD, alpha);
-            DrawRotaGraph3F(screenX(effect.drawX), screenY(effect.drawY),
-                            static_cast<float>(width) * 0.5f, 0.0f,
-                            effect.drawScaleX, effect.drawScaleY,
-                            fixedAngleToRadiansDouble(effect.drawAngle16),
-                            effect.graphHandle, TRUE);
+            DrawRotaGraph3F(
+                static_cast<float>(static_cast<int>(screenX(effect.drawX))),
+                static_cast<float>(static_cast<int>(screenY(effect.drawY))),
+                static_cast<float>(width) * 0.5f, 0.0f,
+                effect.drawScaleX, effect.drawScaleY,
+                fixedAngleToRadiansDouble(effect.drawAngle16),
+                effect.graphHandle, TRUE);
             continue;
         }
         if (effect.type == 0x41) {
@@ -20242,10 +21566,49 @@ void StageRuntime::drawStageEffects(bool foreground, int exactLayer) const {
             }
             continue;
         }
+        if (effect.type == 0x15) {
+            // FUN_140078110 queues three mode-7 nodes around the stored orbit
+            // angle. Mode 7 truncates the final translated coordinates.
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+            for (int node = 0; node < 3; ++node) {
+                const std::uint16_t orbitAngle = normalizeAngle16(
+                    static_cast<int>(effect.angle16) + node * 0x5555);
+                const double radians = fixedAngleToRadiansDouble(orbitAngle);
+                const float nodeX = effect.drawX + static_cast<float>(
+                    std::cos(radians) * effect.scale0);
+                const float nodeY = effect.drawY + static_cast<float>(
+                    std::sin(radians) * effect.scale0);
+                drawOriginalMode7Node(
+                    effect.graphHandle, screenX(nodeX), screenY(nodeY),
+                    effect.drawAngle16, effect.drawScaleX,
+                    effect.drawScaleY, false);
+            }
+            continue;
+        }
+        if (effect.type == 0x17) {
+            // FUN_140076130 draws the base mode-7 node every frame and appends
+            // an otherwise identical mode-8 node every third update.
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+            drawOriginalMode7Node(
+                effect.graphHandle, screenX(effect.drawX), screenY(effect.drawY),
+                effect.drawAngle16, effect.drawScaleX,
+                effect.drawScaleY, false);
+            const int drawAge = effect.age - 1;
+            if (drawAge % 3 == 0) {
+                SetDrawBlendMode(DX_BLENDMODE_ADD, alpha);
+                drawOriginalMode7Node(
+                    effect.graphHandle, screenX(effect.drawX), screenY(effect.drawY),
+                    effect.drawAngle16, effect.drawScaleX,
+                    effect.drawScaleY, false);
+            }
+            continue;
+        }
         const bool additive = effect.type == 0x05 || effect.type == 0x07 ||
+                              effect.type == 0x0d ||
                               effect.type == 0x13 ||
                               effect.type == 0x22 ||
                               effect.type == 0x31 || effect.type == 0x33 ||
+                              effect.type == 0x3b || effect.type == 0x3c ||
                               effect.type == 0x3e;
         SetDrawBlendMode(additive ? DX_BLENDMODE_ADD : DX_BLENDMODE_ALPHA,
                          alpha);
@@ -20258,53 +21621,74 @@ void StageRuntime::drawStageEffects(bool foreground, int exactLayer) const {
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 }
 
-void StageRuntime::drawProjectiles() const {
+void StageRuntime::drawProjectiles(int exactLayer) const {
     for (const auto& projectile : enemyProjectiles_) {
         if (!projectile.drawQueuedThisFrame) {
             continue;
         }
-        const int frameIndex = bulletFrameForVisualSelector(projectile.visualSelector);
-        const int handle = bulletFrames_.empty() || frameIndex >= static_cast<int>(bulletFrames_.size()) ? -1 : bulletFrames_[static_cast<std::size_t>(frameIndex)];
-        const double angle = projectileDrawRotationForVisualSelector(projectile.visualSelector, projectile.drawAge, projectile.angle16);
-        const auto scale = projectileScaleForVisualSelector(projectile.visualSelector, projectile.drawAge);
         const float x = screenX(projectile.x);
         const float y = screenY(projectile.y);
         if ((projectile.visualSelector == 0x11 || projectile.visualSelector == 0x12) &&
+            exactLayer == projectile.drawLayer - 1 &&
             effectSmallFrames_.size() > 7 && effectSmallFrames_[7] != -1) {
             constexpr double kOriginalPi = 3.14159265358979;
             const double pulseY = 0.6 +
                                   std::sin(static_cast<double>(projectile.drawAge) *
                                            2.0 * kOriginalPi / 17.0) *
                                       0.4;
+            SetDrawBright(0xff, 0xff, 0xff);
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0xc0);
             drawOriginalMode7Node(effectSmallFrames_[7], x, y, projectile.angle16,
                                   1.0, pulseY, false);
             SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         }
-        else if ((projectile.visualSelector == 0x13 || projectile.visualSelector == 0x14)) {
+        if ((projectile.visualSelector == 0x13 || projectile.visualSelector == 0x14) &&
+            exactLayer == 0x23) {
             const int overlayIndex = projectile.visualSelector == 0x13 ? 117 : 118;
             if (overlayIndex < static_cast<int>(enemySmallFrames_.size()) &&
                 enemySmallFrames_[static_cast<std::size_t>(overlayIndex)] != -1) {
                 const int direction = projectile.visualSelector == 0x13 ? -1 : 1;
+                SetDrawBright(0xff, 0xff, 0xff);
+                SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0xff);
                 drawOriginalMode7Node(
                     enemySmallFrames_[static_cast<std::size_t>(overlayIndex)], x, y,
                     normalizeAngle16(direction * projectile.drawAge * 0x457),
                     1.0, 1.0, projectile.visualSelector == 0x14);
+                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
             }
         }
-        if (handle != -1) {
-            // Selectors 0x13/0x14 also append persistent generic effect nodes;
-            // their immediate overlays and base beads are rendered here.
-            DrawRotaGraph3F(x, y, 30.0f, 30.0f, scale[0], scale[1], angle, handle, TRUE);
+        if (exactLayer != projectile.drawLayer) {
+            continue;
         }
-        else {
-            DrawCircle(static_cast<int>(x), static_cast<int>(y), projectile.radius, GetColor(255, 80, 180), TRUE);
+
+        const int frameIndex = bulletFrameForVisualSelector(projectile.visualSelector);
+        const int handle = bulletFrames_.empty() ||
+                                   frameIndex >= static_cast<int>(bulletFrames_.size())
+                               ? -1
+                               : bulletFrames_[static_cast<std::size_t>(frameIndex)];
+        const std::uint16_t drawAngle = projectileDrawAngleForVisualSelector(
+            projectile.visualSelector, projectile.drawAge, projectile.angle16);
+        const auto scale = projectileScaleForVisualSelector(
+            projectile.visualSelector, projectile.drawAge);
+        if (handle != -1) {
+            // FUN_140070250 queues mode 7: the renderer applies the dynamic
+            // camera offset, truncates both screen coordinates, and draws in
+            // white with alpha blending even when alpha is fully opaque.
+            SetDrawBright(0xff, 0xff, 0xff);
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0xff);
+            drawOriginalMode7Node(handle, x, y, drawAngle,
+                                  scale[0], scale[1], false);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         }
     }
 }
 
-void StageRuntime::drawRewardItems() const {
+void StageRuntime::drawRewardItems(bool specialLayer) const {
     for (const auto& item : rewardItems_) {
+        const bool specialItem = item.itemType >= 6 && item.itemType <= 8;
+        if (specialItem != specialLayer) {
+            continue;
+        }
         int handle = -1;
         int alpha = 0xff;
         double scale = 1.0;
@@ -20335,7 +21719,7 @@ void StageRuntime::drawRewardItems() const {
             handle = itemFrames_[static_cast<std::size_t>(frameIndex)];
             const double pulse =
                 1.0 + 0.2 * std::sin(static_cast<double>(item.drawAge) *
-                                     static_cast<double>(kTau) / 33.0);
+                                     static_cast<double>(kPi) / 33.0);
             scale = baseScale * pulse;
             alpha = config_.likeStyle == 1 ? 200 : (config_.itemVisibility == 1 ? 128 : 160);
         }
@@ -20370,30 +21754,40 @@ void StageRuntime::drawRewardItems() const {
 }
 
 void StageRuntime::drawOverlay() const {
-    drawHudSidebar();
     if (showLayoutGuides_) {
         drawLayoutGuides();
         drawDebugOverlay();
     }
 }
 
-void StageRuntime::drawHudSidebar() const {
-    drawStateRows();
-    drawTimeWindowHud();
+void StageRuntime::drawHudSidebar(int exactLayer) const {
+    drawStateRows(exactLayer);
+    drawTimeWindowHud(exactLayer);
     if (config_.dataWindowEnabled == 1 && config_.routeMode != -1) {
-        drawLeftHudPanel();
+        drawLeftHudPanel(exactLayer);
     }
 }
 
 
-void StageRuntime::drawLeftHudPanel() const {
+void StageRuntime::drawLeftHudPanel(int exactLayer) const {
+    if (exactLayer == 0x7c) {
+        if (selectedStage_ == 10 && resultFrames_.size() > 9 &&
+            resultFrames_[9] != -1) {
+            DrawRotaGraph3F(30.0f, 365.0f, 0.0f, 30.0f,
+                            0.9, 0.9, 0.0, resultFrames_[9], TRUE);
+        }
+        return;
+    }
+    if (exactLayer != 0x73) {
+        return;
+    }
+
     if (dataWindowHandle_ != -1) {
         DrawGraph(0, 330, dataWindowHandle_, TRUE);
     }
 
-    const int resultIndex = selectedStage_ == 10 ? 9 : 1;
-    if (resultIndex < static_cast<int>(resultFrames_.size())) {
-        const int handle = resultFrames_[static_cast<std::size_t>(resultIndex)];
+    if (selectedStage_ != 10 && resultFrames_.size() > 1) {
+        const int handle = resultFrames_[1];
         if (handle != -1) {
             DrawRotaGraph3F(30.0f, 365.0f, 0.0f, 30.0f,
                             0.9, 0.9, 0.0, handle, TRUE);
@@ -20464,9 +21858,6 @@ void StageRuntime::drawLeftHudPanel() const {
 
     const bool hiddenStage = config_.routeMode == 1 &&
                              config_.specialStageFlag == 0 && selectedStage_ != 10;
-    drawHudNumber(hiddenStage ? 215.0f : 245.0f, 540.0f,
-                  player_.beingShotCount, configNumberFrames_,
-                  25.0f, 1.0, 2, true);
     if (hiddenStage && dataWindow2Frames_.size() > 9 && dataWindow2Frames_[9] != -1) {
         constexpr std::array<std::array<int, 4>, 5> kHiddenShotLimits{{
             {{6, 5, 5, 3}}, {{6, 5, 5, 3}}, {{6, 5, 5, 3}},
@@ -20491,6 +21882,9 @@ void StageRuntime::drawLeftHudPanel() const {
         DrawRotaGraphF(280.0f, 535.0f, 1.0, 0.0, dataWindow2Frames_[9], TRUE);
         SetDrawBright(255, 255, 255);
     }
+    drawHudNumber(hiddenStage ? 215.0f : 245.0f, 540.0f,
+                  player_.beingShotCount, configNumberFrames_,
+                  25.0f, 1.0, 2, true);
 
     const int group = std::clamp(config_.setupGroup, 0, 2);
     constexpr std::array<int, 4> kNeutralSequence{{0, 1, 2, 1}};
@@ -20557,14 +21951,19 @@ void StageRuntime::drawLeftHudPanel() const {
     }
 }
 
-void StageRuntime::drawRightHudPanel() const {
+void StageRuntime::drawRightHudPanel(int exactLayer) const {
+    if (exactLayer != 0x6e) {
+        return;
+    }
     if (!playerFrameFrames_.empty() && playerFrameFrames_.front() != -1) {
         // FUN_1400c2860 draws the fixed right-side frame first, then the
         // selected setup's left-side PlayerFrame overlay. routeMode does not
         // select this family.
         DrawGraph(940, 0, playerFrameFrames_.front(), TRUE);
         const int group = std::clamp(config_.setupGroup, 0, 2);
-        const int overlayIndex = 1 + group * 10;
+        const int overlayIndex =
+            (pauseFlowState_ == PauseFlowState::GameOverPresentation ? 9 : 1) +
+            group * 10;
         if (overlayIndex < static_cast<int>(playerFrameFrames_.size()) &&
             playerFrameFrames_[static_cast<std::size_t>(overlayIndex)] != -1) {
             DrawGraph(0, 0,
@@ -20573,9 +21972,8 @@ void StageRuntime::drawRightHudPanel() const {
     }
 }
 
-void StageRuntime::drawTimeWindowHud() const {
-    if (config_.specialStageFlag != 1 ||
-        (config_.routeMode != 1 && config_.routeMode != 2) ||
+void StageRuntime::drawTimeWindowHud(int exactLayer) const {
+    if (exactLayer != 0x70 || config_.specialStageFlag != 1 ||
         timeWindowHandle_ == -1) {
         return;
     }
@@ -20657,12 +22055,12 @@ void StageRuntime::drawTimeWindowHud() const {
         drawTime(timeWindowElapsedFrames_, 1070.0f, 262.0f, 1.0);
         drawTime(timeWindowBestFrames_, 1070.0f, 295.0f, 1.0);
     }
-    else {
+    else if (config_.routeMode == 2) {
         drawTime(timeWindowElapsedFrames_, 1070.0f, 262.0f, 1.0);
     }
 }
 
-void StageRuntime::drawStateRows() const {
+void StageRuntime::drawStateRows(int exactLayer) const {
     const auto drawState = [&](int frameIndex, float x, float y,
                                int red = 255, int green = 255, int blue = 255,
                                int alpha = 255, double scale = 1.0) {
@@ -20686,13 +22084,22 @@ void StageRuntime::drawStateRows() const {
     const int measuredFrameRate = frameRateMode == 0
                                       ? hudMeasuredFrameRate_
                                       : hudMeasuredFrameRate_ / (frameRateMode + 1);
-    drawHudNumber(1230.0f, 12.0f, measuredFrameRate, numSmallFrames_,
-                  16.0f, 0.8, 3, false);
-    drawHudNumber(1270.0f, 12.0f, targetFrameRate, numSmallFrames_,
-                  16.0f, 0.8, 3, false);
-    if (numSmallFrames_.size() > 12 && numSmallFrames_[12] != -1) {
-        DrawRotaGraph3F(1235.0f, 0.0f, 0.0f, 0.0f,
-                        0.8, 0.8, 0.0, numSmallFrames_[12], TRUE);
+    if (exactLayer == 0x6e) {
+        drawHudNumber(1270.0f, 12.0f, targetFrameRate, numSmallFrames_,
+                      16.0f, 0.8, 3, false);
+        if (numSmallFrames_.size() > 12 && numSmallFrames_[12] != -1) {
+            DrawRotaGraph3F(1235.0f, 0.0f, 0.0f, 0.0f,
+                            0.8, 0.8, 0.0, numSmallFrames_[12], TRUE);
+        }
+        return;
+    }
+    if (exactLayer == 0x78) {
+        drawHudNumber(1230.0f, 12.0f, measuredFrameRate, numSmallFrames_,
+                      16.0f, 0.8, 3, false);
+        return;
+    }
+    if (exactLayer != 0x6f) {
+        return;
     }
 
     if (config_.routeMode == -1) {
@@ -20736,8 +22143,12 @@ void StageRuntime::drawStateRows() const {
         int gaugeRed = 255;
         int gaugeGreen = 64;
         int gaugeBlue = 64;
-        if (player_.specialGauge > 49999) {
-            gaugeScale = 1.0;
+        // The original first comparison is unsigned: negative cooldown values
+        // enter the same rainbow branch as the full/ready sentinel.
+        if (player_.specialGauge < 0 || player_.specialGauge > 49999) {
+            gaugeScale = player_.specialGauge < 0
+                             ? -static_cast<double>(player_.specialGauge) / 600.0
+                             : 1.0;
             constexpr std::array<std::array<int, 3>, 7> kReadyColors{{
                 {{255, 120, 120}}, {{255, 200, 110}}, {{255, 255, 120}},
                 {{120, 255, 120}}, {{120, 255, 255}}, {{120, 120, 255}},
@@ -20773,6 +22184,7 @@ void StageRuntime::drawStateRows() const {
     }
 
     drawState(4, 1040.0f, 580.0f);
+    // DAT_140e445f8: nine-heart Life stock, represented by player_.lives.
     for (int i = 0; i < 9; ++i) {
         const float x = static_cast<float>(1037 + i * 27);
         drawState(8, x, 580.0f, 0, 0, 0, 64);
@@ -20791,6 +22203,7 @@ void StageRuntime::drawStateRows() const {
     }
 
     drawState(6, 1040.0f, 650.0f);
+    // DAT_140e45d34: three-step Mental level, represented by tokenStock.
     constexpr std::array<float, 3> kMentalX{{1100.0f, 1135.0f, 1170.0f}};
     for (std::size_t i = 0; i < kMentalX.size(); ++i) {
         drawState(9, kMentalX[i], 650.0f, 0, 0, 0, 64);
@@ -20898,6 +22311,13 @@ void StageRuntime::drawHudNumber(float anchorX, float centerY, std::int64_t valu
     }
 
     const float leastSignificantX = digitX;
+    // The manually composed right-side rows prepend '+'. FUN_1400c95e0's
+    // ungrouped left-side numbers clamp without an overflow marker.
+    if (overflow && separators && numSmallFrames_.size() > 11 &&
+        numSmallFrames_[11] != -1) {
+        DrawRotaGraphF(leastSignificantX + step, centerY, scale, 0.0,
+                       numSmallFrames_[11], TRUE);
+    }
     for (int i = 0; i < digitCount; ++i) {
         const int digit = digits[static_cast<std::size_t>(i)];
         const int handle = digitFrames[static_cast<std::size_t>(digit)];
@@ -20911,11 +22331,6 @@ void StageRuntime::drawHudNumber(float anchorX, float centerY, std::int64_t valu
             DrawRotaGraphF(digitX + step, centerY, scale, 0.0,
                            numSmallFrames_[10], TRUE);
         }
-    }
-
-    if (overflow && numSmallFrames_.size() > 11 && numSmallFrames_[11] != -1) {
-        DrawRotaGraphF(leastSignificantX + step, centerY, scale, 0.0,
-                       numSmallFrames_[11], TRUE);
     }
 }
 
