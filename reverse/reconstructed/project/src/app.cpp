@@ -313,7 +313,10 @@ int App::runSmokeTestLoop() {
                 config.initialStock = request.initialStock;
                 config.initialStockProgressSteps = request.initialStockProgressSteps;
                 config.initialSpecialGauge = request.initialSpecialGauge;
+                config.initialBestScore = request.initialBestScore;
+                config.initialBestTimeFrames = request.initialBestTimeFrames;
                 config.continueRun = request.continueRun;
+                config.replayPlayback = request.replayPlayback;
                 config.textDatabase = &textDatabase_;
                 if (!stageRuntime_.initialized()) {
                     stageRuntime_.initialize(*resources_, config);

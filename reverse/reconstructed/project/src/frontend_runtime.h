@@ -68,7 +68,10 @@ public:
         int initialStock = -1;
         int initialStockProgressSteps = -1;
         int initialSpecialGauge = -1;
+        std::int64_t initialBestScore = 0;
+        int initialBestTimeFrames = 0;
         bool continueRun = false;
+        bool replayPlayback = false;
     };
 
     struct GameplaySettings {
@@ -87,12 +90,13 @@ public:
     void initialize(ResourceManager& resources, const SaveConfigState& saveConfigState);
     void update(ResourceManager& resources);
     void draw(const ResourceManager& resources) const;
-    void completeGameplay(ResourceManager& resources, int score = 0, int elapsedFrames = 0);
+    void completeGameplay(ResourceManager& resources, std::int64_t score = 0,
+                          int elapsedFrames = 0);
     void returnToTitle(ResourceManager& resources);
     void abortGameplay(ResourceManager& resources);
     void skipTutorial(ResourceManager& resources);
     void finishGameOver(ResourceManager& resources, bool replayPrompt,
-                        int score, int elapsedFrames);
+                        std::int64_t score, int elapsedFrames);
     void applyGameplaySettings(ResourceManager& resources,
                                const GameplaySettings& settings);
 
@@ -208,7 +212,9 @@ private:
     void beginCancelTransition(MainState target);
     void moveCursor(ResourceManager& resources, int delta, int count);
     void refreshOptionSlots();
-    void queueGameplayRequest(bool continueRun = false, bool manualTrialContinue = false);
+    void queueGameplayRequest(bool continueRun = false,
+                              bool manualTrialContinue = false,
+                              bool replayPlayback = false);
     int resultHelpLevel() const;
     bool shouldPromptResultSubmit() const;
 
@@ -282,7 +288,7 @@ private:
     int replayStageChoice_ = 1;
     int rankingCursor_ = 0;
     int rankingValue_ = 0;
-    int resultScore_ = 0;
+    std::int64_t resultScore_ = 0;
     int resultElapsedFrames_ = 0;
     int resultNextStage_ = 1;
     int resultPhase_ = 0;

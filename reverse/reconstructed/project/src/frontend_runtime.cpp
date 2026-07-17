@@ -860,8 +860,9 @@ FrontendRuntime::GameplayRequest FrontendRuntime::consumeGameplayRequest() {
     return request;
 }
 
-void FrontendRuntime::completeGameplay(ResourceManager& resources, int score, int elapsedFrames) {
-    resultScore_ = std::max(0, score);
+void FrontendRuntime::completeGameplay(ResourceManager& resources, std::int64_t score,
+                                       int elapsedFrames) {
+    resultScore_ = std::max<std::int64_t>(0, score);
     resultElapsedFrames_ = std::max(0, elapsedFrames);
     resultRouteCompletion_ = 0;
     if (routeMode_ == 1) {
@@ -953,12 +954,12 @@ void FrontendRuntime::skipTutorial(ResourceManager& resources) {
 }
 
 void FrontendRuntime::finishGameOver(ResourceManager& resources, bool replayPrompt,
-                                     int score, int elapsedFrames) {
+                                     std::int64_t score, int elapsedFrames) {
     if (!replayPrompt) {
         abortGameplay(resources);
         return;
     }
-    resultScore_ = std::max(0, score);
+    resultScore_ = std::max<std::int64_t>(0, score);
     resultElapsedFrames_ = std::max(0, elapsedFrames);
     resultRouteCompletion_ = 0;
     gameplayRequest_ = {};
@@ -1131,7 +1132,8 @@ void FrontendRuntime::refreshOptionSlots() {
     loadoutId_ = optionSlots_[2];
 }
 
-void FrontendRuntime::queueGameplayRequest(bool continueRun, bool manualTrialContinue) {
+void FrontendRuntime::queueGameplayRequest(bool continueRun, bool manualTrialContinue,
+                                           bool replayPlayback) {
     // State 0x04 uses 11..14 for the ordinary Trial map nodes. The gameplay
     // initializer stores node-11 as its submode and starts those routes at
     // active Stage 1; node 10 remains the standalone special stage.
@@ -1196,6 +1198,44 @@ void FrontendRuntime::queueGameplayRequest(bool continueRun, bool manualTrialCon
     gameplayRequest_.rawStartFrame = rawStartFrame;
     gameplayRequest_.firstDispatchFrame = firstDispatchFrame;
     gameplayRequest_.continueRun = continueRun;
+    gameplayRequest_.replayPlayback = replayPlayback;
+    const auto readSavedBest = [this](std::size_t offset) {
+        std::int64_t value = 0;
+        if (offset + sizeof(value) <= saveBackingBytes_.size()) {
+            std::memcpy(&value, saveBackingBytes_.data() + offset, sizeof(value));
+        }
+        return std::max<std::int64_t>(0, value);
+    };
+    if (routeMode_ != 2) {
+        const int group = std::clamp(setupGroup_, 0, 2);
+        const int counter = counterMode_ != 0 ? 1 : 0;
+        std::size_t bestOffset = 0;
+        if (selectedStage_ == 10) {
+            bestOffset = 0x1850 +
+                static_cast<std::size_t>(group * 25 + counter) * sizeof(std::int64_t);
+        }
+        else {
+            const int scoreStage = routeMode_ == 1 ? trialMapStage : selectedStage_;
+            const int index = ((scoreStage * 3 + group) * 25) +
+                              std::clamp(selectedDifficulty_, 0, 4) * 2 + counter;
+            bestOffset = 0xc0 + static_cast<std::size_t>(index) * sizeof(std::int64_t);
+        }
+        gameplayRequest_.initialBestScore = readSavedBest(bestOffset);
+    }
+    if (routeMode_ == 1 && trialMapStage == 14) {
+        const int group = std::clamp(setupGroup_, 0, 2);
+        const int difficulty = std::clamp(selectedDifficulty_, 0, 4);
+        const int counter = counterMode_ != 0 ? 1 : 0;
+        const std::size_t bestTimeOffset = 0x21e0 +
+            static_cast<std::size_t>(counter + (group * 25 + difficulty) * 2) *
+                sizeof(std::int32_t);
+        std::int32_t bestTime = 0;
+        if (bestTimeOffset + sizeof(bestTime) <= saveBackingBytes_.size()) {
+            std::memcpy(&bestTime, saveBackingBytes_.data() + bestTimeOffset,
+                        sizeof(bestTime));
+        }
+        gameplayRequest_.initialBestTimeFrames = std::max(0, static_cast<int>(bestTime));
+    }
     if (routeMode_ == 2) {
         gameplayRequest_.initialStock = practiceOptions_[5];
         gameplayRequest_.initialStockProgressSteps = practiceOptions_[6];

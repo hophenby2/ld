@@ -49,50 +49,40 @@ inline constexpr PointI kPlayScreenOrigin{280, 0};
 inline constexpr PointI kStageBackOrigin{280, 0};
 inline constexpr RectI kStageBackRect{kStageBackOrigin.x, kStageBackOrigin.y, 720, kScreenHeight};
 inline constexpr RectI kStageFrameRect{340, 0, 600, kScreenHeight};
-inline constexpr PointI kPlayerStart{360, 620};
+inline constexpr PointI kPlayerStart{360, 600};
 } // namespace gameplay_layout
 
 namespace hud_layout {
-// Right-side anchors transcribed from FUN_1400c2860. Frame/label semantics are
-// still provisional, but the panel bounds and row coordinates are original-style.
+// Right-side anchors and frame identities decoded from FUN_1400c2860.
 inline constexpr RectI kRightPanelRect{940, 0, 340, 720};
 inline constexpr RectI kTimeWindowRect{940, 0, 340, 340};
 inline constexpr RectI kDataWindowRect{940, 340, 340, 380};
 
 inline constexpr int kLabelX = 1040;
-inline constexpr int kNumberRightX = 1230;
-inline constexpr int kScoreY = 410;
-inline constexpr int kBaseValueY = 450;
-inline constexpr int kGaugeY = 500;
-inline constexpr int kDreamGaugeY = 530;
-inline constexpr int kTokenY = 580;
-inline constexpr int kStageY = 610;
-inline constexpr int kStockY = 650;
-inline constexpr int kPipStartX = 1037;
-inline constexpr int kPipStep = 27;
-inline constexpr int kMaxTokens = 9;
-inline constexpr int kStockIcon0X = 1100;
-inline constexpr int kStockIcon1X = 1135;
-inline constexpr int kStockIcon2X = 1170;
-
-inline constexpr int kGaugeBarWidth = 160;
-inline constexpr int kGaugeBarHeight = 12;
-inline constexpr int kDreamGaugePreviewCenterOffsetX = 80;
-inline constexpr int kDreamGaugePreviewCenterOffsetY = 8;
-inline constexpr double kDreamGaugePreviewScale = 0.28;
+inline constexpr int kNumberRightX = 1240;
+inline constexpr int kBestY = 410;
+inline constexpr int kLikeY = 450;
+inline constexpr int kFollowerY = 500;
+inline constexpr int kBuzzY = 530;
+inline constexpr int kLifeY = 580;
+inline constexpr int kNextExtendY = 610;
+inline constexpr int kMentalY = 650;
+inline constexpr int kHeartStartX = 1037;
+inline constexpr int kHeartStep = 27;
+inline constexpr int kHeartCount = 9;
 
 // Left-side HUD from FUN_1400c4bb0. This panel is conditionally called from
 // FUN_1400c2860 and mirrors the right DataWindow-style HUD on x<340.
 inline constexpr RectI kLeftDataWindowRect{0, 330, 340, 380};
 inline constexpr int kLeftStageLabelX = 30;
 inline constexpr int kLeftStageLabelY = 365;
-inline constexpr int kLeftFrameLabelX = 30;
-inline constexpr int kLeftFrameLabelY = 405;
-inline constexpr int kLeftGrazeLabelX = 30;
-inline constexpr int kLeftGrazeLabelY = 455;
+inline constexpr int kLeftFrameLabelX = 280;
+inline constexpr int kLeftFrameLabelY = 365;
+inline constexpr int kLeftGrazeLabelX = 135;
+inline constexpr int kLeftGrazeLabelY = 535;
 inline constexpr int kLeftKeyStateIconX = 280;
 inline constexpr int kLeftKeyStateIconY = 535;
-inline constexpr int kLeftKeyStateValueRightX = 300;
+inline constexpr int kLeftKeyStateValueRightX = 245;
 inline constexpr int kLeftPlayerIconX = 55;
 inline constexpr int kLeftPlayerIconY = 640;
 inline constexpr int kLeftDataWindow2X = 160;
@@ -238,10 +228,10 @@ inline constexpr int kCounterOnFixedAngle = 0x4000;
 } // namespace difficulty_overlay_evidence
 
 namespace hud_evidence {
-// Resource identities and core right-panel anchors are confirmed from FUN_1400c2860;
-// individual State/DataWindow2 frame meanings still need targeted xref validation.
+// Resource identities, anchors, and frame meanings are confirmed from
+// FUN_1400c2860, FUN_1400c4bb0, and direct sprite-sheet inspection.
 inline constexpr bool kHudPanelAnchorsResolved = true;
-inline constexpr bool kHudFrameMeaningsResolved = false;
+inline constexpr bool kHudFrameMeaningsResolved = true;
 } // namespace hud_evidence
 
 // Primary evidence files:

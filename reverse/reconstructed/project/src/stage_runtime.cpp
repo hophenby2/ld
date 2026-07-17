@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <initializer_list>
 #include <limits>
 #include <string>
 #include <string_view>
@@ -25,11 +26,18 @@ constexpr int kStageEffectCap = 0x1000;
 constexpr int kSpecialGaugeReady = 50000;
 constexpr int kSpecialGaugeForcedFull = 9999999;
 constexpr int kFeverActiveFrames = 600;
-constexpr int kSpecialTokenCap = 9;
+constexpr int kLifeStockCap = 9;
 constexpr std::array<int, 11> kStageEndFrames{{
     0, 5700, 9700, 9500, 11700, 11800, 12500, 12500, 21420, 17900, 12000,
 }};
 constexpr std::array<int, 5> kOriginalStockThresholds{{56000, 70000, 70000, 70000, 70000}};
+constexpr std::array<std::array<std::int64_t, 5>, 5> kExtendThresholds{{
+    {{4000000LL, 16000000LL, 80000000LL, 400000000LL, 2000000000LL}},
+    {{6000000LL, 24000000LL, 120000000LL, 600000000LL, 3000000000LL}},
+    {{8000000LL, 32000000LL, 160000000LL, 800000000LL, 4000000000LL}},
+    {{10000000LL, 40000000LL, 200000000LL, 1000000000LL, 5000000000LL}},
+    {{10000000LL, 40000000LL, 200000000LL, 1000000000LL, 5000000000LL}},
+}};
 constexpr int kGrazeMargin = 48;
 
 void normalizeSystemConfig(std::array<int, 7>& values) {
@@ -1111,6 +1119,8 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
     dataWindow2Frames_ = resources.loadDivGraph("media\\player\\DataWindow2.png", 10, 10, 1, 60, 60);
     playerFrameFrames_ = resources.loadDivGraph("media\\player\\PlayerFrame.png", 0x1e, 10, 3, 0x154, 0x2d0);
     stateFrames_ = resources.loadDivGraph("media\\player\\State.png", 0x20, 1, 0x20, 200, 0x28);
+    resultFrames_ = resources.loadDivGraph("media\\player\\Result.png", 0x14, 1, 0x14, 0xf0, 0x3c);
+    configNumberFrames_ = resources.loadDivGraph("media\\system\\ConfigNumber.png", 0x0b, 1, 0x0b, 0x1e, 0x28);
     dreamGaugeFrames_ = resources.loadDivGraph("media\\player\\DreamGauge.png", 2, 2, 1, 0xa0, 0xa0);
     whiteBackHandle_ = resources.graphHandleById("GFX_system_WhiteBack");
     constexpr std::array<const char*, 8> kBombSoundIds{{
@@ -1127,6 +1137,7 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
         feverSoundHandles_[i] = resources.soundHandleById(kFeverSoundIds[i]);
     }
     normalShotSoundHandle_ = resources.soundHandleById("SE_se_Shot1");
+    optionLockSoundHandle_ = resources.soundHandleById("SE_se_BossSE4");
     missSoundHandle_ = resources.soundHandleById("SE_se_Miss");
     miss2SoundHandle_ = resources.soundHandleById("SE_se_Miss2");
     grazeSoundHandle_ = resources.soundHandleById("SE_se_Graze");
@@ -1211,6 +1222,8 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
                                       ? -1
                                       : std::clamp(config_.initialSpecialGauge, 0,
                                                    kSpecialGaugeReady);
+    config_.initialBestScore = std::max<std::int64_t>(0, config_.initialBestScore);
+    config_.initialBestTimeFrames = std::max(0, config_.initialBestTimeFrames);
     config_.continueRun = false;
     initialized_ = !playerFrames_.empty() && playerFrames_.front() != -1 &&
                    !itemFrames_.empty() && itemFrames_.front() != -1 &&
@@ -1253,6 +1266,8 @@ bool StageRuntime::setConfig(const StageRuntimeConfig& config) {
                                    ? -1
                                    : std::clamp(next.initialSpecialGauge, 0,
                                                 kSpecialGaugeReady);
+    next.initialBestScore = std::max<std::int64_t>(0, next.initialBestScore);
+    next.initialBestTimeFrames = std::max(0, next.initialBestTimeFrames);
     const bool changed = selectedStage_ != normalized || config_.routeMode != next.routeMode ||
                          config_.setupGroup != next.setupGroup ||
                          config_.playerOption != next.playerOption || config_.subOption != next.subOption ||
@@ -1278,6 +1293,9 @@ bool StageRuntime::setConfig(const StageRuntimeConfig& config) {
                          config_.initialStock != next.initialStock ||
                          config_.initialStockProgressSteps != next.initialStockProgressSteps ||
                          config_.initialSpecialGauge != next.initialSpecialGauge ||
+                         config_.initialBestScore != next.initialBestScore ||
+                         config_.initialBestTimeFrames != next.initialBestTimeFrames ||
+                         config_.replayPlayback != next.replayPlayback ||
                          next.continueRun;
     config_ = next;
     selectedStage_ = normalized;
@@ -1296,26 +1314,56 @@ StageRuntime::GameplayExitRequest StageRuntime::consumeExitRequest() {
 void StageRuntime::reset() {
     const PlayerState previousPlayer = player_;
     const bool continueRun = config_.continueRun;
+    const int previousTimeWindowStage = timeWindowStage_;
+    const int previousTimeWindowElapsedFrames = timeWindowElapsedFrames_;
+    const auto previousTimeWindowStageBoundaries = timeWindowStageBoundaries_;
     config_.continueRun = false;
     pendingExitRequest_ = GameplayExitRequest::None;
     frame_ = config_.firstDispatchFrame;
     player_ = {};
+    hudSpecialGaugeFlashTimer_ = 0;
+    const bool timeWindowEnabled = config_.specialStageFlag == 1 &&
+                                   (config_.routeMode == 1 || config_.routeMode == 2);
+    timeWindowDispatchCount_ = 1;
+    timeWindowStage_ = selectedStage_;
+    if (continueRun && timeWindowEnabled) {
+        timeWindowElapsedFrames_ = previousTimeWindowElapsedFrames;
+        timeWindowStageBoundaries_ = previousTimeWindowStageBoundaries;
+        if (previousTimeWindowStage >= 1 && previousTimeWindowStage <= 8 &&
+            selectedStage_ > previousTimeWindowStage) {
+            timeWindowStageBoundaries_[static_cast<std::size_t>(previousTimeWindowStage)] =
+                previousTimeWindowElapsedFrames;
+        }
+    }
+    else {
+        timeWindowElapsedFrames_ = 0;
+        timeWindowStageBoundaries_.fill(0);
+    }
+    timeWindowBestFrames_ = std::max(0, config_.initialBestTimeFrames);
+    player_.bestScore = std::max<std::int64_t>(0, config_.initialBestScore);
     if (continueRun) {
         player_.score = previousPlayer.score;
+        player_.bestScore = std::max(player_.bestScore, previousPlayer.bestScore);
         player_.scoreItemBaseValue = previousPlayer.scoreItemBaseValue;
         player_.specialGauge = previousPlayer.specialGauge;
         player_.tokenStock = previousPlayer.tokenStock;
         player_.graze = previousPlayer.graze;
-        player_.keyStateCount = previousPlayer.keyStateCount;
+        player_.beingShotCount = previousPlayer.beingShotCount;
+        player_.extendIndex = previousPlayer.extendIndex;
         player_.stockProgress = previousPlayer.stockProgress;
         player_.lives = previousPlayer.lives;
     }
     else {
         if (config_.initialStock >= 0) {
-            player_.lives = config_.initialStock;
+            player_.tokenStock = config_.initialStock;
+        }
+        if (config_.routeMode == 2) {
+            // FUN_1401105c0 applies the selected Mental level separately and
+            // always starts Practice with the full nine-heart Life stock.
+            player_.lives = kLifeStockCap;
         }
         const int threshold = stockThresholdForCurrentConfig();
-        player_.stockProgress = threshold * player_.lives;
+        player_.stockProgress = threshold * player_.tokenStock;
         if (config_.initialStockProgressSteps >= 0) {
             player_.stockProgress +=
                 (threshold / 20) * config_.initialStockProgressSteps;
@@ -1325,10 +1373,18 @@ void StageRuntime::reset() {
         }
         if (config_.initialSpecialGauge >= 0) {
             player_.specialGauge = config_.initialSpecialGauge;
+            if (config_.initialSpecialGauge > 0) {
+                hudSpecialGaugeFlashTimer_ = 60;
+            }
         }
     }
     player_.optionX.fill(player_.x);
     player_.optionY.fill(player_.y);
+    hudFrameRateSampleStart_ = std::chrono::steady_clock::now();
+    hudFrameRateSampleTicks_ = 0;
+    hudMeasuredFrameRate_ = 60;
+    enemyProjectileSpawnsThisSecond_ = 0;
+    enemyProjectileSpawnsLastSecond_ = 0;
     nextEntityId_ = 1;
     enemies_.reserve(kStageEntityCap);
     enemyProjectiles_.reserve(kProjectileCap);
@@ -1468,6 +1524,14 @@ void StageRuntime::update() {
         return;
     }
 
+    const auto frameRateNow = std::chrono::steady_clock::now();
+    ++hudFrameRateSampleTicks_;
+    if (frameRateNow - hudFrameRateSampleStart_ > std::chrono::seconds(1)) {
+        hudMeasuredFrameRate_ = hudFrameRateSampleTicks_;
+        hudFrameRateSampleTicks_ = 0;
+        hudFrameRateSampleStart_ = frameRateNow;
+    }
+
     pollInput();
     if (updatePauseFlow()) {
         return;
@@ -1537,6 +1601,11 @@ void StageRuntime::update() {
             stageDispatchCount = 2;
         }
     }
+    if (config_.specialStageFlag == 1 &&
+        (config_.routeMode == 1 || config_.routeMode == 2)) {
+        ++timeWindowElapsedFrames_;
+    }
+    timeWindowDispatchCount_ = stageDispatchCount;
 
     for (int dispatch = 0; dispatch < stageDispatchCount; ++dispatch) {
         spawnDueEvents();
@@ -1546,6 +1615,16 @@ void StageRuntime::update() {
     }
     spawnBackgroundEffects();
     updatePlayer();
+    const bool hasGaugeFlashClockSource =
+        std::any_of(enemies_.begin(), enemies_.end(),
+                    [](const StageEnemy& enemy) {
+                        return enemy.active && enemy.targetable;
+                    }) ||
+        std::any_of(rewardItems_.begin(), rewardItems_.end(),
+                    [](const RewardItem& item) { return item.active; });
+    if (hudSpecialGaugeFlashTimer_ > 0 && hasGaugeFlashClockSource) {
+        --hudSpecialGaugeFlashTimer_;
+    }
     updatePlayerSideObjects();
     updateEnemies();
     const int currentBossPhaseMode = [this]() {
@@ -1567,6 +1646,22 @@ void StageRuntime::update() {
     updateStageEffects();
     updateProjectiles();
     handleCollisions();
+
+    const auto& extendThresholds =
+        kExtendThresholds[static_cast<std::size_t>(std::clamp(config_.difficulty, 0, 4))];
+    if (player_.extendIndex >= 0 && player_.extendIndex < 5 &&
+        player_.score >= extendThresholds[static_cast<std::size_t>(player_.extendIndex)]) {
+        playPlayerSound(extendSoundHandle_);
+        if (player_.lives < kLifeStockCap) {
+            ++player_.lives;
+        }
+        ++player_.extendIndex;
+    }
+
+    if (frame_ > 59 && frame_ % 60 == 0) {
+        enemyProjectileSpawnsLastSecond_ = enemyProjectileSpawnsThisSecond_;
+        enemyProjectileSpawnsThisSecond_ = 0;
+    }
 
     ++frame_;
     completeGameOverDelayFrame();
@@ -3905,6 +4000,7 @@ void StageRuntime::updatePlayer() {
     if (pauseFlowState_ == PauseFlowState::GameOverDelay) {
         return;
     }
+    player_.shotVariantAuraScale = 0.0f;
 
     const bool shootDown = actionDown(InputAction::Shoot);
     const bool rapidFireDown = actionDown(InputAction::RapidFire);
@@ -3979,21 +4075,66 @@ void StageRuntime::updatePlayer() {
     if (leftDown && upDown) player_.movementAngle16 = 0xa000;
     if (rightDown && upDown) player_.movementAngle16 = 0xe000;
 
+    const bool directionalInput = upDown || downDown || rightDown || leftDown;
+    const bool verticalOnly = player_.movementAngle16 == 0x4000 ||
+                              player_.movementAngle16 == 0xc000;
+    const bool movingLeft = player_.movementAngle16 == 0x6000 ||
+                            player_.movementAngle16 == 0x8000 ||
+                            player_.movementAngle16 == 0xa000;
+    if (!directionalInput || verticalOnly) {
+        if (player_.lateralAnimation < 0) {
+            ++player_.lateralAnimation;
+        }
+        else if (player_.lateralAnimation > 0) {
+            --player_.lateralAnimation;
+        }
+    }
+    else if (movingLeft) {
+        if (player_.lateralAnimation > 0) {
+            player_.lateralAnimation = 0;
+        }
+        player_.lateralAnimation = std::max(player_.lateralAnimation - 1, -12);
+    }
+    else {
+        if (player_.lateralAnimation < 0) {
+            player_.lateralAnimation = 0;
+        }
+        player_.lateralAnimation = std::min(player_.lateralAnimation + 1, 12);
+    }
+
     constexpr std::array<std::array<double, 2>, 3> kMovementSpeeds{{
         {{7.5, 4.0}}, {{7.9, 4.1}}, {{8.3, 4.2}},
     }};
     float nextX = player_.x;
     float nextY = player_.y;
-    if (player_.playerStateTimer < 180 && (upDown || downDown || rightDown || leftDown)) {
+    const bool playerMovedThisFrame =
+        player_.playerStateTimer <= 180 && directionalInput;
+    if (playerMovedThisFrame) {
         const int group = std::clamp(config_.setupGroup, 0, 2);
         const double speed = kMovementSpeeds[static_cast<std::size_t>(group)][player_.focused ? 1U : 0U];
         const double angle = fixedAngleToRadiansDouble(player_.movementAngle16);
         nextX += static_cast<float>(std::cos(angle) * speed * 1.2);
         nextY += static_cast<float>(std::sin(angle) * speed);
     }
+    // FUN_1401346a0 reads the already-updated global x while deriving mode-4
+    // bounds, so this self-dependent origin is intentional.
     const float horizontalOrigin = nextX / 6.0f;
     player_.x = clampFloat(nextX, horizontalOrigin + 4.0f, horizontalOrigin + 596.0f);
     player_.y = clampFloat(nextY, 4.0f, 716.0f);
+    if (player_.playerStateTimer >= 181 && player_.playerStateTimer <= 220) {
+        constexpr float kRespawnX = 360.0f;
+        constexpr float kRespawnY = 600.0f;
+        const float deltaX = kRespawnX - player_.x;
+        const float deltaY = kRespawnY - player_.y;
+        const float distance = std::sqrt(deltaX * deltaX + deltaY * deltaY);
+        if (distance > 0.0f) {
+            const double angle = std::atan2(static_cast<double>(deltaY),
+                                            static_cast<double>(deltaX));
+            const double step = static_cast<double>(distance) / 10.0 + 1.0;
+            player_.x += static_cast<float>(std::cos(angle) * step);
+            player_.y += static_cast<float>(std::sin(angle) * step);
+        }
+    }
     if (player_.y <= 300.0f && player_.playerStateTimer < 180) {
         for (auto& item : rewardItems_) {
             const bool autoCollectType =
@@ -4036,27 +4177,102 @@ void StageRuntime::updatePlayer() {
     if (player_.shotTimer % 5 == 1) {
         emitPlayerNormalShot();
     }
+    if (config_.setupGroup == 0 && config_.optionSlots[1] == 0 &&
+        player_.focusTransition < 0 && player_.shotTimer == 1) {
+        // FUN_140106be0 restarts this formation transition on the opening
+        // volley so the four lock-on options acquire in their original order.
+        player_.focusTransition = -1;
+    }
     updateSpecialGaugeAction();
+    if (config_.setupGroup == 1 && config_.optionSlots[2] == 1) {
+        if (player_.shotVariant > 0) {
+            player_.shotVariantAuraScale =
+                static_cast<float>(player_.shotVariant) / 600.0f;
+            --player_.shotVariant;
+        }
+        else if (player_.shotVariant < 0) {
+            player_.shotVariant = 0;
+        }
+    }
     if (settlePendingPlayerHit()) {
         return;
     }
+
+    const int group = std::clamp(config_.setupGroup, 0, 2);
+    const int baseFrame = group * 30;
+    const auto animationFrame = [](int tick, int offset, int duration,
+                                   std::initializer_list<int> frames) {
+        const int count = static_cast<int>(frames.size());
+        const int period = duration * count;
+        int phase = period > 0 ? (tick - offset) % period : 0;
+        if (phase < 0) {
+            phase += period;
+        }
+        return *(frames.begin() + std::min(phase / duration, count - 1));
+    };
+    if (player_.lateralAnimation == 0) {
+        player_.visualFrame = baseFrame + animationFrame(
+            player_.animationClock, 0, 7, {0, 1, 2, 1});
+    }
+    else if (player_.lateralAnimation > 0 && player_.lateralAnimation < 12) {
+        player_.visualFrame = baseFrame + animationFrame(
+            player_.lateralAnimation, 0, 6, {3, 4, 5});
+    }
+    else if (player_.lateralAnimation >= 12) {
+        player_.visualFrame = baseFrame + animationFrame(
+            player_.animationClock, 12, 7, {5, 6, 7});
+    }
+    else if (player_.lateralAnimation > -12) {
+        player_.visualFrame = baseFrame + animationFrame(
+            -player_.lateralAnimation, 0, 6, {8, 9, 10});
+    }
+    else {
+        player_.visualFrame = baseFrame + animationFrame(
+            player_.animationClock, 12, 7, {10, 11, 12});
+    }
+
+    if (frame_ < 60) {
+        player_.hitboxScale = 0.0f;
+    }
+    else if (frame_ < 90) {
+        constexpr double kHitboxEaseStep = 3.14159265358979 / 60.0;
+        player_.hitboxScale = static_cast<float>(
+            std::sin(static_cast<double>(frame_ - 60) * kHitboxEaseStep));
+    }
+    else {
+        player_.hitboxScale = 1.0f;
+    }
+    player_.hitboxAngle16 = normalizeAngle16(frame_ * 0x3c0);
+    player_.drawAnimationClock = player_.animationClock;
+    player_.drawInvulnerabilityOverlay =
+        player_.invulnerableFrames != 0 && (player_.animationClock & 1) == 0;
+
     if (player_.playerStateTimer > 0) {
         --player_.playerStateTimer;
     }
     processStockProgressAfterGain(0);
     updateSpecialGaugeState();
-    if (player_.shotVariant > 0) {
-        --player_.shotVariant;
+    if (playerMovedThisFrame && !player_.focused &&
+        (player_.drawAnimationClock & 1) == 0) {
+        const int afterimageHandle =
+            player_.visualFrame >= 0 &&
+                    player_.visualFrame < static_cast<int>(playerFrames_.size())
+                ? playerFrames_[static_cast<std::size_t>(player_.visualFrame)]
+                : -1;
+        spawnStageEffect(0x05, afterimageHandle, 0x50, 0x27,
+                         player_.x, player_.y, 0,
+                         0.0, 1.0, 1.0, 0x18,
+                         0xff, 0xff, 0xff, 0x60);
     }
     if (player_.invulnerableFrames > 0) {
         --player_.invulnerableFrames;
     }
+    ++player_.animationClock;
 }
 
 void StageRuntime::updatePlayerOptions() {
-    // FUN_14010cc90 keeps four persistent option nodes. Most configurations
-    // select a fixed offset/angle row; node positions close 25% of the remaining
-    // distance each frame and angles use the original delta/10 + 0x80 turn step.
+    // FUN_14010cc90 keeps four persistent option nodes. Positions close 25% of
+    // the remaining distance and angles turn by abs(delta) / 10 + 0x80.
     constexpr std::array<std::array<float, 8>, 6> kUnfocusedOffsets{{
         {{50.0f, 60.0f, -50.0f, 60.0f, 80.0f, 10.0f, -80.0f, 10.0f}},
         {{50.0f, -30.0f, -50.0f, -30.0f, 80.0f, 30.0f, -80.0f, 30.0f}},
@@ -4100,7 +4316,109 @@ void StageRuntime::updatePlayerOptions() {
     const int group = std::clamp(config_.setupGroup, 0, 2);
     const int option0 = std::clamp(config_.optionSlots[0], 0, 1);
     const int option1 = std::clamp(config_.optionSlots[1], 0, 1);
-    const bool rotatingUnfocusedFormation = !player_.focused &&
+    player_.optionDrawScale = 1.0f;
+    if (player_.playerStateTimer >= 180 && player_.playerStateTimer < 260) {
+        if (player_.playerStateTimer < 190) {
+            player_.optionDrawScale = static_cast<float>(
+                1.0 - std::sin(static_cast<double>(player_.playerStateTimer - 180) *
+                               static_cast<double>(kPi) / 20.0));
+        }
+        else if (player_.playerStateTimer < 250) {
+            player_.optionDrawScale = 0.0f;
+        }
+        else {
+            player_.optionDrawScale = static_cast<float>(
+                1.0 - std::sin(static_cast<double>(player_.playerStateTimer - 240) *
+                               static_cast<double>(kPi) / 20.0));
+        }
+    }
+    const auto isCommonTarget = [this](const StageEnemy& enemy) {
+        if (!enemy.active || !enemy.targetable) {
+            return false;
+        }
+        const float radius = static_cast<float>(std::max(0, enemy.radius));
+        const float horizontalOrigin = player_.x / 6.0f;
+        return enemy.x >= horizontalOrigin - (radius + 100.0f) &&
+               enemy.x <= horizontalOrigin + radius + 700.0f &&
+               enemy.y >= -(radius + 100.0f) &&
+               enemy.y <= radius + 820.0f;
+    };
+    const auto findTargetById = [this](int entityId) -> const StageEnemy* {
+        if (entityId == 0) {
+            return nullptr;
+        }
+        for (const auto& enemy : enemies_) {
+            if (enemy.entityId == entityId) {
+                return &enemy;
+            }
+        }
+        return nullptr;
+    };
+    const auto acquireOptionTarget = [&](float optionX, float optionY) {
+        const StageEnemy* nearest = nullptr;
+        float nearestSurfaceDistance = 2000.0f;
+        for (const auto& enemy : enemies_) {
+            if (!isCommonTarget(enemy)) {
+                continue;
+            }
+            const float radius = static_cast<float>(std::max(0, enemy.radius));
+            if (enemy.y >= optionY ||
+                std::abs(enemy.x - optionX) >= radius + 180.0f) {
+                continue;
+            }
+            const float dx = enemy.x - optionX;
+            const float dy = enemy.y - optionY;
+            const float surfaceDistance = std::sqrt(dx * dx + dy * dy) - radius;
+            if (surfaceDistance < nearestSurfaceDistance) {
+                nearestSurfaceDistance = surfaceDistance;
+                nearest = &enemy;
+            }
+        }
+        return nearest != nullptr ? nearest->entityId : 0;
+    };
+    const auto advanceSharedTarget = [&]() {
+        double heading = std::atan2(
+            static_cast<double>(player_.y - player_.sharedOptionTargetY),
+            static_cast<double>(player_.x - player_.sharedOptionTargetX));
+        if (player_.focusTransition == -2) {
+            const float dx = player_.x - player_.sharedOptionTargetX;
+            const float dy = player_.y - player_.sharedOptionTargetY;
+            if (std::sqrt(dx * dx + dy * dy) <= 30.0f) {
+                player_.sharedOptionTargetX = player_.x;
+                player_.sharedOptionTargetY = player_.y;
+            }
+        }
+
+        float nearestSurfaceDistance = 2000.0f;
+        float targetX = player_.x;
+        float targetY = -65536.0f;
+        bool hasCommonTarget = false;
+        for (const auto& enemy : enemies_) {
+            if (!isCommonTarget(enemy)) {
+                continue;
+            }
+            hasCommonTarget = true;
+            const float radius = static_cast<float>(std::max(0, enemy.radius));
+            const float dx = enemy.x - player_.sharedOptionTargetX;
+            const float dy = enemy.y - player_.sharedOptionTargetY;
+            const float surfaceDistance = std::sqrt(dx * dx + dy * dy) - radius;
+            if (surfaceDistance < nearestSurfaceDistance) {
+                nearestSurfaceDistance = surfaceDistance;
+                targetX = enemy.x;
+                targetY = enemy.y;
+            }
+        }
+        if (hasCommonTarget) {
+            heading = std::atan2(
+                static_cast<double>(targetY + 200.0f - player_.sharedOptionTargetY),
+                static_cast<double>(targetX - player_.sharedOptionTargetX));
+        }
+        player_.sharedOptionTargetX += static_cast<float>(std::cos(heading) * 0.1);
+        player_.sharedOptionTargetY += static_cast<float>(std::sin(heading) * 0.1);
+    };
+
+    const bool rotatingUnfocusedFormation =
+        !player_.focused &&
         ((group == 1 && option0 == 1) || (group == 2 && option0 == 0));
     if (rotatingUnfocusedFormation) {
         std::uint16_t target = 0xc000;
@@ -4112,15 +4430,30 @@ void StageRuntime::updatePlayerOptions() {
         }
         player_.optionFormationAngle16 = approachAngle16(player_.optionFormationAngle16, target, 0x5a);
     }
+    if (player_.focused && group == 1 && option0 == 1) {
+        player_.optionFormationAngle16 = 0xc000;
+    }
 
     for (int slot = 0; slot < 4; ++slot) {
         float offsetX = 0.0f;
         float offsetY = 0.0f;
+        float anchorX = player_.x;
+        float anchorY = player_.y;
         std::uint16_t targetAngle = 0xc000;
         const std::size_t offsetIndex = static_cast<std::size_t>(slot * 2);
 
         if (!player_.focused) {
-            if (group == 1 && option0 == 1) {
+            const bool useSharedTransition =
+                group == 2 && option1 == 1 && player_.focusTransition < 0x11;
+            if (useSharedTransition) {
+                const std::size_t row = static_cast<std::size_t>(group * 2 + option0);
+                anchorX = player_.sharedOptionTargetX;
+                anchorY = player_.sharedOptionTargetY;
+                offsetX = kUnfocusedOffsets[row][offsetIndex];
+                offsetY = kUnfocusedOffsets[row][offsetIndex + 1];
+                targetAngle = kUnfocusedAngles[row][static_cast<std::size_t>(slot)];
+            }
+            else if (group == 1 && option0 == 1) {
                 const float angle = fixedAngleToRadians(player_.optionFormationAngle16);
                 offsetX = std::cos(angle) * 100.0f;
                 offsetY = std::sin(angle) * 100.0f + 20.0f;
@@ -4142,18 +4475,50 @@ void StageRuntime::updatePlayerOptions() {
                 offsetY = kUnfocusedOffsets[row][offsetIndex + 1];
                 targetAngle = kUnfocusedAngles[row][static_cast<std::size_t>(slot)];
             }
+            if (group == 2 && option1 == 1 && !useSharedTransition) {
+                player_.sharedOptionTargetX = player_.x;
+                player_.sharedOptionTargetY = player_.y;
+            }
+            player_.optionTargetEntityIds[static_cast<std::size_t>(slot)] = 0;
         }
         else if (group == 0 && option1 == 0) {
-            // The original may assign an enemy ID to each node here. Until that
-            // ID list is represented, retain its exact no-target formation.
             offsetX = kFocusedGroup0Option0Offsets[offsetIndex];
             offsetY = kFocusedGroup0Option0Offsets[offsetIndex + 1];
             targetAngle = kUpAngles[static_cast<std::size_t>(slot)];
+
+            const std::size_t index = static_cast<std::size_t>(slot);
+            const bool canAcquire = player_.focusTransition <= -(slot + 1) * 5 &&
+                                    player_.shotTimer >= 1;
+            if (!canAcquire) {
+                player_.optionTargetEntityIds[index] = 0;
+            }
+            else if (player_.optionTargetEntityIds[index] == 0) {
+                player_.optionTargetEntityIds[index] =
+                    acquireOptionTarget(player_.optionX[index], player_.optionY[index]);
+                if (player_.optionTargetEntityIds[index] != 0) {
+                    targetAngle = 0;
+                    playPlayerSound(optionLockSoundHandle_, 0x13);
+                }
+            }
+            else {
+                const StageEnemy* target =
+                    findTargetById(player_.optionTargetEntityIds[index]);
+                if (target == nullptr || !target->active || !target->targetable) {
+                    player_.optionTargetEntityIds[index] = 0;
+                    targetAngle = 0;
+                }
+                else {
+                    targetAngle = radiansToFixedAngleTrunc(std::atan2(
+                        static_cast<double>(target->y - player_.optionY[index]),
+                        static_cast<double>(target->x - player_.optionX[index])));
+                }
+            }
         }
         else if (group == 0) {
             offsetX = kFocusedNarrowOffsets[offsetIndex];
             offsetY = kFocusedNarrowOffsets[offsetIndex + 1];
             targetAngle = kFocusedGroup0Option1Angles[static_cast<std::size_t>(slot)];
+            player_.optionTargetEntityIds[static_cast<std::size_t>(slot)] = 0;
         }
         else if (group == 1) {
             offsetX = kFocusedNarrowOffsets[offsetIndex];
@@ -4161,33 +4526,40 @@ void StageRuntime::updatePlayerOptions() {
             targetAngle = option1 == 0
                 ? kFocusedGroup1Option0Angles[static_cast<std::size_t>(slot)]
                 : kUpAngles[static_cast<std::size_t>(slot)];
+            player_.optionTargetEntityIds[static_cast<std::size_t>(slot)] = 0;
         }
         else if (option1 == 0) {
             offsetX = kFocusedGroup2Option0Offsets[offsetIndex];
             offsetY = kFocusedGroup2Option0Offsets[offsetIndex + 1];
             targetAngle = player_.optionFormationAngle16;
+            player_.optionTargetEntityIds[static_cast<std::size_t>(slot)] = 0;
         }
         else {
-            // FUN_14010cc90 can move the shared anchor toward the nearest enemy;
-            // these are the exact per-node offsets/angles for its no-target path.
+            advanceSharedTarget();
+            anchorX = player_.sharedOptionTargetX;
+            anchorY = player_.sharedOptionTargetY;
             offsetX = kFocusedGroup2Option1Offsets[offsetIndex];
             offsetY = kFocusedGroup2Option1Offsets[offsetIndex + 1];
             targetAngle = kFocusedGroup2Option1Angles[static_cast<std::size_t>(slot)];
+            player_.optionTargetEntityIds[static_cast<std::size_t>(slot)] = 0;
         }
 
-        const float targetX = player_.x + offsetX;
-        const float targetY = player_.y + offsetY;
-        player_.optionX[static_cast<std::size_t>(slot)] +=
-            (targetX - player_.optionX[static_cast<std::size_t>(slot)]) * 0.25f;
-        player_.optionY[static_cast<std::size_t>(slot)] +=
-            (targetY - player_.optionY[static_cast<std::size_t>(slot)]) * 0.25f;
+        const float targetX = anchorX + offsetX;
+        const float targetY = anchorY + offsetY;
+        const std::size_t index = static_cast<std::size_t>(slot);
+        const double deltaX = static_cast<double>(targetX - player_.optionX[index]);
+        const double deltaY = static_cast<double>(targetY - player_.optionY[index]);
+        const double distance = std::sqrt(deltaX * deltaX + deltaY * deltaY);
+        const double heading = std::atan2(deltaY, deltaX);
+        player_.optionX[index] += static_cast<float>(std::cos(heading) * distance * 0.25);
+        player_.optionY[index] += static_cast<float>(std::sin(heading) * distance * 0.25);
 
-        const std::uint16_t currentAngle = player_.optionAngle16[static_cast<std::size_t>(slot)];
+        const std::uint16_t currentAngle = player_.optionAngle16[index];
         int delta = static_cast<int>(targetAngle) - static_cast<int>(currentAngle);
         if (delta > 0x8000) delta -= 0x10000;
         if (delta < -0x8000) delta += 0x10000;
         const int turnStep = std::abs(delta) / 10 + 0x80;
-        player_.optionAngle16[static_cast<std::size_t>(slot)] =
+        player_.optionAngle16[index] =
             approachAngle16(currentAngle, targetAngle, turnStep);
     }
 }
@@ -13900,7 +14272,7 @@ void StageRuntime::updateRewardItems() {
                     distanceSquared(item.x, item.y, player_.x, player_.y) <=
                         static_cast<float>((item.radiusOrScale + 0x48) *
                                            (item.radiusOrScale + 0x48)) &&
-                    (player_.lives != 3 || item.itemType != 6)) {
+                    (player_.tokenStock != 3 || item.itemType != 6)) {
                     item.homing = true;
                     item.angle16 = radiansToFixedAngle(std::atan2(player_.y - item.y, player_.x - item.x));
                 }
@@ -13978,13 +14350,18 @@ int StageRuntime::stockThresholdForCurrentConfig() const {
     // DAT_140538bd8 is a five-entry difficulty/route table in .rdata:
     // {56000, 70000, 70000, 70000, 70000}. FUN_1400f6c40 initializes
     // DAT_140e45d88 as table[DAT_140e419b8] * DAT_140e474ec, and
-    // FUN_14010e250 uses the same chunk for the 0..3 stock bands.
+    // FUN_14010e250 uses the same chunk for the 0..3 Mental-level bands.
     const int index = std::max(0, std::min(config_.difficulty, static_cast<int>(kOriginalStockThresholds.size()) - 1));
     return kOriginalStockThresholds[static_cast<std::size_t>(index)];
 }
 
-void StageRuntime::addRunScore(int amount) {
-    player_.score = std::max(0, player_.score + amount);
+void StageRuntime::addRunScore(std::int64_t amount) {
+    player_.score = std::max<std::int64_t>(0, player_.score + amount);
+    if (!config_.replayPlayback &&
+        (config_.routeMode == 0 || config_.routeMode == 1) &&
+        effectiveHelpLevel() == 0) {
+        player_.bestScore = std::max(player_.bestScore, player_.score);
+    }
 }
 
 void StageRuntime::addSpecialGauge(int amount) {
@@ -14000,15 +14377,15 @@ void StageRuntime::processStockProgressAfterGain(int progressGain) {
     const int threshold = stockThresholdForCurrentConfig();
     const int cap = threshold * 3;
     player_.stockProgress = std::min(cap, player_.stockProgress + std::max(0, progressGain));
-    if (player_.lives < 3 &&
-        player_.stockProgress >= (player_.lives + 1) * threshold) {
-        ++player_.lives;
+    if (player_.tokenStock < 3 &&
+        player_.stockProgress >= (player_.tokenStock + 1) * threshold) {
+        ++player_.tokenStock;
     }
 }
 
 void StageRuntime::collectRewardItem(const RewardItem& item) {
     // FUN_1400ca7b0 reward collection table: 0/3 = 1x base, 1/4 = 5x,
-    // 2/5 = 10x; 6 feeds stock progress, 7 token stock, 8 large stock/token.
+    // 2/5 = 10x; 6 feeds Mental progress, 7 adds a life, and 8 grants both.
     switch (item.itemType) {
     case 0:
     case 3:
@@ -14029,7 +14406,7 @@ void StageRuntime::collectRewardItem(const RewardItem& item) {
         playPlayerSound(item1SoundHandle_, 0x0c);
         break;
     case 6:
-        if (player_.lives < 3) {
+        if (player_.tokenStock < 3) {
             player_.stockProgress += stockThresholdForCurrentConfig();
         }
         addSpecialGauge(3000);
@@ -14037,20 +14414,21 @@ void StageRuntime::collectRewardItem(const RewardItem& item) {
         playPlayerSound(item3SoundHandle_);
         break;
     case 7:
-        if (player_.tokenStock < kSpecialTokenCap) {
-            ++player_.tokenStock;
+        if (player_.lives < kLifeStockCap) {
+            ++player_.lives;
             playPlayerSound(extendSoundHandle_);
         }
         break;
     case 8:
         player_.stockProgress += 99999;
-        player_.tokenStock = kSpecialTokenCap;
+        player_.lives = kLifeStockCap;
         break;
     default:
         addRunScore(player_.scoreItemBaseValue);
         addSpecialGauge(300);
         break;
     }
+    hudSpecialGaugeFlashTimer_ = 60;
 }
 
 void StageRuntime::spawnEnemyDeathRewardBurst(const StageEnemy& enemy, int payoutWindow,
@@ -14131,7 +14509,6 @@ void StageRuntime::spawnEnemyDeathRewardBurst(const StageEnemy& enemy, int payou
     if (spawnImmediateEffect && !defersEnemyDeathEffects(enemy.spawnType)) {
         spawnEnemyDeathEffects(enemy, immediateEnemyDeathEffectMode(enemy.spawnType));
     }
-    ++player_.keyStateCount;
 }
 
 void StageRuntime::spawnEnemyDeathEffects(const StageEnemy& enemy, int mode,
@@ -14350,7 +14727,8 @@ void StageRuntime::updateSpecialGaugeAction() {
     const bool manualFever = config_.specialMode == 1;
     const bool triggerAllowed =
         player_.bombLock == 0 &&
-        (player_.lives != 0 || (manualFever && player_.specialGauge >= kSpecialGaugeReady)) &&
+        (player_.tokenStock != 0 ||
+         (manualFever && player_.specialGauge >= kSpecialGaugeReady)) &&
         static_cast<std::uint32_t>(player_.playerStateTimer - 120) > 139U &&
         (player_.specialGauge >= 0 ||
          static_cast<std::uint32_t>(player_.invulnerableFrames - 1) > 278U);
@@ -14405,7 +14783,7 @@ bool StageRuntime::settlePendingPlayerHit() {
                           : selectedStage_ == 4 ? stage04BossPhaseMode_
                                                 : lateStageBossPhaseMode_;
     const int style = std::clamp(config_.optionSlots[3], 0, 3);
-    const bool autoGuard = player_.lives > 0 && style != 3;
+    const bool autoGuard = player_.tokenStock > 0 && style != 3;
     if (autoGuard) {
         if (phaseMode == 1 && bossPhaseRewardIndex_ == 0) {
             bossPhaseRewardIndex_ = 1;
@@ -14423,15 +14801,15 @@ bool StageRuntime::settlePendingPlayerHit() {
         const float guardRadius = style == 0
                                       ? 240.0f
                                       : kGuardRadii[static_cast<std::size_t>(
-                                            std::clamp(player_.lives, 0, 3))];
+                                            std::clamp(player_.tokenStock, 0, 3))];
         spawnPlayerSideObject(0x16, player_.x, player_.y,
                               0.0, 0, 0, guardRadius);
         if (style == 0) {
-            --player_.lives;
+            --player_.tokenStock;
             player_.stockProgress -= stockThresholdForCurrentConfig();
         }
         else {
-            player_.lives = 0;
+            player_.tokenStock = 0;
             player_.stockProgress = 0;
         }
 
@@ -14462,27 +14840,24 @@ bool StageRuntime::settlePendingPlayerHit() {
                      0.0, 1.0, 1.0, 0,
                      0xff, 0xff, 0xff, 0xff);
     const int group = std::clamp(config_.setupGroup, 0, 2);
-    const int portraitIndex = (player_.tokenStock == 0 ? 9 : 8) + group * 10;
+    const int portraitIndex = (player_.lives == 0 ? 9 : 8) + group * 10;
     const int portraitHandle = portraitIndex < static_cast<int>(playerFrameFrames_.size())
                                    ? playerFrameFrames_[static_cast<std::size_t>(portraitIndex)]
                                    : -1;
     spawnStageEffect(0x16, portraitHandle, 0, 0x6f,
                      0.0f, 0.0f, 0,
-                     0.0, 1.0, 1.0, player_.tokenStock == 0 ? 1000 : 0x78,
+                     0.0, 1.0, 1.0, player_.lives == 0 ? 1000 : 0x78,
                      0xff, 0xff, 0xff, 0xff);
     spawnStageEffect(0x1f, -1, 0, 1,
                      0.0f, 0.0f, 0,
                      0.0, 1.0, 1.0, 0x50,
                      0xff, 0xff, 0xff, 0xff);
-    if (player_.tokenStock == 0) {
+    if (player_.lives == 0) {
         beginGameOver();
         return true;
     }
     flushEnemyProjectilesToEffects();
-    --player_.tokenStock;
-    player_.playerStateTimer = 0;
-    player_.bombLock = -120;
-    player_.invulnerableFrames = std::max(player_.invulnerableFrames, 150);
+    --player_.lives;
     return false;
 }
 
@@ -14525,7 +14900,7 @@ void StageRuntime::startEquippedBomb() {
     player_.bombLock = kBombLocks[static_cast<std::size_t>(group)][static_cast<std::size_t>(slot)];
     player_.invulnerableFrames =
         kBombInvulnerability[static_cast<std::size_t>(group)][static_cast<std::size_t>(slot)];
-    --player_.lives;
+    --player_.tokenStock;
     player_.stockProgress -= stockThresholdForCurrentConfig();
     player_.playerStateTimer = 0;
     playPlayerSound(bombSoundHandles_[0]);
@@ -14582,7 +14957,7 @@ void StageRuntime::updatePlayerSideObjects() {
         }
         const int updateAge = object.age;
         const auto moveAlongAngle = [&object]() {
-            const float angle = fixedAngleToRadians(object.angle16);
+            const double angle = fixedAngleToRadiansDouble(object.angle16);
             object.x += static_cast<float>(std::cos(angle) * object.speedOrScale);
             object.y += static_cast<float>(std::sin(angle) * object.speedOrScale);
         };
@@ -14604,6 +14979,16 @@ void StageRuntime::updatePlayerSideObjects() {
 
         if (object.type >= 0 && object.type <= 0x0a) {
             moveAlongAngle();
+            if (object.type == 0) {
+                object.damageOrLifetime = updateAge < 0x11
+                                              ? 0x82 - updateAge * 5
+                                              : 0x32;
+            }
+            else if (object.type == 1) {
+                object.damageOrLifetime = updateAge < 0x11
+                                              ? 0xa0 - updateAge * 5
+                                              : 0x50;
+            }
             if (object.type >= 8 && object.type <= 10 && updateAge < 60) {
                 const int group = std::clamp(config_.setupGroup, 0, 2);
                 if (group < 2) {
@@ -14861,10 +15246,11 @@ void StageRuntime::updatePlayerSideObjects() {
 
 std::uint16_t StageRuntime::nearestTargetAngleForPlayerShot(const PlayerSideObject& object) const {
     const StageEnemy* nearest = nullptr;
-    float nearestSurfaceDistance = std::numeric_limits<float>::max();
+    float nearestSurfaceDistance = 2000.0f;
     const float horizontalOrigin = player_.x / 6.0f;
+    bool hasCommonTarget = false;
     for (const auto& enemy : enemies_) {
-        if (!enemy.active || !enemy.targetable || enemy.hp <= 0 || enemy.age <= enemy.activationDelay) {
+        if (!enemy.active || !enemy.targetable) {
             continue;
         }
         const float radius = static_cast<float>(std::max(0, enemy.radius));
@@ -14873,6 +15259,7 @@ std::uint16_t StageRuntime::nearestTargetAngleForPlayerShot(const PlayerSideObje
             enemy.y < -(radius + 100.0f) || enemy.y > radius + 820.0f) {
             continue;
         }
+        hasCommonTarget = true;
         const float dx = enemy.x - object.x;
         const float dy = enemy.y - object.y;
         const float surfaceDistance = std::sqrt(dx * dx + dy * dy) - radius;
@@ -14881,12 +15268,14 @@ std::uint16_t StageRuntime::nearestTargetAngleForPlayerShot(const PlayerSideObje
             nearest = &enemy;
         }
     }
-    if (nearest == nullptr) {
+    if (!hasCommonTarget) {
         return object.angle16;
     }
+    const float targetX = nearest != nullptr ? nearest->x : player_.x;
+    const float targetY = nearest != nullptr ? nearest->y : -65536.0f;
     return radiansToFixedAngleTrunc(
-        std::atan2(static_cast<double>(nearest->y - object.y),
-                   static_cast<double>(nearest->x - object.x)));
+        std::atan2(static_cast<double>(targetY - object.y),
+                   static_cast<double>(targetX - object.x)));
 }
 
 void StageRuntime::emitPlayerNormalShot() {
@@ -15015,19 +15404,24 @@ int StageRuntime::enemyVisualFrameForSpawnType(const StageEnemy& enemy) const {
 }
 
 int StageRuntime::playerSideObjectVisualFrame(const PlayerSideObject& object) const {
+    const int group = std::clamp(config_.setupGroup, 0, 2);
+    constexpr std::array<int, 3> kMainFrames{{0x1c, 0x2c, 0x49}};
+    constexpr std::array<int, 3> kUnfocusedFrames{{0x1d, 0x3a, 0x4a}};
+    constexpr std::array<int, 3> kFocusedFrames{{0x2b, 0x3b, 0x58}};
+    constexpr std::array<int, 3> kTrackingFrames{{0x59, 0x67, 0x59}};
     switch (object.type) {
-    case 0: return 0x19;
-    case 1: return 0x1e;
+    case 0:
+    case 1: return kMainFrames[static_cast<std::size_t>(group)];
     case 2:
-    case 3: return 0x23;
-    case 4:
-    case 5: return 0x2d;
-    case 6: return 0x36;
-    case 7: return 0x3c;
-    case 8: return 0x3f;
+    case 3:
+    case 4: return kUnfocusedFrames[static_cast<std::size_t>(group)];
+    case 5:
+    case 6:
+    case 7: return kFocusedFrames[static_cast<std::size_t>(group)];
+    case 8:
     case 9:
-    case 10: return 0x46;
-    default: return 0x19;
+    case 10: return kTrackingFrames[static_cast<std::size_t>(group)];
+    default: return kMainFrames[static_cast<std::size_t>(group)];
     }
 }
 
@@ -15236,9 +15630,11 @@ void StageRuntime::handleEnemyProjectilePlayerHitAndGraze() {
                 0xff, 0xff, 0xff, 0xff);
             playPlayerSound(grazeSoundHandle_, 0x10);
             ++player_.graze;
+            hudSpecialGaugeFlashTimer_ = 60;
         }
     }
     if (playerHit && player_.invulnerableFrames == 0) {
+        ++player_.beingShotCount;
         player_.playerStateTimer = 280;
         player_.invulnerableFrames = 300;
         playPlayerSound(missSoundHandle_, 0x19);
@@ -15273,6 +15669,7 @@ void StageRuntime::spawnProjectileNode(int visualSelector, int projectileId, flo
     projectile.collisionEnabled = true;
     updateProjectileVelocity(projectile);
     enemyProjectiles_.push_back(projectile);
+    ++enemyProjectileSpawnsThisSecond_;
 }
 
 void StageRuntime::updateProjectileVelocity(StageProjectile& projectile) {
@@ -15913,6 +16310,48 @@ void StageRuntime::drawPlayerSideObjects() const {
         DrawGraph(0, 0, whiteBackHandle_, TRUE);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     };
+    const auto drawPlayerSprite = [](int handle, float x, float y,
+                                     double scaleX, double scaleY,
+                                     std::uint16_t angle16,
+                                     int red, int green, int blue, int alpha) {
+        if (handle == -1 || scaleX <= 0.0 || scaleY <= 0.0 || alpha <= 0) {
+            return;
+        }
+        int width = 0;
+        int height = 0;
+        if (GetGraphSize(handle, &width, &height) != 0 || width <= 0 || height <= 0) {
+            return;
+        }
+        SetDrawBright(std::clamp(red, 0, 255), std::clamp(green, 0, 255),
+                      std::clamp(blue, 0, 255));
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(alpha, 0, 255));
+        DrawRotaGraph3F(x, y, static_cast<float>(width) * 0.5f,
+                        static_cast<float>(height) * 0.5f,
+                        scaleX, scaleY, fixedAngleToRadians(angle16), handle, TRUE);
+        SetDrawBright(255, 255, 255);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    };
+
+    if (pauseFlowState_ != PauseFlowState::GameOverDelay &&
+        pauseFlowState_ != PauseFlowState::GameOverPresentation) {
+        constexpr std::array<int, 4> kGroup1OptionFrames{{0x5f, 0x60, 0x61, 0x60}};
+        const int group = std::clamp(config_.setupGroup, 0, 2);
+        const int phase = (std::max(0, player_.drawAnimationClock) / 6) %
+                          (group == 1 ? 4 : 5);
+        const int frameIndex = group == 0
+                                   ? 0x5a + phase
+                                   : (group == 1
+                                          ? kGroup1OptionFrames[static_cast<std::size_t>(phase)]
+                                          : 0x62 + phase);
+        const int handle = frameHandle(playerFrames_, frameIndex);
+        for (std::size_t slot = 0; slot < player_.optionX.size(); ++slot) {
+            drawPlayerSprite(handle, screenX(player_.optionX[slot]),
+                             screenY(player_.optionY[slot]),
+                             player_.optionDrawScale, player_.optionDrawScale,
+                             player_.optionAngle16[slot],
+                             255, 255, 255, 255);
+        }
+    }
 
     for (const auto& object : playerSideObjects_) {
         const float x = screenX(object.x);
@@ -15922,13 +16361,49 @@ void StageRuntime::drawPlayerSideObjects() const {
             const int frameIndex = playerSideObjectVisualFrame(object);
             const int handle = frameHandle(playerFrames_, frameIndex);
             if (handle != -1) {
-                DrawRotaGraphF(x, y, 0.55, fixedAngleToRadians(object.drawAngle16) + kPi * 0.5f,
-                               handle, TRUE);
+                int red = 255;
+                int green = 255;
+                int blue = 255;
+                int alpha = 0x80;
+                double scale = 1.0;
+                if (object.type == 0) {
+                    green = drawAge < 0x11 ? 0x80 + drawAge * 8 : 0xff;
+                    blue = green;
+                }
+                else if (object.type == 1) {
+                    green = drawAge < 0x11 ? 0x80 + drawAge * 8 : 0xff;
+                    blue = 0x80;
+                    alpha = 0xc0;
+                    scale = 2.0;
+                }
+                else if (object.type == 3 || object.type == 6 || object.type == 9) {
+                    green = 0x80;
+                    blue = 0x80;
+                    scale = 1.5;
+                }
+                else if (object.type == 4 || object.type == 7 || object.type == 10) {
+                    alpha = 0xc0;
+                    scale = 2.0;
+                    if (player_.specialGauge < 0) {
+                        green = 0xff;
+                        blue = 0x80;
+                    }
+                    else {
+                        red = 0xc0;
+                        green = 0x40;
+                        blue = 0x40;
+                    }
+                }
+                const bool stretched = object.type >= 2 && object.type <= 4;
+                drawPlayerSprite(handle, x, y,
+                                 stretched ? scale * 1.5 : scale, scale,
+                                 object.drawAngle16,
+                                 red, green, blue, alpha);
             }
             else {
                 const int color = object.type <= 1 ? GetColor(120, 220, 255) : GetColor(180, 255, 180);
                 DrawCircle(static_cast<int>(x), static_cast<int>(y),
-                           std::max(3, static_cast<int>(object.auxRadiusOrScale)), color, TRUE);
+                           object.type <= 1 ? 6 : 4, color, TRUE);
             }
             continue;
         }
@@ -16076,14 +16551,147 @@ void StageRuntime::drawPlayer() const {
         pauseFlowState_ == PauseFlowState::GameOverPresentation) {
         return;
     }
+    if (player_.playerStateTimer >= 180 && player_.playerStateTimer < 260) {
+        return;
+    }
     const float x = screenX(player_.x);
     const float y = screenY(player_.y);
-    const int frame = playerFrames_.empty() ? -1 : playerFrames_[0];
-    if (frame != -1 && (player_.invulnerableFrames / 6) % 2 == 0) {
-        DrawRotaGraphF(x, y, 0.7, 0.0, frame, TRUE);
+    const auto frameHandle = [this](int index) {
+        return index >= 0 && index < static_cast<int>(playerFrames_.size())
+                   ? playerFrames_[static_cast<std::size_t>(index)]
+                   : -1;
+    };
+    constexpr std::array<std::array<int, 3>, 7> kFeverColors{{
+        {{255, 120, 120}}, {{255, 200, 110}}, {{255, 255, 120}},
+        {{120, 255, 120}}, {{120, 255, 255}}, {{120, 120, 255}},
+        {{220, 120, 255}},
+    }};
+    const int colorClock = std::max(player_.drawAnimationClock, 0);
+    const int colorIndex = (colorClock / 20) % static_cast<int>(kFeverColors.size());
+    const int nextColorIndex = (colorIndex + 1) % static_cast<int>(kFeverColors.size());
+    const int colorStep = colorClock % 20;
+    const auto feverChannel = [&](std::size_t channel) {
+        const int current = kFeverColors[static_cast<std::size_t>(colorIndex)][channel];
+        const int next = kFeverColors[static_cast<std::size_t>(nextColorIndex)][channel];
+        return static_cast<int>(
+            static_cast<double>(current) -
+            (static_cast<double>(current - next) / 20.0) *
+                static_cast<double>(colorStep));
+    };
+    const std::array<int, 3> feverColor{{
+        feverChannel(0), feverChannel(1), feverChannel(2),
+    }};
+    const int frame = frameHandle(player_.visualFrame);
+    if (frame != -1) {
+        DrawRotaGraphF(x, y, 1.0, 0.0, frame, TRUE);
     }
-    const int color = player_.focused ? GetColor(128, 220, 255) : GetColor(255, 255, 255);
-    DrawCircle(static_cast<int>(x), static_cast<int>(y), player_.focused ? 3 : 5, color, FALSE);
+    if (frame != -1 && (player_.specialGauge < 0 || player_.specialGauge >= 50000)) {
+        const int alpha = 0x60 - static_cast<int>(
+            std::sin(static_cast<double>(colorClock) *
+                     static_cast<double>(kPi) / 15.0) * -96.0);
+        SetDrawBright(feverColor[0], feverColor[1], feverColor[2]);
+        SetDrawBlendMode(DX_BLENDMODE_ADD, std::clamp(alpha, 0, 255));
+        DrawRotaGraphF(x, y, 1.0, 0.0, frame, TRUE);
+        SetDrawBright(255, 255, 255);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    }
+    if (player_.drawInvulnerabilityOverlay) {
+        const int overlay = frameHandle(player_.visualFrame + 15);
+        if (overlay != -1) {
+            DrawRotaGraphF(x, y, 1.0, 0.0, overlay, TRUE);
+        }
+    }
+
+    if (!dreamGaugeFrames_.empty()) {
+        int stageShade = 0xff;
+        if (selectedStage_ == 2 || selectedStage_ == 6 || selectedStage_ == 10) {
+            stageShade = 0x60;
+        }
+        else if (selectedStage_ == 1) {
+            stageShade = 0x80;
+        }
+
+        const int mentalLevel = std::clamp(player_.tokenStock, 0, 3);
+        const int threshold = stockThresholdForCurrentConfig();
+        const int bandFloor = mentalLevel * threshold;
+        double bandPercent = 100.0;
+        if (mentalLevel < 3 && threshold > 0) {
+            bandPercent = std::clamp(
+                static_cast<double>(player_.stockProgress - bandFloor) /
+                    static_cast<double>(threshold) * 100.0,
+                0.0, 100.0);
+        }
+
+        int fillRed = stageShade;
+        int fillGreen = stageShade;
+        int fillBlue = stageShade;
+        if (mentalLevel == 1) {
+            fillRed = 0x80;
+            fillGreen = 0xff;
+            fillBlue = 0x80;
+        }
+        else if (mentalLevel == 2) {
+            fillRed = 0x80;
+            fillGreen = 0xff;
+            fillBlue = 0xff;
+        }
+        else if (mentalLevel == 3) {
+            fillRed = (player_.drawAnimationClock & 1) == 0 ? 0x80 : 0xff;
+            fillGreen = 0xff;
+            fillBlue = 0xff;
+        }
+
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 0x80);
+        if (dreamGaugeFrames_.size() > 1 && dreamGaugeFrames_[1] != -1) {
+            SetDrawBright(fillRed, fillGreen, fillBlue);
+            DrawCircleGauge(static_cast<int>(x), static_cast<int>(y), bandPercent,
+                            dreamGaugeFrames_[1]);
+        }
+        if (dreamGaugeFrames_[0] != -1) {
+            SetDrawBright(stageShade, stageShade, stageShade);
+            DrawRotaGraphF(
+                x, y, 1.0,
+                fixedAngleToRadians(normalizeAngle16(
+                    -player_.drawAnimationClock * 0x100)),
+                dreamGaugeFrames_[0], TRUE);
+        }
+        SetDrawBright(0xff, 0xff, 0xff);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    }
+
+    if (enemyGaugeFillHandle_ != -1) {
+        int gaugeWidth = 0;
+        int gaugeHeight = 0;
+        if (GetGraphSize(enemyGaugeFillHandle_, &gaugeWidth, &gaugeHeight) == 0 &&
+            gaugeWidth > 0 && gaugeHeight > 0) {
+            const auto drawAura = [&](double scaleX, int red, int green, int blue) {
+                if (scaleX <= 0.0) {
+                    return;
+                }
+                SetDrawBright(red, green, blue);
+                SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255);
+                DrawRotaGraph3F(
+                    x, screenY(player_.y + 80.0f),
+                    static_cast<float>(gaugeWidth) * 0.5f,
+                    static_cast<float>(gaugeHeight) * 0.5f,
+                    scaleX, 1.0, 0.0, enemyGaugeFillHandle_, TRUE);
+                SetDrawBright(255, 255, 255);
+                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+            };
+            drawAura(player_.shotVariantAuraScale, 255, 64, 64);
+            if (player_.specialGauge < 0) {
+                drawAura(-static_cast<double>(player_.specialGauge) / 600.0,
+                         feverColor[0], feverColor[1], feverColor[2]);
+            }
+        }
+    }
+
+    const int group = std::clamp(config_.setupGroup, 0, 2);
+    const int hitbox = frameHandle(group * 30 + 13);
+    if (hitbox != -1 && player_.hitboxScale > 0.0f) {
+        DrawRotaGraphF(x, y, player_.hitboxScale,
+                       fixedAngleToRadians(player_.hitboxAngle16), hitbox, TRUE);
+    }
 }
 
 void StageRuntime::drawEnemies() const {
@@ -19770,64 +20378,181 @@ void StageRuntime::drawOverlay() const {
 }
 
 void StageRuntime::drawHudSidebar() const {
+    drawStateRows();
+    drawTimeWindowHud();
     if (config_.dataWindowEnabled == 1 && config_.routeMode != -1) {
         drawLeftHudPanel();
     }
-    drawStateRows();
-    drawNumberWithSeparators(notes::hud_layout::kNumberRightX, notes::hud_layout::kScoreY, player_.score, numSmallFrames_, 20, 30, 0.9);
-    drawNumberWithSeparators(notes::hud_layout::kNumberRightX, notes::hud_layout::kBaseValueY, player_.scoreItemBaseValue, numSmallFrames_, 20, 30, 0.85);
-    drawDreamGauge(notes::hud_layout::kLabelX, notes::hud_layout::kDreamGaugeY, player_.specialGauge, 50000);
-    drawDataWindow2Tokens(notes::hud_layout::kPipStartX, notes::hud_layout::kTokenY, player_.tokenStock, notes::hud_layout::kMaxTokens);
-    drawHudNumber(notes::hud_layout::kNumberRightX, notes::hud_layout::kStageY, selectedStage_, numSmallFrames_, 20, 30, 0.85);
-    drawHudStatusIconGroup();
 }
 
 
 void StageRuntime::drawLeftHudPanel() const {
     if (dataWindowHandle_ != -1) {
-        DrawGraph(notes::hud_layout::kLeftDataWindowRect.x, notes::hud_layout::kLeftDataWindowRect.y, dataWindowHandle_, TRUE);
-    }
-    else {
-        DrawBox(notes::hud_layout::kLeftDataWindowRect.x, notes::hud_layout::kLeftDataWindowRect.y,
-                notes::hud_layout::kLeftDataWindowRect.right(), notes::hud_layout::kLeftDataWindowRect.bottom(),
-                GetColor(18, 20, 36), TRUE);
+        DrawGraph(0, 330, dataWindowHandle_, TRUE);
     }
 
-    if (!stateFrames_.empty() && stateFrames_.front() != -1) {
-        const auto drawState = [&](int frame, int x, int y, int alpha = 255) {
-            if (frame >= 0 && frame < static_cast<int>(stateFrames_.size()) && stateFrames_[static_cast<std::size_t>(frame)] != -1) {
-                SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
-                DrawGraph(x, y, stateFrames_[static_cast<std::size_t>(frame)], TRUE);
-                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+    const int resultIndex = selectedStage_ == 10 ? 9 : 1;
+    if (resultIndex < static_cast<int>(resultFrames_.size())) {
+        const int handle = resultFrames_[static_cast<std::size_t>(resultIndex)];
+        if (handle != -1) {
+            DrawRotaGraph3F(30.0f, 365.0f, 0.0f, 30.0f,
+                            0.9, 0.9, 0.0, handle, TRUE);
+        }
+    }
+    if (selectedStage_ != 10) {
+        drawHudNumber(120.0f, 365.0f, selectedStage_, numSmallFrames_,
+                      16.0f, 0.9, 1, false);
+    }
+    if (pauseFlowState_ != PauseFlowState::GameOverPresentation) {
+        drawHudNumber(280.0f, 365.0f, frame_, numSmallFrames_,
+                      16.0f, 1.0, 5, false);
+    }
+
+    float nearestSurfaceDistance = std::numeric_limits<float>::max();
+    bool hasDistanceTarget = false;
+    const float horizontalOrigin = player_.x / 6.0f;
+    for (const StageEnemy& enemy : enemies_) {
+        if (!enemy.active || !enemy.targetable) {
+            continue;
+        }
+        const float radius = static_cast<float>(std::max(0, enemy.radius));
+        if (enemy.x < horizontalOrigin - (radius + 100.0f) ||
+            enemy.x > horizontalOrigin + radius + 700.0f ||
+            enemy.y < -(radius + 100.0f) || enemy.y > radius + 820.0f) {
+            continue;
+        }
+        hasDistanceTarget = true;
+        const float dx = enemy.x - player_.x;
+        const float dy = enemy.y - player_.y;
+        const float surfaceDistance =
+            std::sqrt(dx * dx + dy * dy) - static_cast<float>(enemy.radius);
+        nearestSurfaceDistance = std::min(nearestSurfaceDistance, surfaceDistance);
+    }
+    int distanceValue = 0;
+    int distanceTier = 10;
+    if (nearestSurfaceDistance >= 0.0f && nearestSurfaceDistance < 2000.0f) {
+        distanceValue = static_cast<int>(nearestSurfaceDistance);
+        if (distanceValue > 150) {
+            distanceTier = 1;
+            if (distanceValue < 450) {
+                distanceTier = std::max(1, (450 - distanceValue) / 30);
             }
+        }
+    }
+    if (hasDistanceTarget) {
+        drawHudNumber(54.0f, 447.0f, distanceValue, numSmallFrames_,
+                      16.0f, 1.0, 4, true);
+    }
+    if (hasDistanceTarget && distanceTier >= 0 &&
+        distanceTier < static_cast<int>(itemFrames_.size())) {
+        const int handle = itemFrames_[static_cast<std::size_t>(distanceTier)];
+        if (handle != -1) {
+            const double scale = static_cast<double>(distanceTier) * 0.035 + 0.35;
+            DrawRotaGraphF(120.0f, 450.0f, scale, 0.0, handle, TRUE);
+        }
+    }
+
+    const int bulletCount = static_cast<int>(std::count_if(
+        enemyProjectiles_.begin(), enemyProjectiles_.end(),
+        [](const StageProjectile& projectile) { return projectile.active; }));
+    drawHudNumber(280.0f, 435.0f, bulletCount, numSmallFrames_,
+                  16.0f, 1.0, 4, false);
+    drawHudNumber(265.0f, 465.0f, enemyProjectileSpawnsLastSecond_, numSmallFrames_,
+                  16.0f, 0.7, 4, false);
+    drawHudNumber(135.0f, 535.0f, player_.graze, numSmallFrames_,
+                  16.0f, 1.0, 6, false);
+
+    const bool hiddenStage = config_.routeMode == 1 &&
+                             config_.specialStageFlag == 0 && selectedStage_ != 10;
+    drawHudNumber(hiddenStage ? 215.0f : 245.0f, 540.0f,
+                  player_.beingShotCount, configNumberFrames_,
+                  25.0f, 1.0, 2, true);
+    if (hiddenStage && dataWindow2Frames_.size() > 9 && dataWindow2Frames_[9] != -1) {
+        constexpr std::array<std::array<int, 4>, 5> kHiddenShotLimits{{
+            {{6, 5, 5, 3}}, {{6, 5, 5, 3}}, {{6, 5, 5, 3}},
+            {{8, 7, 7, 4}}, {{10, 8, 8, 5}},
+        }};
+        const int difficulty = std::clamp(config_.difficulty, 0, 4);
+        const int style = std::clamp(config_.optionSlots[3], 0, 3);
+        const bool hiddenStateUnlocked =
+            player_.beingShotCount <=
+            kHiddenShotLimits[static_cast<std::size_t>(difficulty)]
+                             [static_cast<std::size_t>(style)];
+        int brightness = 64;
+        if (selectedStage_ == 9) {
+            brightness = 255;
+        }
+        else if (hiddenStateUnlocked) {
+            brightness = 224 + static_cast<int>(
+                32.0 * std::sin(static_cast<double>(player_.drawAnimationClock) *
+                                static_cast<double>(kPi) / 60.0));
+        }
+        SetDrawBright(brightness, brightness, brightness);
+        DrawRotaGraphF(280.0f, 535.0f, 1.0, 0.0, dataWindow2Frames_[9], TRUE);
+        SetDrawBright(255, 255, 255);
+    }
+
+    const int group = std::clamp(config_.setupGroup, 0, 2);
+    constexpr std::array<int, 4> kNeutralSequence{{0, 1, 2, 1}};
+    const int neutralFrame = group * 30 +
+        kNeutralSequence[static_cast<std::size_t>(
+            (std::max(player_.drawAnimationClock, 0) / 7) % 4)];
+    if (neutralFrame >= 0 && neutralFrame < static_cast<int>(playerFrames_.size()) &&
+        playerFrames_[static_cast<std::size_t>(neutralFrame)] != -1) {
+        DrawRotaGraphF(55.0f, 640.0f, 1.0, 0.0,
+                       playerFrames_[static_cast<std::size_t>(neutralFrame)], TRUE);
+    }
+    if (player_.invulnerableFrames > 0 &&
+        (player_.drawAnimationClock & 1) == 0) {
+        const int overlayFrame = neutralFrame + 15;
+        if (overlayFrame < static_cast<int>(playerFrames_.size()) &&
+            playerFrames_[static_cast<std::size_t>(overlayFrame)] != -1) {
+            DrawRotaGraphF(55.0f, 640.0f, 1.0, 0.0,
+                           playerFrames_[static_cast<std::size_t>(overlayFrame)], TRUE);
+        }
+    }
+    if (player_.invulnerableFrames > 0) {
+        drawHudNumber(55.0f, 640.0f, player_.invulnerableFrames,
+                      numSmallFrames_, 16.0f, 1.0, 4, true);
+    }
+
+    if (dataWindow2Frames_.size() >= 9) {
+        const auto drawDataWindowFrame = [&](int frameIndex, float x, float y,
+                                             std::uint16_t angle16 = 0) {
+            const int handle = dataWindow2Frames_[static_cast<std::size_t>(frameIndex)];
+            if (handle == -1) {
+                return;
+            }
+            const double angle = static_cast<double>(angle16) *
+                                 static_cast<double>(kPi) / 32768.0;
+            DrawRotaGraphF(x, y, 1.0, angle, handle, TRUE);
         };
-        drawState(0, notes::hud_layout::kLeftStageLabelX, notes::hud_layout::kLeftStageLabelY);
-        drawState(1, notes::hud_layout::kLeftFrameLabelX, notes::hud_layout::kLeftFrameLabelY);
-        drawState(3, notes::hud_layout::kLeftGrazeLabelX, notes::hud_layout::kLeftGrazeLabelY);
-        drawState(27, notes::hud_layout::kLeftKeyStateIconX - 80, notes::hud_layout::kLeftKeyStateIconY - 20, 220);
-    }
+        drawDataWindowFrame(0, 160.0f, 647.0f);
+        constexpr std::array<InputAction, 4> kDirections{{
+            InputAction::Up, InputAction::Down,
+            InputAction::Right, InputAction::Left,
+        }};
+        constexpr std::array<float, 4> kDirectionX{{160.0f, 160.0f, 190.0f, 130.0f}};
+        constexpr std::array<float, 4> kDirectionY{{610.0f, 670.0f, 640.0f, 640.0f}};
+        constexpr std::array<std::uint16_t, 4> kDirectionAngles{{
+            0xc000, 0x4000, 0x0000, 0x8000,
+        }};
+        for (std::size_t i = 0; i < kDirections.size(); ++i) {
+            drawDataWindowFrame(actionDown(kDirections[i]) ? 2 : 1,
+                                kDirectionX[i], kDirectionY[i], kDirectionAngles[i]);
+        }
 
-    drawHudNumber(notes::hud_layout::kLeftStageLabelX + 190, notes::hud_layout::kLeftStageLabelY + 6,
-                  selectedStage_, numSmallFrames_, 20, 30, 0.72);
-    drawHudNumber(notes::hud_layout::kLeftFrameLabelX + 235, notes::hud_layout::kLeftFrameLabelY + 6,
-                  frame_, numSmallFrames_, 20, 30, 0.62);
-    drawNumberWithSeparators(notes::hud_layout::kLeftGrazeLabelX + 235, notes::hud_layout::kLeftGrazeLabelY + 6,
-                             player_.graze, numSmallFrames_, 20, 30, 0.62);
-    drawHudNumber(notes::hud_layout::kLeftKeyStateValueRightX, notes::hud_layout::kLeftKeyStateIconY + 8,
-                  player_.keyStateCount, numSmallFrames_, 20, 30, 0.72);
-
-    if (!playerFrames_.empty() && playerFrames_.front() != -1) {
-        const int base = std::min(config_.routeMode * 0x1e, static_cast<int>(playerFrames_.size()) - 1);
-        DrawRotaGraphF(static_cast<float>(notes::hud_layout::kLeftPlayerIconX),
-                       static_cast<float>(notes::hud_layout::kLeftPlayerIconY),
-                       0.62, 0.0, playerFrames_[static_cast<std::size_t>(base)], TRUE);
-    }
-    if (!dataWindow2Frames_.empty() && dataWindow2Frames_.front() != -1) {
-        for (int i = 0; i < std::min(player_.tokenStock, 5); ++i) {
-            const int frame = std::min(i, static_cast<int>(dataWindow2Frames_.size()) - 1);
-            DrawRotaGraphF(static_cast<float>(notes::hud_layout::kLeftDataWindow2X + i * 24),
-                           static_cast<float>(notes::hud_layout::kLeftDataWindow2Y),
-                           0.38, 0.0, dataWindow2Frames_[static_cast<std::size_t>(frame)], TRUE);
+        constexpr std::array<InputAction, 4> kButtons{{
+            InputAction::Shoot, InputAction::Bomb,
+            InputAction::RapidFire, InputAction::Slow,
+        }};
+        constexpr std::array<float, 4> kButtonX{{220.0f, 270.0f, 290.0f, 240.0f}};
+        constexpr std::array<float, 4> kButtonY{{615.0f, 615.0f, 665.0f, 665.0f}};
+        for (std::size_t i = 0; i < kButtons.size(); ++i) {
+            drawDataWindowFrame(5 + static_cast<int>(i),
+                                kButtonX[i], kButtonY[i] - 20.0f);
+            drawDataWindowFrame(actionDown(kButtons[i]) ? 4 : 3,
+                                kButtonX[i], kButtonY[i]);
         }
     }
 }
@@ -19845,83 +20570,241 @@ void StageRuntime::drawRightHudPanel() const {
             DrawGraph(0, 0,
                       playerFrameFrames_[static_cast<std::size_t>(overlayIndex)], TRUE);
         }
+    }
+}
+
+void StageRuntime::drawTimeWindowHud() const {
+    if (config_.specialStageFlag != 1 ||
+        (config_.routeMode != 1 && config_.routeMode != 2) ||
+        timeWindowHandle_ == -1) {
         return;
     }
-    if (timeWindowHandle_ != -1) {
-        DrawGraph(notes::hud_layout::kTimeWindowRect.x, notes::hud_layout::kTimeWindowRect.y, timeWindowHandle_, TRUE);
+
+    // FUN_1400c5930 replaces PlayerFrame[0]'s upper panel at layer 0x70.
+    DrawGraph(940, 0, timeWindowHandle_, TRUE);
+
+    if (effectSmallFrames_.size() > 1 && effectSmallFrames_[1] != -1) {
+        const int dispatchCount = std::clamp(timeWindowDispatchCount_, 0, 4);
+        for (int i = 0; i < dispatchCount; ++i) {
+            DrawRotaGraphF(965.0f + static_cast<float>(i * 24), 15.0f,
+                           0.4, 0.0, effectSmallFrames_[1], TRUE);
+        }
     }
-    if (dataWindowHandle_ != -1) {
-        DrawGraph(notes::hud_layout::kDataWindowRect.x, notes::hud_layout::kDataWindowRect.y, dataWindowHandle_, TRUE);
+
+    if (numSmallFrames_.size() < 14) {
+        return;
+    }
+    const auto drawFrame = [this](int frameIndex, float x, float y, double scale) {
+        const int handle = numSmallFrames_[static_cast<std::size_t>(frameIndex)];
+        if (handle != -1) {
+            DrawRotaGraphF(x, y, scale, 0.0, handle, TRUE);
+        }
+    };
+    const auto drawTime = [&](int sourceFrames, float x, float y, double scale) {
+        int remaining = std::max(0, sourceFrames);
+        const bool displaySeconds = remaining >= 60;
+        const float step = 16.0f * static_cast<float>(scale);
+        const auto drawRightAligned = [&](int value, float rightX) {
+            value = std::max(0, value);
+            do {
+                drawFrame(value % 10, rightX, y, scale);
+                rightX -= step;
+                value /= 10;
+            } while (value > 0);
+        };
+
+        if (remaining >= 3600) {
+            const int minutes = std::min(remaining / 3600, 99);
+            drawRightAligned(minutes, x + step * 2.0f);
+            drawFrame(13, x + step * 3.0f, y, scale);
+            remaining %= 3600;
+        }
+        if (displaySeconds) {
+            const int seconds = remaining / 60;
+            drawRightAligned(seconds, x + step * 5.0f);
+            if (seconds < 10) {
+                drawFrame(0, x + step * 4.0f, y, scale);
+            }
+            drawFrame(10, x + step * 6.0f + 5.0f, y, scale);
+            remaining %= 60;
+        }
+
+        const int hundredths = std::min(
+            static_cast<int>(static_cast<double>(remaining) * (5.0 / 3.0)), 99);
+        if (hundredths < 10) {
+            drawFrame(0, x + step * 7.0f, y, scale);
+        }
+        drawRightAligned(hundredths, x + step * 8.0f);
+    };
+
+    if (config_.routeMode == 1) {
+        for (int row = 0; row < 8; ++row) {
+            const int stage = row + 1;
+            const float y = 50.0f + static_cast<float>(row * 26);
+            if (stage < timeWindowStage_) {
+                const int start = timeWindowStageBoundaries_[static_cast<std::size_t>(stage - 1)];
+                const int end = timeWindowStageBoundaries_[static_cast<std::size_t>(stage)];
+                drawTime(end, 1030.0f, y, 0.7);
+                drawTime(std::max(0, end - start), 1150.0f, y, 0.7);
+            }
+            else if (stage == timeWindowStage_) {
+                const int start = timeWindowStageBoundaries_[static_cast<std::size_t>(stage - 1)];
+                drawTime(timeWindowElapsedFrames_, 1030.0f, y, 0.7);
+                drawTime(std::max(0, timeWindowElapsedFrames_ - start),
+                         1150.0f, y, 0.7);
+            }
+        }
+        drawTime(timeWindowElapsedFrames_, 1070.0f, 262.0f, 1.0);
+        drawTime(timeWindowBestFrames_, 1070.0f, 295.0f, 1.0);
+    }
+    else {
+        drawTime(timeWindowElapsedFrames_, 1070.0f, 262.0f, 1.0);
     }
 }
 
 void StageRuntime::drawStateRows() const {
-    if (stateFrames_.empty() || stateFrames_.front() == -1) {
-        return;
-    }
-    constexpr std::array<int, 6> frames{{0, 1, 2, 3, 4, 5}};
-    constexpr std::array<int, 6> ys{{notes::hud_layout::kScoreY - 32, notes::hud_layout::kBaseValueY - 32, notes::hud_layout::kGaugeY - 32,
-                                     notes::hud_layout::kTokenY - 32, notes::hud_layout::kStageY - 32, notes::hud_layout::kStockY - 32}};
-    for (std::size_t i = 0; i < frames.size(); ++i) {
-        const int frame = frames[i] < static_cast<int>(stateFrames_.size()) ? stateFrames_[static_cast<std::size_t>(frames[i])] : -1;
-        if (frame != -1) {
-            DrawGraph(notes::hud_layout::kLabelX, ys[i], frame, TRUE);
+    const auto drawState = [&](int frameIndex, float x, float y,
+                               int red = 255, int green = 255, int blue = 255,
+                               int alpha = 255, double scale = 1.0) {
+        if (frameIndex < 0 || frameIndex >= static_cast<int>(stateFrames_.size())) {
+            return;
         }
-    }
-}
-
-void StageRuntime::drawDreamGauge(int x, int y, int value, int maxValue) const {
-    const bool feverActive = value < 0;
-    const float ratio = maxValue <= 0 || feverActive ? 0.0f : clampFloat(static_cast<float>(value) / static_cast<float>(maxValue), 0.0f, 1.0f);
-    if (!dreamGaugeFrames_.empty() && dreamGaugeFrames_.front() != -1) {
-        DrawRotaGraphF(static_cast<float>(x + notes::hud_layout::kDreamGaugePreviewCenterOffsetX),
-                       static_cast<float>(y + notes::hud_layout::kDreamGaugePreviewCenterOffsetY),
-                       notes::hud_layout::kDreamGaugePreviewScale, 0.0, dreamGaugeFrames_.front(), TRUE);
-        if (dreamGaugeFrames_.size() > 1 && dreamGaugeFrames_[1] != -1) {
-            SetDrawBlendMode(DX_BLENDMODE_ALPHA, static_cast<int>(80 + ratio * 175));
-            DrawRotaGraphF(static_cast<float>(x + notes::hud_layout::kDreamGaugePreviewCenterOffsetX),
-                           static_cast<float>(y + notes::hud_layout::kDreamGaugePreviewCenterOffsetY),
-                           notes::hud_layout::kDreamGaugePreviewScale, 0.0, dreamGaugeFrames_[1], TRUE);
-            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-        }
-    }
-    const int width = notes::hud_layout::kGaugeBarWidth;
-    const int height = notes::hud_layout::kGaugeBarHeight;
-    DrawBox(x, y + 16, x + width, y + 16 + height, GetColor(32, 36, 64), TRUE);
-    const int gaugeColor = feverActive ? GetColor(255, 110, 140) : GetColor(100, 220, 255);
-    const int fillWidth = feverActive
-                              ? static_cast<int>((width - 4) * clampFloat(static_cast<float>(-value) / static_cast<float>(kFeverActiveFrames), 0.0f, 1.0f))
-                              : static_cast<int>((width - 4) * ratio);
-    DrawBox(x + 2, y + 18, x + 2 + fillWidth, y + 16 + height - 2, gaugeColor, TRUE);
-}
-
-void StageRuntime::drawDataWindow2Tokens(int x, int y, int activeCount, int maxCount) const {
-    activeCount = std::max(0, std::min(activeCount, maxCount));
-    for (int i = 0; i < maxCount; ++i) {
-        const bool active = i < activeCount;
-        const int handle = dataWindow2Frames_.empty() ? -1 : dataWindow2Frames_[static_cast<std::size_t>(std::min(i, static_cast<int>(dataWindow2Frames_.size()) - 1))];
+        const int handle = stateFrames_[static_cast<std::size_t>(frameIndex)];
         if (handle == -1) {
-            continue;
+            return;
         }
-        const int cx = x + i * notes::hud_layout::kPipStep;
-        SetDrawBlendMode(DX_BLENDMODE_ALPHA, active ? 255 : 90);
-        DrawRotaGraphF(static_cast<float>(cx), static_cast<float>(y), 0.42, 0.0, handle, TRUE);
+        SetDrawBright(red, green, blue);
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+        DrawRotaGraphF(x, y, scale, 0.0, handle, TRUE);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-    }
-}
+        SetDrawBright(255, 255, 255);
+    };
 
-void StageRuntime::drawHudStatusIconGroup() const {
-    if (dataWindow2Frames_.empty() || dataWindow2Frames_.front() == -1) {
-        drawHudNumber(notes::hud_layout::kNumberRightX, notes::hud_layout::kStockY, std::max(0, player_.lives), numSmallFrames_, 20, 30, 0.85);
-        return;
+    constexpr std::array<int, 3> kFrameRates{{60, 30, 20}};
+    const int frameRateMode = std::clamp(config_.systemConfig[1], 0, 2);
+    const int targetFrameRate = kFrameRates[static_cast<std::size_t>(frameRateMode)];
+    const int measuredFrameRate = frameRateMode == 0
+                                      ? hudMeasuredFrameRate_
+                                      : hudMeasuredFrameRate_ / (frameRateMode + 1);
+    drawHudNumber(1230.0f, 12.0f, measuredFrameRate, numSmallFrames_,
+                  16.0f, 0.8, 3, false);
+    drawHudNumber(1270.0f, 12.0f, targetFrameRate, numSmallFrames_,
+                  16.0f, 0.8, 3, false);
+    if (numSmallFrames_.size() > 12 && numSmallFrames_[12] != -1) {
+        DrawRotaGraph3F(1235.0f, 0.0f, 0.0f, 0.0f,
+                        0.8, 0.8, 0.0, numSmallFrames_[12], TRUE);
     }
-    const std::array<int, 3> xs{{notes::hud_layout::kStockIcon0X, notes::hud_layout::kStockIcon1X, notes::hud_layout::kStockIcon2X}};
-    for (std::size_t i = 0; i < xs.size(); ++i) {
-        const int handle = dataWindow2Frames_[static_cast<std::size_t>(std::min(6 + static_cast<int>(i), static_cast<int>(dataWindow2Frames_.size()) - 1))];
-        SetDrawBlendMode(DX_BLENDMODE_ALPHA, static_cast<int>(i) < player_.lives ? 255 : 90);
-        DrawRotaGraphF(static_cast<float>(xs[i]), static_cast<float>(notes::hud_layout::kStockY), 0.48, 0.0, handle, TRUE);
-        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
+    if (config_.routeMode == -1) {
+        drawState(15, 1115.0f, 340.0f);
     }
+    else if (selectedStage_ == 10) {
+        drawState(16, 1115.0f, 340.0f);
+    }
+    else {
+        drawState(10 + std::clamp(config_.difficulty, 0, 4),
+                  1115.0f, 340.0f);
+    }
+    if (config_.routeMode == 1 && selectedStage_ != 10) {
+        drawState(17, 1115.0f, 370.0f);
+    }
+    else if (config_.routeMode == 2) {
+        drawState(28, 1115.0f, 370.0f);
+    }
+
+    const int bestFrame = config_.likeStyle == 0 ? 0 : 29;
+    const int likeFrame = config_.likeStyle == 0 ? 1 : 30;
+    drawState(bestFrame, 1040.0f, 410.0f);
+    drawState(likeFrame, 1040.0f, 450.0f);
+    drawHudNumber(1240.0f, 410.0f, player_.bestScore, numSmallFrames_,
+                  16.0f, 1.0, 12, false, true);
+    drawHudNumber(1240.0f, 450.0f, player_.score, numSmallFrames_,
+                  16.0f, 1.0, 12, false, true);
+
+    drawState(2, 1040.0f, 500.0f);
+    drawHudNumber(1240.0f, 500.0f, player_.scoreItemBaseValue,
+                  numSmallFrames_, 16.0f, 1.0, 9, false, true);
+
+    drawState(3, 1040.0f, 530.0f);
+    if (!enemyGaugeFrames_.empty() && enemyGaugeFrames_[0] != -1) {
+        SetDrawBright(64, 64, 128);
+        DrawRotaGraphF(1135.0f, 534.0f, 1.0, 0.0, enemyGaugeFrames_[0], TRUE);
+        SetDrawBright(255, 255, 255);
+    }
+    if (enemyGaugeFillHandle_ != -1) {
+        double gaugeScale = static_cast<double>(player_.specialGauge) / 50000.0;
+        int gaugeRed = 255;
+        int gaugeGreen = 64;
+        int gaugeBlue = 64;
+        if (player_.specialGauge > 49999) {
+            gaugeScale = 1.0;
+            constexpr std::array<std::array<int, 3>, 7> kReadyColors{{
+                {{255, 120, 120}}, {{255, 200, 110}}, {{255, 255, 120}},
+                {{120, 255, 120}}, {{120, 255, 255}}, {{120, 120, 255}},
+                {{220, 120, 255}},
+            }};
+            const int colorTick = std::max(player_.drawAnimationClock, 0);
+            const int colorIndex = (colorTick / 20) % 7;
+            const int nextColorIndex = (colorIndex + 1) % 7;
+            const double mix = static_cast<double>(colorTick % 20) / 20.0;
+            const auto interpolate = [&](int channel) {
+                const int current = kReadyColors[static_cast<std::size_t>(colorIndex)]
+                                                [static_cast<std::size_t>(channel)];
+                const int next = kReadyColors[static_cast<std::size_t>(nextColorIndex)]
+                                             [static_cast<std::size_t>(channel)];
+                return static_cast<int>(static_cast<double>(current) +
+                                        static_cast<double>(next - current) * mix);
+            };
+            gaugeRed = interpolate(0);
+            gaugeGreen = interpolate(1);
+            gaugeBlue = interpolate(2);
+        }
+        SetDrawBright(gaugeRed, gaugeGreen, gaugeBlue);
+        DrawRotaGraph3F(1015.0f, 529.0f, 0.0f, 0.0f,
+                        gaugeScale, 1.0, 0.0, enemyGaugeFillHandle_, TRUE);
+        SetDrawBright(255, 255, 255);
+        if (hudSpecialGaugeFlashTimer_ > 0) {
+            SetDrawBright(255, 128, 64);
+            DrawRotaGraph3F(1015.0f, 543.0f, 0.0f, 0.0f,
+                            static_cast<double>(hudSpecialGaugeFlashTimer_) / 60.0,
+                            0.5, 0.0, enemyGaugeFillHandle_, TRUE);
+            SetDrawBright(255, 255, 255);
+        }
+    }
+
+    drawState(4, 1040.0f, 580.0f);
+    for (int i = 0; i < 9; ++i) {
+        const float x = static_cast<float>(1037 + i * 27);
+        drawState(8, x, 580.0f, 0, 0, 0, 64);
+        if (i < player_.lives) {
+            drawState(8, x, 580.0f);
+        }
+    }
+
+    drawState(5, 1050.0f, 610.0f);
+    const auto& thresholds =
+        kExtendThresholds[static_cast<std::size_t>(std::clamp(config_.difficulty, 0, 4))];
+    if (player_.extendIndex >= 0 && player_.extendIndex < 5) {
+        drawHudNumber(1240.0f, 611.0f,
+                      thresholds[static_cast<std::size_t>(player_.extendIndex)], numSmallFrames_,
+                      16.0f, 0.7, 12, false, true);
+    }
+
+    drawState(6, 1040.0f, 650.0f);
+    constexpr std::array<float, 3> kMentalX{{1100.0f, 1135.0f, 1170.0f}};
+    for (std::size_t i = 0; i < kMentalX.size(); ++i) {
+        drawState(9, kMentalX[i], 650.0f, 0, 0, 0, 64);
+        if (static_cast<int>(i) < player_.tokenStock) {
+            drawState(9, kMentalX[i], 650.0f);
+        }
+    }
+
+    drawState(7, 1030.0f, 695.0f);
+    for (std::size_t i = 0; i < config_.optionSlots.size(); ++i) {
+        drawState(22 + std::clamp(config_.optionSlots[i], 0, 3),
+                  1130.0f + static_cast<float>(i) * 20.0f, 695.0f);
+    }
+    drawState(config_.specialMode == 0 ? 26 : 27, 1300.0f, 695.0f);
 }
 
 void StageRuntime::drawLayoutGuides() const {
@@ -19944,24 +20827,27 @@ void StageRuntime::drawLayoutGuides() const {
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
     const int lineColor = GetColor(180, 220, 255);
-    for (int y : {notes::hud_layout::kScoreY, notes::hud_layout::kBaseValueY, notes::hud_layout::kGaugeY,
-                  notes::hud_layout::kTokenY, notes::hud_layout::kStageY, notes::hud_layout::kStockY}) {
+    for (int y : {notes::hud_layout::kBestY, notes::hud_layout::kLikeY,
+                  notes::hud_layout::kFollowerY, notes::hud_layout::kBuzzY,
+                  notes::hud_layout::kLifeY, notes::hud_layout::kNextExtendY,
+                  notes::hud_layout::kMentalY}) {
         DrawLine(notes::hud_layout::kDataWindowRect.x, y, notes::hud_layout::kDataWindowRect.right(), y, lineColor);
     }
-    for (int i = 0; i < notes::hud_layout::kMaxTokens; ++i) {
-        const int x = notes::hud_layout::kPipStartX + i * notes::hud_layout::kPipStep;
-        DrawLine(x, notes::hud_layout::kTokenY - 10, x, notes::hud_layout::kTokenY + 26, GetColor(180, 255, 220));
+    for (int i = 0; i < notes::hud_layout::kHeartCount; ++i) {
+        const int x = notes::hud_layout::kHeartStartX + i * notes::hud_layout::kHeartStep;
+        DrawLine(x, notes::hud_layout::kLifeY - 10, x,
+                 notes::hud_layout::kLifeY + 26, GetColor(180, 255, 220));
     }
     DrawFormatString(56, 20, GetColor(255, 245, 160),
                      "F7 layout guides  player local=(%.1f, %.1f) screen=(%.1f, %.1f)",
                      player_.x, player_.y, screenX(player_.x), screenY(player_.y));
     DrawString(56, 42, "blue=StageBack  green=StageFrame  yellow=600x720 playfield  red/pink=HUD windows", GetColor(210, 220, 240));
-    DrawString(56, 64, "HUD panel anchors follow FUN_1400c2860; State/DataWindow2 frame meanings remain provisional.", GetColor(255, 220, 170));
+    DrawString(56, 64, "HUD anchors and frame identities follow FUN_1400c2860/FUN_1400c4bb0.", GetColor(255, 220, 170));
 }
 
 void StageRuntime::drawDebugOverlay() const {
     DrawFormatString(24, notes::kScreenHeight - 70, GetColor(170, 170, 190),
-                     "F7 guide: HUD anchors from FUN_1400c2860; frame meanings provisional.");
+                     "F7 guide: decoded HUD anchors from FUN_1400c2860/FUN_1400c4bb0.");
     DrawFormatString(24, notes::kScreenHeight - 48, GetColor(150, 160, 180),
                      "reconstruction probe  stage=%02d frame=%d enemies=%d bullets=%d side=%d lives=%d",
                      selectedStage_, frame_, static_cast<int>(enemies_.size()),
@@ -19974,44 +20860,62 @@ void StageRuntime::drawDebugOverlay() const {
                      config_.optionSlots[0], config_.optionSlots[1], config_.optionSlots[2], config_.optionSlots[3]);
 }
 
-void StageRuntime::drawHudNumber(int rightX, int y, int value, const std::vector<int>& digitFrames, int digitWidth, int digitHeight, double scale) const {
-    drawNumberWithSeparators(rightX, y, value, digitFrames, digitWidth, digitHeight, scale);
-}
+void StageRuntime::drawHudNumber(float anchorX, float centerY, std::int64_t value,
+                                 const std::vector<int>& digitFrames,
+                                 float unscaledStep, double scale,
+                                 int maxDigits, bool centered,
+                                 bool separators) const {
+    value = std::max<std::int64_t>(0, value);
+    maxDigits = std::clamp(maxDigits, 1, 12);
 
-void StageRuntime::drawNumberWithSeparators(int rightX, int y, int value, const std::vector<int>& digitFrames, int digitWidth, int digitHeight, double scale) const {
-    const int originalValue = std::max(0, value);
-    value = originalValue;
+    std::int64_t maximum = 1;
+    for (int i = 0; i < maxDigits; ++i) {
+        maximum *= 10;
+    }
+    --maximum;
+    const bool overflow = value > maximum;
+    std::int64_t remaining = std::min(value, maximum);
+
     std::array<int, 12> digits{};
-    int count = 0;
+    int digitCount = 0;
     do {
-        digits[static_cast<std::size_t>(count++)] = value % 10;
-        value /= 10;
-    } while (value > 0 && count < static_cast<int>(digits.size()));
+        digits[static_cast<std::size_t>(digitCount++)] =
+            static_cast<int>(remaining % 10);
+        remaining /= 10;
+    } while (remaining > 0 && digitCount < maxDigits);
 
-    if (digitFrames.empty() || digitFrames.front() == -1) {
-        DrawFormatString(rightX - count * digitWidth, y, GetColor(245, 245, 255), "%d", originalValue);
+    const float step = unscaledStep * static_cast<float>(scale);
+    float digitX = anchorX;
+    if (centered) {
+        digitX += static_cast<float>(digitCount - 1) * step * 0.5f;
+    }
+
+    if (digitFrames.size() < 10 || digitFrames.front() == -1) {
+        DrawFormatString(static_cast<int>(anchorX), static_cast<int>(centerY),
+                         GetColor(245, 245, 255), "%lld",
+                         static_cast<long long>(std::min(value, maximum)));
         return;
     }
 
-    const int step = static_cast<int>(static_cast<double>(digitWidth) * scale);
-    int x = rightX - step;
-    for (int i = 0; i < count; ++i) {
+    const float leastSignificantX = digitX;
+    for (int i = 0; i < digitCount; ++i) {
         const int digit = digits[static_cast<std::size_t>(i)];
-        const int handle = digit < static_cast<int>(digitFrames.size()) ? digitFrames[static_cast<std::size_t>(digit)] : -1;
+        const int handle = digitFrames[static_cast<std::size_t>(digit)];
         if (handle != -1) {
-            DrawRotaGraphF(static_cast<float>(x + step / 2), static_cast<float>(y + static_cast<int>(digitHeight * scale) / 2), scale, 0.0, handle, TRUE);
+            DrawRotaGraphF(digitX, centerY, scale, 0.0, handle, TRUE);
         }
-        else {
-            DrawFormatString(x, y, GetColor(245, 245, 255), "%d", digit);
+        digitX -= step;
+        if (separators && (i + 1) % 3 == 0 && i + 1 < digitCount &&
+            numSmallFrames_.size() > 10 && numSmallFrames_[10] != -1) {
+            digitX -= 5.0f * static_cast<float>(scale);
+            DrawRotaGraphF(digitX + step, centerY, scale, 0.0,
+                           numSmallFrames_[10], TRUE);
         }
-        x -= step;
-        if ((i + 1) % 3 == 0 && i + 1 < count) {
-            const int commaFrame = digitFrames.size() > 10 ? digitFrames[10] : -1;
-            if (commaFrame != -1) {
-                DrawRotaGraphF(static_cast<float>(x + step / 2), static_cast<float>(y + static_cast<int>(digitHeight * scale) / 2), scale, 0.0, commaFrame, TRUE);
-            }
-            x -= step / 2;
-        }
+    }
+
+    if (overflow && numSmallFrames_.size() > 11 && numSmallFrames_[11] != -1) {
+        DrawRotaGraphF(leastSignificantX + step, centerY, scale, 0.0,
+                       numSmallFrames_[11], TRUE);
     }
 }
 

@@ -4,6 +4,7 @@
 #include "text_database.h"
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <cstddef>
 #include <vector>
@@ -55,7 +56,10 @@ public:
         int initialStock = -1;
         int initialStockProgressSteps = -1;
         int initialSpecialGauge = -1;
+        std::int64_t initialBestScore = 0;
+        int initialBestTimeFrames = 0;
         bool continueRun = false;
+        bool replayPlayback = false;
         const TextDatabase* textDatabase = nullptr;
     };
 
@@ -97,7 +101,7 @@ public:
     int routeMode() const { return config_.routeMode; }
     int specialStageFlag() const { return config_.specialStageFlag; }
     int frame() const { return frame_; }
-    int score() const { return player_.score; }
+    std::int64_t score() const { return player_.score; }
     int enemiesAlive() const;
     int enemyProjectilesAlive() const;
     bool stageComplete() const {
@@ -142,28 +146,42 @@ private:
 
     struct PlayerState {
         float x = 360.0f;
-        float y = 620.0f;
+        float y = 600.0f;
         int playerStateTimer = 0;
         int shotTimer = 0;
         int focusTransition = 0x20;
         int focusHoldTimer = 0;
+        int lateralAnimation = 0;
+        int animationClock = 0;
+        int drawAnimationClock = 0;
+        int visualFrame = 0;
+        int hitboxAngle16 = 0;
         int shotVariant = 0;
-        int score = 0;
+        float shotVariantAuraScale = 0.0f;
+        std::int64_t score = 0;
+        std::int64_t bestScore = 0;
         int scoreItemBaseValue = 100;
         int specialGauge = 0;
         int tokenStock = 2;
         int graze = 0;
-        int keyStateCount = 0;
+        int beingShotCount = 0;
+        int extendIndex = 0;
         int stockProgress = 0;
-        int invulnerableFrames = 0;
-        int lives = 3;
+        int invulnerableFrames = 60;
+        int lives = 2;
         int bombLock = 0;
         std::array<float, 4> optionX{};
         std::array<float, 4> optionY{};
         std::array<std::uint16_t, 4> optionAngle16{{0xc000, 0xc000, 0xc000, 0xc000}};
+        std::array<int, 4> optionTargetEntityIds{};
+        float sharedOptionTargetX = 360.0f;
+        float sharedOptionTargetY = 600.0f;
+        float optionDrawScale = 1.0f;
         std::uint16_t optionFormationAngle16 = 0xc000;
         std::uint16_t movementAngle16 = 0xc000;
+        float hitboxScale = 0.0f;
         bool focused = false;
+        bool drawInvulnerabilityOverlay = false;
     };
 
     struct StageEnemy {
@@ -572,7 +590,7 @@ private:
     void updateRewardItems();
     int effectiveHelpLevel() const;
     int stockThresholdForCurrentConfig() const;
-    void addRunScore(int amount);
+    void addRunScore(std::int64_t amount);
     void addSpecialGauge(int amount);
     void collectRewardItem(const RewardItem& item);
     void processStockProgressAfterGain(int progressGain);
@@ -656,14 +674,14 @@ private:
     void drawHudSidebar() const;
     void drawLeftHudPanel() const;
     void drawRightHudPanel() const;
+    void drawTimeWindowHud() const;
     void drawStateRows() const;
-    void drawDreamGauge(int x, int y, int value, int maxValue) const;
-    void drawDataWindow2Tokens(int x, int y, int activeCount, int maxCount) const;
-    void drawHudStatusIconGroup() const;
     void drawLayoutGuides() const;
     void drawDebugOverlay() const;
-    void drawHudNumber(int rightX, int y, int value, const std::vector<int>& digitFrames, int digitWidth, int digitHeight, double scale = 1.0) const;
-    void drawNumberWithSeparators(int rightX, int y, int value, const std::vector<int>& digitFrames, int digitWidth, int digitHeight, double scale = 1.0) const;
+    void drawHudNumber(float anchorX, float centerY, std::int64_t value,
+                       const std::vector<int>& digitFrames, float unscaledStep,
+                       double scale, int maxDigits, bool centered,
+                       bool separators = false) const;
 
     void initializePauseResources(ResourceManager& resources);
     bool updatePauseFlow();
@@ -719,6 +737,7 @@ private:
     std::array<int, 8> bombSoundHandles_{{-1, -1, -1, -1, -1, -1, -1, -1}};
     std::array<int, 4> feverSoundHandles_{{-1, -1, -1, -1}};
     int normalShotSoundHandle_ = -1;
+    int optionLockSoundHandle_ = -1;
     int missSoundHandle_ = -1;
     int miss2SoundHandle_ = -1;
     int grazeSoundHandle_ = -1;
@@ -792,17 +811,30 @@ private:
     std::vector<int> numLargeFrames_;
     int dataWindowHandle_ = -1;
     int timeWindowHandle_ = -1;
+    int timeWindowElapsedFrames_ = 0;
+    int timeWindowBestFrames_ = 0;
+    int timeWindowDispatchCount_ = 1;
+    int timeWindowStage_ = 1;
+    std::array<int, 9> timeWindowStageBoundaries_{};
     std::vector<int> dataWindow2Frames_;
     std::vector<int> playerFrameFrames_;
     std::vector<int> stateFrames_;
+    std::vector<int> resultFrames_;
+    std::vector<int> configNumberFrames_;
     std::vector<int> dreamGaugeFrames_;
     std::vector<StageEnemy> enemies_;
     std::vector<StageEnemy> pendingEnemies_;
     std::vector<StageProjectile> enemyProjectiles_;
+    int enemyProjectileSpawnsThisSecond_ = 0;
+    int enemyProjectileSpawnsLastSecond_ = 0;
     std::vector<PlayerSideObject> playerSideObjects_;
     std::vector<RewardItem> rewardItems_;
     std::vector<StageEffect> stageEffects_;
     std::array<bool, 11> inputActions_{};
+    int hudSpecialGaugeFlashTimer_ = 0;
+    std::chrono::steady_clock::time_point hudFrameRateSampleStart_{};
+    int hudFrameRateSampleTicks_ = 0;
+    int hudMeasuredFrameRate_ = 60;
     bool showLayoutGuides_ = false;
     bool prevLayoutGuideToggle_ = false;
     PauseFlowState pauseFlowState_ = PauseFlowState::Gameplay;
