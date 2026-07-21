@@ -766,7 +766,7 @@ bool StageRuntime::drawStage10Enemy(const StageEnemy& enemy, float x,
         return true;
     }
 
-    if (exactLayer == 0x32 && enemy.targetable &&
+    if (exactLayer == 0x64 && enemy.targetable &&
         enemy.spawnType != 0xff && enemy.spawnType != 0x101) {
         StageEnemy gauge = enemy;
         gauge.hp = enemy.drawHp;

@@ -153,7 +153,7 @@ bool App::initialize() {
     }
     textDatabase_.load(textResources(), options_.assetRoot, options_.resourceMode);
     stageProbe_.loadDemoSummaries(options_.assetRoot);
-    frontendRuntime_.initialize(*resources_, saveConfigState_);
+    frontendRuntime_.initialize(*resources_, saveConfigState_, &textDatabase_);
 
     return true;
 }
@@ -385,21 +385,30 @@ int App::runSmokeTestLoop() {
             frontendRuntime_.abortGameplay(*resources_);
             diagnosticsPage_ = 0;
         }
+        else if (gameplayExitAfterDraw == StageRuntime::GameplayExitRequest::ReplayFinished &&
+                 resources_) {
+            frontendRuntime_.finishReplay(*resources_);
+            diagnosticsPage_ = 0;
+        }
         else if (gameplayExitAfterDraw == StageRuntime::GameplayExitRequest::GameOver &&
                  resources_) {
-            const bool replayPrompt = !stageRuntime_.replayPlayback() &&
-                                      stageRuntime_.routeMode() >= 0;
-            if (replayPrompt) {
-                frontendRuntime_.captureReplay(stageRuntime_.finalizedReplayData());
+            if (stageRuntime_.replayPlayback()) {
+                frontendRuntime_.finishReplay(*resources_);
             }
-            frontendRuntime_.finishGameOver(
-                *resources_, replayPrompt,
-                stageRuntime_.score(), stageRuntime_.frame());
+            else {
+                const bool replayPrompt = stageRuntime_.routeMode() >= 0;
+                if (replayPrompt) {
+                    frontendRuntime_.captureReplay(stageRuntime_.finalizedReplayData());
+                }
+                frontendRuntime_.finishGameOver(
+                    *resources_, replayPrompt,
+                    stageRuntime_.score(), stageRuntime_.frame());
+            }
             diagnosticsPage_ = 0;
         }
         else if (completeGameplayAfterDraw && resources_) {
             if (stageRuntime_.replayPlayback()) {
-                frontendRuntime_.abortGameplay(*resources_);
+                frontendRuntime_.finishReplay(*resources_);
             }
             else {
                 frontendRuntime_.captureReplay(stageRuntime_.finalizedReplayData());
@@ -420,6 +429,12 @@ void App::drawSmokeTestFrame() {
     ClearDrawScreen();
 
     if (diagnosticsPage_ == 0 && resources_) {
+        if (frontendRuntime_.state() == FrontendRuntime::MainState::ReplayFinished &&
+            stageRuntime_.initialized()) {
+            // State 0x27 keeps the final gameplay composition visible beneath
+            // its two-choice replay menu.
+            stageRuntime_.draw();
+        }
         frontendRuntime_.draw(*resources_);
         return;
     }

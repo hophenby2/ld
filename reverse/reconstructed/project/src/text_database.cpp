@@ -152,7 +152,9 @@ LoadedTextFile TextDatabase::loadOne(const TextResourceSpec& spec, const std::fi
         if (fields.size() != 4) {
             continue;
         }
-        TextRecord record{toInt(fields[0]), fields[1], fields[2], toInt(fields[3])};
+        TextRecord record{toInt(fields[0]), fields[1],
+                          fields[2] == "NULL" ? std::string{} : fields[2],
+                          toInt(fields[3])};
         ++result.rowCount;
         if (result.sampleRecords.size() < 4) {
             result.sampleRecords.push_back(record);

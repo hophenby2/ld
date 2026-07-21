@@ -342,6 +342,7 @@ bool StageRuntime::updatePauseFlow() {
 
     if (pauseFlowState_ == PauseFlowState::Gameplay) {
         if (pauseDown && !pauseInputHeld_ && !stageComplete() &&
+            frame_ >= config_.rawStartFrame + 60 &&
             pendingExitRequest_ == GameplayExitRequest::None) {
             enterPauseMenu();
             pauseInputHeld_ = true;

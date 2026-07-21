@@ -11,6 +11,8 @@
 
 namespace reconstructed {
 
+class TextDatabase;
+
 class FrontendRuntime {
 public:
     enum class MainState {
@@ -37,6 +39,7 @@ public:
         ReplayPrompt = 0x23,
         ReplaySave = 0x24,
         ReplayNameEntry = 0x25,
+        ReplayFinished = 0x27,
     };
 
     struct GameplayRequest {
@@ -94,7 +97,8 @@ public:
         bool saveSystemConfig = false;
     };
 
-    void initialize(ResourceManager& resources, const SaveConfigState& saveConfigState);
+    void initialize(ResourceManager& resources, const SaveConfigState& saveConfigState,
+                    const TextDatabase* textDatabase);
     void update(ResourceManager& resources);
     void draw(const ResourceManager& resources) const;
     void completeGameplay(ResourceManager& resources, std::int64_t score = 0,
@@ -104,6 +108,7 @@ public:
     void skipTutorial(ResourceManager& resources);
     void finishGameOver(ResourceManager& resources, bool replayPrompt,
                         std::int64_t score, int elapsedFrames);
+    void finishReplay(ResourceManager& resources);
     void captureReplay(ReplayData replay);
     void discardReplay();
     void applyGameplaySettings(ResourceManager& resources,
@@ -121,6 +126,7 @@ private:
         bool down = false;
         bool confirm = false;
         bool cancel = false;
+        bool pause = false;
         bool upRepeat = false;
         bool downRepeat = false;
         bool leftRepeat = false;
@@ -142,6 +148,24 @@ private:
         int checkpoint = 1;
         int maximumStage = 1;
         long long score = 0;
+    };
+
+    struct PracticeAmbientParticle {
+        enum class Kind : std::uint8_t {
+            Medium,
+            Small,
+        };
+
+        Kind kind = Kind::Medium;
+        float x = 0.0f;
+        float y = 0.0f;
+        std::uint16_t angle16 = 0;
+        double targetSpeed = 0.0;
+        double targetScale = 1.0;
+        double drawScale = 0.0;
+        int age = 0;
+        int drawAge = 0;
+        std::uint32_t birthFrame = 0;
     };
 
     InputSnapshot readInput();
@@ -174,6 +198,8 @@ private:
     void updateReplayPrompt(ResourceManager& resources, const InputSnapshot& input);
     void updateReplaySave(ResourceManager& resources, const InputSnapshot& input);
     void updateReplayNameEntry(ResourceManager& resources, const InputSnapshot& input);
+    void updateReplayFinished(ResourceManager& resources, const InputSnapshot& input);
+    void updatePracticeAmbient();
     void updateTransition(ResourceManager& resources);
 
     void drawTitleMenu(const ResourceManager& resources) const;
@@ -198,6 +224,9 @@ private:
     void drawReplayPrompt(const ResourceManager& resources) const;
     void drawReplaySave(const ResourceManager& resources) const;
     void drawReplayNameEntry(const ResourceManager& resources) const;
+    void drawReplayFinished(const ResourceManager& resources) const;
+    void drawPracticeAmbient(const ResourceManager& resources) const;
+    void drawPracticeHelpText() const;
     void drawTransitionOverlay(const ResourceManager& resources) const;
 
     void loadSaveBackedState(const SaveConfigState& saveConfigState);
@@ -302,6 +331,7 @@ private:
     int replayStageChoice_ = 1;
     ReplayData loadedReplay_;
     std::size_t loadedReplayInputStartIndex_ = 0;
+    int replayFinishedSelectionPulse_ = 0;
     ReplayData pendingReplay_;
     std::array<char, 4> replayTag_{{'A', 'A', 'A', '\0'}};
     int rankingCursor_ = 0;
@@ -313,6 +343,11 @@ private:
     int resultPhaseTransitionTimer_ = 0;
     int resultRouteCompletion_ = 0;
     bool resultBgmStarted_ = false;
+    const TextDatabase* textDatabase_ = nullptr;
+    std::array<int, 2> practiceFontHandles_{{-1, -1}};
+    std::vector<PracticeAmbientParticle> practiceAmbientParticles_;
+    std::uint32_t ambientSessionSeed_ = 0;
+    std::uint32_t frontendGlobalFrame_ = 0;
     std::vector<std::uint8_t> saveBackingBytes_;
     GameplayRequest gameplayRequest_;
 
@@ -322,6 +357,7 @@ private:
     int rightHeldFrames_ = 0;
     int confirmHeldFrames_ = 0;
     int cancelHeldFrames_ = 0;
+    int pauseHeldFrames_ = 0;
 };
 
 } // namespace reconstructed

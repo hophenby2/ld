@@ -1,6 +1,7 @@
 #include "frontend_runtime.h"
 
 #include "reconstruction_notes.h"
+#include "text_database.h"
 
 #include <DxLib.h>
 #include <Windows.h>
@@ -48,6 +49,7 @@ constexpr int kEnemyEncyclopediaInputEnableFrame = 0x3c;
 constexpr const char* kPracticeMenuPath = "media\\system\\PracticeMenu.png";
 constexpr const char* kConfigNumberPath = "media\\system\\ConfigNumber.png";
 constexpr const char* kEffectMediumPath = "media\\effect\\Effect_m.png";
+constexpr const char* kEffectSmallPath = "media\\effect\\Effect_s.png";
 constexpr const char* kPlayerStatePath = "media\\player\\State.png";
 constexpr const char* kGalleryFramePath = "media\\gallery\\GalleryFrame.png";
 constexpr const char* kAchievementPath = "media\\gallery\\Achievement.png";
@@ -752,9 +754,54 @@ int controllerButtonNumber(int binding) {
     return 0;
 }
 
+std::uint32_t practiceRandom(std::uint32_t seed) {
+    const std::uint32_t u = ((seed >> 30) ^ seed) * 0x6c078965u + 1u;
+    const std::uint32_t a = ((u >> 30) ^ u) * 0x6c078965u + 2u;
+    const std::uint32_t b = ((a >> 30) ^ a) * 0x6c078965u + 3u;
+    const std::uint32_t c = ((b >> 30) ^ b) * 0x6c078965u + 4u;
+    const std::uint32_t mixed = u * 0x800u ^ u;
+    return (((c >> 11) ^ mixed) >> 8) ^ c ^ mixed;
+}
+
+double practiceRandomThousandth(std::uint32_t seed, double minimum,
+                                double maximum) {
+    const int low = static_cast<int>(minimum * 1000.0);
+    const int high = static_cast<int>(maximum * 1000.0);
+    return static_cast<double>(
+               low + static_cast<int>(practiceRandom(seed) %
+                                      static_cast<std::uint32_t>(high - low + 1))) /
+           1000.0;
+}
+
+void drawPracticeTileWipeIn(const ResourceManager& resources, int phase) {
+    for (int column = 0; column < 12; ++column) {
+        for (int row = 0; row < 6; ++row) {
+            const int onset = column + row * 3;
+            const double progress = std::clamp(
+                static_cast<double>(phase - onset) / 12.0, 0.0, 1.0);
+            const double scaleX = std::cos(progress * kPi * 0.5);
+            if (scaleX <= 0.0) {
+                continue;
+            }
+            const int frame = ((column + row) & 1) == 0 ? 1 : 2;
+            const int handle = resources.graphFrame(kEffectMediumPath, frame);
+            if (handle == -1) {
+                continue;
+            }
+            const float x = static_cast<float>(column * 120);
+            const float y = static_cast<float>(row * 120 + 60) -
+                static_cast<float>((1.0 - scaleX) * 180.0);
+            DrawRotaGraph3F(x, y, 100.0f, 100.0f,
+                            scaleX, 1.0, 0.0, handle, TRUE);
+        }
+    }
+}
+
 } // namespace
 
-void FrontendRuntime::initialize(ResourceManager& resources, const SaveConfigState& saveConfigState) {
+void FrontendRuntime::initialize(ResourceManager& resources,
+                                 const SaveConfigState& saveConfigState,
+                                 const TextDatabase* textDatabase) {
     state_ = MainState::TitleMenu;
     pendingState_ = state_;
     cursor_ = 0;
@@ -817,6 +864,9 @@ void FrontendRuntime::initialize(ResourceManager& resources, const SaveConfigSta
     replaySlots_.fill(ReplaySlot{});
     replaySlotIndex_ = 0;
     replayStageChoice_ = 1;
+    loadedReplay_.clear();
+    loadedReplayInputStartIndex_ = 0;
+    replayFinishedSelectionPulse_ = 0;
     pendingReplay_.clear();
     replayTag_ = {{'A', 'A', 'A', '\0'}};
     rankingCursor_ = 0;
@@ -828,6 +878,25 @@ void FrontendRuntime::initialize(ResourceManager& resources, const SaveConfigSta
     resultPhaseTransitionTimer_ = 0;
     resultRouteCompletion_ = 0;
     resultBgmStarted_ = false;
+    textDatabase_ = textDatabase;
+    practiceAmbientParticles_.clear();
+    ambientSessionSeed_ = static_cast<std::uint32_t>(std::time(nullptr));
+    frontendGlobalFrame_ = 0;
+    if (practiceFontHandles_[0] == -1) {
+        constexpr char kNyashiFace[] =
+            "\xe3\x81\xab\xe3\x82\x83\xe3\x81\x97\xe3\x81\x83"
+            "\xe3\x83\x95\xe3\x82\xa9\xe3\x83\xb3\xe3\x83\x88"
+            "\xe6\x94\xb9\xe4\xba\x8c";
+        practiceFontHandles_[0] = CreateFontToHandle(
+            kNyashiFace, 20, 9, DX_FONTTYPE_ANTIALIASING_EDGE_4X4);
+    }
+    if (practiceFontHandles_[1] == -1) {
+        constexpr char kChillRoundFace[] =
+            "\xe5\xaf\x92\xe8\x9d\x89\xe5\x8d\x8a"
+            "\xe5\x9c\x86\xe4\xbd\x93";
+        practiceFontHandles_[1] = CreateFontToHandle(
+            kChillRoundFace, 20, 9, DX_FONTTYPE_ANTIALIASING_EDGE_4X4);
+    }
     resetInputCounters();
     loadSaveBackedState(saveConfigState);
     loadMissingFrontendGraphs(resources);
@@ -846,7 +915,12 @@ void FrontendRuntime::initialize(ResourceManager& resources, const SaveConfigSta
 }
 
 void FrontendRuntime::update(ResourceManager& resources) {
+    if (state_ == MainState::AlternateSetup && transitionTimer_ == 0 &&
+        frame_ == 0) {
+        playSound(resources, "SE_se_Switch");
+    }
     ++frame_;
+    ++frontendGlobalFrame_;
     if (selectionDirtyTimer_ > 0) {
         --selectionDirtyTimer_;
     }
@@ -863,6 +937,12 @@ void FrontendRuntime::update(ResourceManager& resources) {
         }
     }
     auto input = readInput();
+    if (state_ == MainState::AlternateSetup) {
+        updatePracticeAmbient();
+        if (transitionTimer_ == 0 && frame_ < 0x1c && frame_ % 3 == 0) {
+            playSound(resources, "SE_se_Switch");
+        }
+    }
     if (transitionTimer_ != 0) {
         updateTransition(resources);
         return;
@@ -892,6 +972,7 @@ void FrontendRuntime::update(ResourceManager& resources) {
     case MainState::ReplayPrompt: updateReplayPrompt(resources, input); break;
     case MainState::ReplaySave: updateReplaySave(resources, input); break;
     case MainState::ReplayNameEntry: updateReplayNameEntry(resources, input); break;
+    case MainState::ReplayFinished: updateReplayFinished(resources, input); break;
     }
 
     if (state_ == MainState::StageSelect) {
@@ -943,6 +1024,10 @@ void FrontendRuntime::draw(const ResourceManager& resources) const {
     case MainState::ReplayPrompt: drawReplayPrompt(resources); break;
     case MainState::ReplaySave: drawReplaySave(resources); break;
     case MainState::ReplayNameEntry: drawReplayNameEntry(resources); break;
+    case MainState::ReplayFinished: drawReplayFinished(resources); break;
+    }
+    if (state_ == MainState::AlternateSetup && frame_ < 0x3c) {
+        drawPracticeTileWipeIn(resources, frame_);
     }
     drawTransitionOverlay(resources);
 }
@@ -1082,6 +1167,14 @@ void FrontendRuntime::finishGameOver(ResourceManager& resources, bool replayProm
     resetInputCounters();
 }
 
+void FrontendRuntime::finishReplay(ResourceManager& resources) {
+    gameplayRequest_ = {};
+    pendingReplay_.clear();
+    stopAllBgm(resources);
+    setState(MainState::ReplayFinished, 0);
+    resetInputCounters();
+}
+
 void FrontendRuntime::applyGameplaySettings(ResourceManager& resources,
                                             const GameplaySettings& settings) {
     bgmVolume_ = std::clamp(settings.bgmVolume, 0, 10);
@@ -1149,12 +1242,14 @@ FrontendRuntime::InputSnapshot FrontendRuntime::readInput() {
     updateHeldCounter(actions[2], rightHeldFrames_);
     updateHeldCounter(actions[4], confirmHeldFrames_);
     updateHeldCounter(actions[5], cancelHeldFrames_);
+    updateHeldCounter(actions[10], pauseHeldFrames_);
 
     InputSnapshot input;
     input.up = pressed(upHeldFrames_);
     input.down = pressed(downHeldFrames_);
     input.confirm = pressed(confirmHeldFrames_);
     input.cancel = pressed(cancelHeldFrames_);
+    input.pause = pressed(pauseHeldFrames_);
     input.upRepeat = repeatSlow(upHeldFrames_);
     input.downRepeat = repeatSlow(downHeldFrames_);
     input.leftRepeat = repeatSlow(leftHeldFrames_);
@@ -1170,6 +1265,7 @@ void FrontendRuntime::resetInputCounters() {
     rightHeldFrames_ = 0;
     confirmHeldFrames_ = 0;
     cancelHeldFrames_ = 0;
+    pauseHeldFrames_ = 0;
 }
 
 void FrontendRuntime::updateHeldCounter(bool down, int& heldFrames) {
@@ -1242,6 +1338,8 @@ FrontendRuntime::TransitionSpec FrontendRuntime::currentTransitionSpec() const {
                    : TransitionSpec{0x28, 10};
     case MainState::ReplayNameEntry:
         return {0x20, 10};
+    case MainState::ReplayFinished:
+        return {0x3c, 0x14};
     }
     return {0x3c, 0x14};
 }
@@ -1451,6 +1549,13 @@ void FrontendRuntime::setState(MainState state, int cursor) {
     }
     else if (state == MainState::ReplayNameEntry) {
         cursor_ = std::clamp(cursor_, 0, 3);
+    }
+    else if (state == MainState::ReplayFinished) {
+        cursor_ = std::clamp(cursor_, 0, 1);
+        replayFinishedSelectionPulse_ = 0;
+    }
+    if (state == MainState::AlternateSetup) {
+        practiceAmbientParticles_.clear();
     }
 }
 
@@ -1701,6 +1806,7 @@ void FrontendRuntime::updateAlternateSetup(ResourceManager& resources, const Inp
     const bool rightCommand = input.rightRepeat && leftHeldFrames_ == 0;
     if ((leftCommand || rightCommand) && cursor_ < 8) {
         directionConsumed = true;
+        selectionDirtyTimer_ = 1;
         const int delta = rightCommand ? 1 : -1;
         int minimum = 0;
         int maximum = 0;
@@ -1820,6 +1926,70 @@ void FrontendRuntime::updateAlternateSetup(ResourceManager& resources, const Inp
         stopTitleBgm(resources);
         beginConfirmTransition(MainState::Gameplay);
     }
+}
+
+void FrontendRuntime::updatePracticeAmbient() {
+    const std::uint32_t globalFrame = frontendGlobalFrame_;
+    if (globalFrame % 16u == 10u) {
+        PracticeAmbientParticle particle;
+        particle.kind = PracticeAmbientParticle::Kind::Medium;
+        const std::uint32_t randomX =
+            practiceRandom(ambientSessionSeed_ + globalFrame);
+        const std::uint32_t randomY =
+            practiceRandom(ambientSessionSeed_ + globalFrame + 6u);
+        particle.x = static_cast<float>(randomX % 1381u) - 50.0f;
+        particle.y = static_cast<float>(randomY % 421u) + 400.0f;
+        particle.angle16 = 0xc000;
+        particle.targetScale = practiceRandomThousandth(
+            globalFrame - 666u, 0.5, 1.0);
+        particle.targetSpeed = particle.targetScale * 5.0;
+        particle.birthFrame = globalFrame;
+        practiceAmbientParticles_.push_back(particle);
+    }
+
+    if (globalFrame % 60u == 10u) {
+        const std::uint32_t random0 =
+            practiceRandom(ambientSessionSeed_ + globalFrame);
+        const std::uint32_t random1 =
+            practiceRandom(ambientSessionSeed_ + globalFrame + 66u);
+        const int count = static_cast<int>(random0 % 13u) + 24;
+        const std::uint16_t baseAngle =
+            static_cast<std::uint16_t>(random0 % 65537u);
+        const int angleStep = 65536 / count;
+        for (int index = 0; index < count; ++index) {
+            PracticeAmbientParticle particle;
+            particle.kind = PracticeAmbientParticle::Kind::Small;
+            particle.x = static_cast<float>(random0 % 1281u);
+            particle.y = static_cast<float>(random1 % 721u);
+            particle.angle16 = static_cast<std::uint16_t>(
+                static_cast<int>(baseAngle) + index * angleStep);
+            particle.targetSpeed = 7.7;
+            particle.targetScale = 1.0;
+            particle.birthFrame = globalFrame;
+            practiceAmbientParticles_.push_back(particle);
+        }
+    }
+
+    for (auto& particle : practiceAmbientParticles_) {
+        particle.drawAge = particle.age;
+        particle.drawScale = particle.age < 30
+            ? particle.targetScale *
+                  std::sin(static_cast<double>(particle.age) * kPi / 60.0)
+            : particle.targetScale;
+        const double speed = particle.age < 60
+            ? particle.targetSpeed *
+                  std::sin(static_cast<double>(particle.age) * kPi / 120.0)
+            : particle.targetSpeed;
+        const double radians = fixedAngleRadians(particle.angle16);
+        particle.x += static_cast<float>(std::cos(radians) * speed);
+        particle.y += static_cast<float>(std::sin(radians) * speed);
+        ++particle.age;
+    }
+
+    std::erase_if(practiceAmbientParticles_, [](const PracticeAmbientParticle& particle) {
+        return particle.x < -100.0f || particle.x > 1380.0f ||
+               particle.y < -100.0f || particle.y > 820.0f;
+    });
 }
 
 void FrontendRuntime::updateGallery(ResourceManager& resources, const InputSnapshot& input) {
@@ -2346,6 +2516,38 @@ void FrontendRuntime::updateReplayNameEntry(ResourceManager& resources,
     frame_ = 0x20;
 }
 
+void FrontendRuntime::updateReplayFinished(ResourceManager& resources,
+                                           const InputSnapshot& input) {
+    if (replayFinishedSelectionPulse_ > 0) {
+        --replayFinishedSelectionPulse_;
+    }
+    if (input.upRepeat && downHeldFrames_ == 0) {
+        cursor_ = (cursor_ + 1) % 2;
+        replayFinishedSelectionPulse_ = 4;
+        playSound(resources, "SE_se_Select");
+        return;
+    }
+    if (input.downRepeat && upHeldFrames_ == 0) {
+        cursor_ = (cursor_ + 1) % 2;
+        replayFinishedSelectionPulse_ = 4;
+        playSound(resources, "SE_se_Select");
+        return;
+    }
+    if (!input.confirm && !input.pause) {
+        return;
+    }
+
+    if (cursor_ == 0 &&
+        (!loadedReplay_.recordable || loadedReplay_.inputRecords.empty())) {
+        playSound(resources, "SE_se_Error");
+        return;
+    }
+    playSound(resources, "SE_se_Enter");
+    beginConfirmTransition(cursor_ == 0
+                               ? MainState::Gameplay
+                               : MainState::ReplayList);
+}
+
 void FrontendRuntime::updateRanking(ResourceManager& resources, const InputSnapshot& input) {
     if (frame_ < 0x3c) {
         return;
@@ -2742,6 +2944,12 @@ void FrontendRuntime::updateKeyConfig(ResourceManager& resources, const InputSna
 void FrontendRuntime::updateTransition(ResourceManager& resources) {
     const auto spec = currentTransitionSpec();
     transitionTimer_ += transitionDirection_;
+    if (state_ == MainState::AlternateSetup) {
+        const int wipePhase = std::abs(transitionTimer_) - spec.wipeDelay;
+        if (wipePhase >= 0 && wipePhase < 0x1c && wipePhase % 3 == 0) {
+            playSound(resources, "SE_se_Switch");
+        }
+    }
     const bool commitForward = transitionDirection_ > 0 && transitionTimer_ >= spec.commitFrames;
     const bool commitBackward = transitionDirection_ < 0 && transitionTimer_ <= -spec.commitFrames;
     if (!commitForward && !commitBackward) {
@@ -2764,7 +2972,8 @@ void FrontendRuntime::updateTransition(ResourceManager& resources) {
     if (source == MainState::ConfigMenu) {
         saveSystemConfig(resources);
     }
-    else if (source != MainState::TitleMenu && source != MainState::Gameplay) {
+    else if (source != MainState::TitleMenu && source != MainState::Gameplay &&
+             source != MainState::ReplayFinished) {
         saveFrontendState(resources);
     }
 
@@ -2834,14 +3043,20 @@ void FrontendRuntime::updateTransition(ResourceManager& resources) {
         stopResultBgm(resources);
         ensureTitleBgm(resources);
     }
+    if (source == MainState::ReplayFinished && target == MainState::ReplayList) {
+        scanReplaySlots(resources);
+        restartTitleBgm(resources);
+    }
     if (target == MainState::Gameplay) {
         const bool manualTrialContinue = source == MainState::TrialContinue;
-        if (source == MainState::ReplayStageSelect) {
+        if (source == MainState::ReplayStageSelect ||
+            source == MainState::ReplayFinished) {
             if (!applyLoadedReplaySettings()) {
                 loadedReplay_.clear();
                 returnToTitle(resources);
                 return;
             }
+            stopTitleBgm(resources);
             queueGameplayRequest(false, false, true);
             if (routeMode_ == 1 && selectedStage_ > 1 && selectedStage_ < 10) {
                 // FUN_140118290 restores the stage snapshot after context init,
@@ -2849,7 +3064,9 @@ void FrontendRuntime::updateTransition(ResourceManager& resources) {
                 gameplayRequest_.firstDispatchFrame = gameplayRequest_.rawStartFrame + 1;
             }
             gameplayRequest_.replayInputStartIndex = loadedReplayInputStartIndex_;
-            gameplayRequest_.replayData = std::move(loadedReplay_);
+            // State 0x27 can replay the same checkpoint repeatedly. Keep the
+            // loaded source data resident while StageRuntime receives a copy.
+            gameplayRequest_.replayData = loadedReplay_;
         }
         else {
             queueGameplayRequest(manualTrialContinue, manualTrialContinue);
@@ -3141,6 +3358,7 @@ void FrontendRuntime::drawStageSelect(const ResourceManager& resources) const {
 
 void FrontendRuntime::drawAlternateSetup(const ResourceManager& resources) const {
     drawFrontendBackdrop(resources, 2, language_);
+    drawPracticeAmbient(resources);
 
     const float standY = 480.0f +
         6.0f * std::sin(static_cast<float>(frame_) * kPi / 90.0f);
@@ -3226,7 +3444,7 @@ void FrontendRuntime::drawAlternateSetup(const ResourceManager& resources) const
                 drawConfigNumberBrightness(resources, 600.0f, y, value * 5,
                                            false, valueBrightness, alpha);
                 drawPathFrameBrightness(resources, kConfigNumberPath, 10,
-                                        640.0f, y, valueBrightness, alpha);
+                                        635.0f, y, valueBrightness, alpha);
             }
             break;
         }
@@ -3239,6 +3457,88 @@ void FrontendRuntime::drawAlternateSetup(const ResourceManager& resources) const
     drawPracticeStatus(resources, optionSlots_, feverMode_);
     drawPracticePrompts(resources, language_, controlDevice_,
                         keyBindings_, controllerBindings_);
+    drawPracticeHelpText();
+}
+
+void FrontendRuntime::drawPracticeAmbient(const ResourceManager& resources) const {
+    const auto drawKind = [this, &resources](PracticeAmbientParticle::Kind kind,
+                                             int red, int green, int blue,
+                                             int alpha) {
+        const char* path = kind == PracticeAmbientParticle::Kind::Medium
+            ? kEffectMediumPath
+            : kEffectSmallPath;
+        const int handle = resources.graphFrame(path, 0);
+        if (handle == -1) {
+            return;
+        }
+        SetDrawBright(red, green, blue);
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+        for (const auto& particle : practiceAmbientParticles_) {
+            if (particle.kind != kind || particle.drawScale <= 0.0) {
+                continue;
+            }
+            float drawX = particle.x;
+            if (kind == PracticeAmbientParticle::Kind::Medium) {
+                const int delay = static_cast<int>(
+                    practiceRandom(particle.birthFrame + 8888u) % 31u);
+                const int period = static_cast<int>(
+                    practiceRandom(particle.birthFrame + 8976u) % 61u) + 60;
+                drawX += static_cast<float>(
+                    std::sin(static_cast<double>(particle.drawAge - delay) *
+                             2.0 * kPi / static_cast<double>(period)) *
+                    (20.0 * particle.targetScale));
+            }
+            DrawRotaGraphF(drawX, particle.y, particle.drawScale,
+                           0.0, handle, TRUE);
+        }
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        SetDrawBright(255, 255, 255);
+    };
+
+    // FUN_1400d3a60 assigns layer 10 to Effect_m and layer 11 to Effect_s.
+    drawKind(PracticeAmbientParticle::Kind::Medium, 255, 255, 255, 64);
+    drawKind(PracticeAmbientParticle::Kind::Small, 144, 197, 255, 96);
+}
+
+void FrontendRuntime::drawPracticeHelpText() const {
+    if (textDatabase_ == nullptr) {
+        return;
+    }
+    const int fontHandle =
+        practiceFontHandles_[language_ < 2 ? 0 : 1];
+    if (fontHandle == -1) {
+        return;
+    }
+
+    const auto drawCentered = [fontHandle](const std::string& line,
+                                           int centerY) {
+        if (line.empty()) {
+            return;
+        }
+        const int width =
+            GetDrawStringWidthToHandle(line.c_str(), -1, fontHandle);
+        DrawStringToHandle(640 - width / 2, centerY - 10, line.c_str(),
+                           GetColor(255, 255, 255), fontHandle,
+                           GetColor(0, 0, 0));
+    };
+    const auto drawRecord = [&drawCentered](const TextRecord* record,
+                                            int centerY) {
+        if (record == nullptr) {
+            return;
+        }
+        drawCentered(record->line1, centerY);
+        drawCentered(record->line2, centerY + 30);
+    };
+
+    drawRecord(textDatabase_->find(language_, cursor_ + 228), 620);
+    const int practiceStage = practiceOptions_[0];
+    const bool validDifficulty =
+        practiceStage == 10 ||
+        practiceOptions_[1] <=
+            maxDifficultyForStage(maxUnlockedDifficultyByStage_, practiceStage);
+    if (cursor_ == 8 && !validDifficulty) {
+        drawRecord(textDatabase_->find(language_, 238), 650);
+    }
 }
 
 void FrontendRuntime::drawGallery(const ResourceManager& resources) const {
@@ -3639,6 +3939,39 @@ void FrontendRuntime::drawReplayNameEntry(const ResourceManager& resources) cons
     DrawString(500, 470, "SAVE",
                cursor_ == 3 ? GetColor(255, 255, 255)
                             : GetColor(128, 128, 144));
+}
+
+void FrontendRuntime::drawReplayFinished(const ResourceManager& resources) const {
+    const char* menuPath = localizedPath(kPauseMenuPaths, language_);
+    const int alpha = frame_ < 0x1e
+        ? std::clamp(static_cast<int>(
+              std::sin(static_cast<double>(frame_) * kPi / 60.0) * 255.0),
+              0, 255)
+        : 255;
+
+    drawPathFrameScaledAlpha(resources, menuPath, 11,
+                             640.0f, 200.0f, 1.0, alpha);
+    constexpr std::array<int, 2> kFrames{{13, 6}};
+    for (int row = 0; row < 2; ++row) {
+        const bool selected = cursor_ == row;
+        double scale = 1.0;
+        if (selected && replayFinishedSelectionPulse_ > 0) {
+            scale += std::sin(static_cast<double>(replayFinishedSelectionPulse_) *
+                              kPi / 8.0) * 0.1;
+        }
+        const int brightness = selected ? 255 : 128;
+        SetDrawBright(brightness, brightness, brightness);
+        drawPathFrameScaledAlpha(
+            resources, menuPath, kFrames[static_cast<std::size_t>(row)],
+            640.0f, 300.0f + static_cast<float>(row * 90), scale, alpha);
+        SetDrawBright(255, 255, 255);
+        if (selected && transitionTimer_ > 0 && transitionTimer_ % 4 < 2) {
+            drawPathFrameScaledAlpha(
+                resources, menuPath, kFrames[static_cast<std::size_t>(row)],
+                640.0f, 300.0f + static_cast<float>(row * 90), scale,
+                std::min(alpha, 128));
+        }
+    }
 }
 
 void FrontendRuntime::drawRanking(const ResourceManager& resources) const {

@@ -19,6 +19,7 @@ public:
         Retry,
         SkipTutorial,
         AbortGameplay,
+        ReplayFinished,
         GameOver,
     };
 

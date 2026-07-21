@@ -30,6 +30,7 @@ constexpr int kSpecialGaugeReady = 50000;
 constexpr int kSpecialGaugeForcedFull = 9999999;
 constexpr int kFeverActiveFrames = 600;
 constexpr int kLifeStockCap = 9;
+constexpr int kEnemyGaugeLayer = 100;
 constexpr std::array<int, 11> kStageEndFrames{{
     0, 5700, 9700, 9500, 11700, 11800, 12500, 12500, 21420, 17900, 12000,
 }};
@@ -1642,9 +1643,9 @@ void StageRuntime::update() {
         const int stageBgm =
             stageBgmHandles_[static_cast<std::size_t>(selectedStage_ - 1)];
         if (stageBgm != -1) {
-            ChangeVolumeSoundMem(static_cast<int>(config_.bgmVolume * 25.5),
-                                 stageBgm);
             if (config_.rawStartFrame == 0) {
+                ChangeVolumeSoundMem(static_cast<int>(config_.bgmVolume * 25.5),
+                                     stageBgm);
                 if (selectedStage_ != 10) {
                     PlaySoundMem(stageBgm, DX_PLAYTYPE_LOOP, TRUE);
                 }
@@ -1655,6 +1656,7 @@ void StageRuntime::update() {
                 const int timelineOffset = selectedStage_ == 10 ? 300 : 0;
                 const int elapsedSeconds =
                     std::max(0, config_.rawStartFrame - timelineOffset) / 60;
+                ChangeVolumeSoundMem(0, stageBgm);
                 SetCurrentPositionSoundMem(
                     static_cast<LONGLONG>(elapsedSeconds) * 44100LL, stageBgm);
                 PlaySoundMem(stageBgm, DX_PLAYTYPE_LOOP, FALSE);
@@ -1662,21 +1664,41 @@ void StageRuntime::update() {
         }
     }
 
-    const bool replayRecordsThisTick =
-        pauseFlowState_ == PauseFlowState::Gameplay && !stageComplete();
+    if (config_.rawStartFrame != 0 &&
+        frame_ >= config_.rawStartFrame + 1 &&
+        frame_ < config_.rawStartFrame + 60 && frame_ < stageEnd &&
+        !(config_.replayPlayback && config_.routeMode == 1)) {
+        const int stageBgm =
+            stageBgmHandles_[static_cast<std::size_t>(selectedStage_ - 1)];
+        if (stageBgm != -1) {
+            const double volumeScale = std::sin(
+                static_cast<double>(frame_ - config_.rawStartFrame) * kPi / 120.0);
+            ChangeVolumeSoundMem(
+                static_cast<int>(config_.bgmVolume * 25.5 * volumeScale), stageBgm);
+        }
+    }
+
+    const bool gameplayFlowAtTickStart =
+        pauseFlowState_ == PauseFlowState::Gameplay;
+    const bool replayRecordsThisTick = gameplayFlowAtTickStart && !stageComplete();
     pollInput();
     if (replayRecordsThisTick) {
         recordReplayInputFrame();
     }
-    if (updatePauseFlow()) {
-        return;
-    }
-    if (config_.replayPlayback) {
+    bool replayFinishedThisTick = false;
+    if (config_.replayPlayback && gameplayFlowAtTickStart) {
         if (!replayInputAvailable()) {
-            pendingExitRequest_ = GameplayExitRequest::AbortGameplay;
-            return;
+            replayFinishedThisTick = true;
         }
-        advanceReplayInputFrame();
+        else {
+            // State 0x14 advances the replay cursor before dispatching gameplay.
+            // Its pause branch runs at the tail, so the frame that opened the
+            // pause menu is never consumed twice after resuming.
+            advanceReplayInputFrame();
+        }
+    }
+    if (!gameplayFlowAtTickStart && updatePauseFlow()) {
+        return;
     }
 
     const int startWipePhase = frame_ - config_.rawStartFrame;
@@ -1886,6 +1908,20 @@ void StageRuntime::update() {
     if (frame_ > 59 && frame_ % 60 == 0) {
         enemyProjectileSpawnsLastSecond_ = enemyProjectileSpawnsThisSecond_;
         enemyProjectileSpawnsThisSecond_ = 0;
+    }
+
+    if ((replayFinishedThisTick ||
+         (config_.replayPlayback && stageComplete())) &&
+        pendingExitRequest_ == GameplayExitRequest::None) {
+        stopStageBgm();
+        playPlayerSound(pausePoseSoundHandle_);
+        pendingExitRequest_ = GameplayExitRequest::ReplayFinished;
+    }
+    else if (gameplayFlowAtTickStart &&
+             pauseFlowState_ == PauseFlowState::Gameplay) {
+        // The original tests Pause after the complete gameplay dispatch. This
+        // ordering matters both to recorded input and to replay cursor parity.
+        updatePauseFlow();
     }
 
     // FUN_1400bca30 increments DAT_140e44acc at the dispatcher tail even when
@@ -4780,7 +4816,9 @@ void StageRuntime::updatePlayer() {
     }
     updatePlayerOptions();
 
-    const bool firing = player_.playerStateTimer < 180 && (shootDown || rapidFireDown);
+    const bool startShotLock = frame_ <= config_.rawStartFrame;
+    const bool firing = player_.playerStateTimer < 180 && !startShotLock &&
+                        (shootDown || rapidFireDown);
     const bool stageClearShotLock = [this]() {
         switch (selectedStage_) {
         case 1: return stage01ClearTransition_;
@@ -9039,34 +9077,39 @@ void StageRuntime::emitStage03BossProjectiles(StageEnemy& enemy) {
         static constexpr std::array<int, 5> kWindowGap{{70, 50, 40, 40, 40}};
         static constexpr std::array<int, 5> kWindowCount{{3, 5, 7, 7, 9}};
         static constexpr std::array<double, 5> kWindowSlope{{0.10, 0.18, 0.20, 0.20, 0.24}};
-        int start = 320;
-        for (int window = 0; window < 8; ++window) {
-            const int length = 30 + window * 15;
-            if (p >= start && p < start + length) {
-                const int local = p - start;
-                if (local == 0) {
-                    enemy.targetAngle16 = aimFrom(enemy.x, sourceY);
-                }
-                if (local % 5 == 0) {
-                    const int count = kWindowCount[static_cast<std::size_t>(difficulty)];
-                    const double speed = 3.5 +
-                        static_cast<double>(local) *
-                            kWindowSlope[static_cast<std::size_t>(difficulty)];
-                    spawnProjectileSpread(3, 0, enemy.x, sourceY,
-                                          enemy.targetAngle16, 0.0f, speed, 1,
-                                          count, 27000, 0);
-                    if (difficulty >= 3) {
-                        spawnProjectileSpread(3, 0, enemy.x, sourceY,
-                                              enemy.targetAngle16, 0.0f,
-                                              speed + 1.5, 1, count, 27000, 0);
+        // FUN_14000ed10 gates the whole expanding-window family with
+        // unsigned `(p - 0x140) < 0x154`, so later generated windows are
+        // intentionally dormant once p reaches 660.
+        if (p >= 320 && p < 660) {
+            int start = 320;
+            for (int window = 0; window < 8; ++window) {
+                const int length = 30 + window * 15;
+                if (p >= start && p < start + length) {
+                    const int local = p - start;
+                    if (local == 0) {
+                        enemy.targetAngle16 = aimFrom(enemy.x, sourceY);
                     }
-                    enemy.targetAngle16 = approachAngle16(
-                        enemy.targetAngle16, aimFrom(enemy.x, sourceY), 0x78);
+                    if (local % 5 == 0) {
+                        const int count = kWindowCount[static_cast<std::size_t>(difficulty)];
+                        const double speed = 3.5 +
+                            static_cast<double>(local) *
+                                kWindowSlope[static_cast<std::size_t>(difficulty)];
+                        spawnProjectileSpread(3, 0, enemy.x, sourceY,
+                                              enemy.targetAngle16, 0.0f, speed, 1,
+                                              count, 27000, 0);
+                        if (difficulty >= 3) {
+                            spawnProjectileSpread(3, 0, enemy.x, sourceY,
+                                                  enemy.targetAngle16, 0.0f,
+                                                  speed + 1.5, 1, count, 27000, 0);
+                        }
+                        enemy.targetAngle16 = approachAngle16(
+                            enemy.targetAngle16, aimFrom(enemy.x, sourceY), 0x78);
+                    }
+                    break;
                 }
-                break;
+                start += kWindowGap[static_cast<std::size_t>(difficulty)] +
+                         window * 15;
             }
-            start += kWindowGap[static_cast<std::size_t>(difficulty)] +
-                     window * 15;
         }
         return;
     }
@@ -11398,6 +11441,29 @@ void StageRuntime::updateStage02BossChild(StageEnemy& enemy) {
     if (enemy.spawnType == 0x22) {
         enemy.x = parent->x + enemy.originX;
         enemy.y = parent->y + enemy.originY;
+
+        // FUN_14000d480 removes these mounts when the second live phase ends.
+        // In the original entity loop the player's collision with the root is
+        // resolved before the later child nodes run, so they still observe
+        // parent state 3 with HP <= 0.  Our batched collision pass exposes the
+        // already-selected transition state 4 on the following tick instead;
+        // accepting only states 2/3 preserves the same lifetime and prevents a
+        // stale mount from continuing its 1200-frame firing loop indefinitely.
+        const bool attachedToSecondPhase = parent->helperState == 2 ||
+                                           parent->helperState == 3;
+        const bool livePhaseEnded =
+            parent->helperState == 3 &&
+            (parent->hp < 1 || stage02BossCountdown_ < 1 ||
+             stage02BossPhaseMode_ != 1);
+        if (!attachedToSecondPhase || livePhaseEnded) {
+            if (parent->helperState > 3 || parent->hp < 1 ||
+                stage02BossCountdown_ < 1) {
+                spawnEnemyDeathEffects(enemy, 1);
+            }
+            enemy.active = false;
+            return;
+        }
+
         if (enemy.helperState == 0 && timer == 50) {
             enemy.helperState = 1;
             enemy.helperTimer = 0;
@@ -11405,13 +11471,16 @@ void StageRuntime::updateStage02BossChild(StageEnemy& enemy) {
         if (enemy.helperState == 1) {
             emitStage02BossChildProjectiles(enemy, *parent);
         }
-        const bool livePhaseEnded = parent->helperState == 3 &&
-                                    (parent->hp < 1 || stage02BossCountdown_ < 1 ||
-                                     stage02BossPhaseMode_ != 1);
-        if (livePhaseEnded) {
+        return;
+    }
+
+    const int expectedParentState = enemy.spawnType == 0x23 ? 5 : 7;
+    if (parent->helperState != expectedParentState || parent->hp < 1 ||
+        stage02BossCountdown_ < 1 || stage02BossPhaseMode_ != 1) {
+        if (parent->hp < 1 || stage02BossCountdown_ < 1) {
             spawnEnemyDeathEffects(enemy, 1);
-            enemy.active = false;
         }
+        enemy.active = false;
         return;
     }
 
@@ -11453,14 +11522,6 @@ void StageRuntime::updateStage02BossChild(StageEnemy& enemy) {
         emitStage02BossChildProjectiles(enemy, *parent);
     }
 
-    const int expectedParentState = enemy.spawnType == 0x23 ? 5 : 7;
-    if (parent->helperState != expectedParentState || parent->hp < 1 ||
-        stage02BossCountdown_ < 1 || stage02BossPhaseMode_ != 1) {
-        if (parent->hp < 1 || stage02BossCountdown_ < 1) {
-            spawnEnemyDeathEffects(enemy, 1);
-        }
-        enemy.active = false;
-    }
 }
 
 void StageRuntime::emitStage02BossChildProjectiles(StageEnemy& enemy,
@@ -13080,8 +13141,8 @@ void StageRuntime::updateStage04Type41(StageEnemy& enemy, StageEnemy& parent) {
             step = maximumStep;
         }
         else if (liveTimer < 1800) {
-            step = maximumStep - static_cast<int>(std::sin(
-                static_cast<double>(liveTimer - 1200) * kPi / 1200.0) * maximumStep);
+            step = static_cast<int>(std::sin(
+                static_cast<double>(liveTimer - 600) * kPi / 1200.0) * maximumStep);
         }
         enemy.secondaryAngle16 = normalizeAngle16(
             static_cast<int>(enemy.secondaryAngle16) + step);
@@ -13107,11 +13168,39 @@ void StageRuntime::updateStage04Type41(StageEnemy& enemy, StageEnemy& parent) {
         }
     }
 
-    const double radians = fixedAngleToRadiansDouble(enemy.secondaryAngle16);
+    // FUN_14001ac40 projects the satellites with FUN_140133f30. The spawn
+    // parameters are the vertical radius (100) followed by the horizontal
+    // radius (200); treating them as ordinary x/y offsets rotates the whole
+    // formation by 90 degrees. During the live phase the vertical radius and
+    // orbital plane also oscillate independently.
+    double verticalRadius = static_cast<double>(enemy.originX) * entryScale;
+    double horizontalRadius = static_cast<double>(enemy.originY) * entryScale;
+    int tiltAngle16 = 0;
+    if (stateAtEntry == 0) {
+        verticalRadius = static_cast<double>(static_cast<int>(verticalRadius));
+        horizontalRadius = static_cast<double>(static_cast<int>(horizontalRadius));
+    }
+    else {
+        verticalRadius = static_cast<double>(enemy.originX) *
+            std::sin(static_cast<double>(timer + 80) *
+                     static_cast<double>(kPi) / 160.0);
+        horizontalRadius = static_cast<double>(enemy.originY);
+        tiltAngle16 = static_cast<int>(
+            std::sin(static_cast<double>(timer) *
+                     static_cast<double>(kPi) / 115.0) * 2222.0);
+    }
+    const double tilt = fixedAngleToRadiansDouble(normalizeAngle16(tiltAngle16));
+    const double orbit = fixedAngleToRadiansDouble(enemy.secondaryAngle16);
+    const double tiltCos = std::cos(tilt);
+    const double tiltSin = std::sin(tilt);
+    const double orbitCos = std::cos(orbit);
+    const double orbitSin = std::sin(orbit);
     enemy.x = parent.x + static_cast<float>(
-        std::cos(radians) * static_cast<double>(enemy.originX) * entryScale);
+        tiltCos * orbitCos * horizontalRadius -
+        tiltSin * orbitSin * verticalRadius);
     enemy.y = parent.y + static_cast<float>(
-        std::sin(radians) * static_cast<double>(enemy.originY) * entryScale);
+        tiltCos * orbitSin * verticalRadius +
+        tiltSin * orbitCos * horizontalRadius);
     if (stateAtEntry == 0 && timer < 50 && (timer & 1) == 0) {
         const double base = entryScale *
             (0.9 + 0.1 * std::sin(fixedAngleToRadiansDouble(
@@ -15809,6 +15898,7 @@ void StageRuntime::updateSpecialGaugeAction() {
         }
     }();
     const bool triggerAllowed =
+        frame_ > config_.rawStartFrame &&
         player_.bombLock == 0 &&
         (player_.tokenStock != 0 ||
          (manualFever && player_.specialGauge >= kSpecialGaugeReady)) &&
@@ -18710,6 +18800,47 @@ bool StageRuntime::drawStage02BossExact(const StageEnemy& enemy, float x, float 
                                   scaleX, scaleY, reverseX);
         }
     };
+    const auto drawBottomAnchoredNode = [](int handle, float drawX, float drawY,
+                                           std::uint16_t angle, double scaleX,
+                                           double scaleY) {
+        int width = 0;
+        int height = 0;
+        if (handle == -1 || GetGraphSize(handle, &width, &height) != 0 ||
+            width <= 0 || height <= 0) {
+            return;
+        }
+        // FUN_1400c8530 mode 0xb supplies (width / 2, height), rather than the
+        // centered mode-7 pivot, to the rotated-graph wrapper.
+        DrawRotaGraph3F(static_cast<float>(static_cast<int>(drawX)),
+                        static_cast<float>(static_cast<int>(drawY)),
+                        static_cast<float>(width) * 0.5f,
+                        static_cast<float>(height), scaleX, scaleY,
+                        fixedAngleToRadiansDouble(angle), handle, TRUE);
+    };
+    const auto drawMode17Projection = [](int handle, float drawX, float drawY,
+                                         double scaleX, double scaleY) {
+        int width = 0;
+        int height = 0;
+        if (handle == -1 || GetGraphSize(handle, &width, &height) != 0 ||
+            width <= 0 || height <= 0) {
+            return;
+        }
+
+        // FUN_1400c8530 mode 0x17 projects the image into one sheared quad.
+        // Preserve its integer truncation and 0.3/0.7 perspective constants.
+        const int halfWidth = static_cast<int>(
+            static_cast<double>(width / 2) * scaleX);
+        const int shear = static_cast<int>(
+            static_cast<double>(halfWidth) * scaleX * 0.3);
+        const int bottom = static_cast<int>(drawY) + height / 2;
+        const int top = static_cast<int>(
+            static_cast<double>(bottom) -
+            static_cast<double>(static_cast<int>(height * scaleY)) * 0.7);
+        const int left = static_cast<int>(drawX) - halfWidth;
+        const int right = static_cast<int>(drawX) + halfWidth;
+        DrawModiGraph(left + shear, top, right + shear, top,
+                      right, bottom, left, bottom, handle, TRUE);
+    };
 
     if (child) {
         const int timer = enemy.drawHelperTimer;
@@ -18730,12 +18861,14 @@ bool StageRuntime::drawStage02BossExact(const StageEnemy& enemy, float x, float 
             if (medium != -1 && exactLayer == 0x1e) {
                 SetDrawBlendMode(DX_BLENDMODE_ALPHA, 64);
                 SetDrawBright(0, 0, 0);
-                drawNode(medium, x, y - 50.0f, 0, bodyScaleX, bodyScaleY);
+                drawMode17Projection(medium, x, y - 50.0f,
+                                     bodyScaleX, bodyScaleY);
                 SetDrawBright(255, 255, 255);
                 SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
             }
             if (medium != -1 && exactLayer == 0x23) {
-                drawNode(medium, x, y + 50.0f, 0, bodyScaleX, bodyScaleY);
+                drawBottomAnchoredNode(medium, x, y + 50.0f, 0,
+                                       bodyScaleX, bodyScaleY);
             }
             if (exactLayer == 0x23) {
                 drawNode(core, x, y - 60.0f, 0, coreScale, coreScale);
@@ -20055,7 +20188,8 @@ void StageRuntime::drawStageBannerText() const {
 
 void StageRuntime::drawEnemyGaugeExact(const StageEnemy& enemy, int mode, float x,
                                        float y, int exactLayer) const {
-    if (exactLayer != 0x32 ||
+    // FUN_140079c10 queues every enemy gauge at decimal layer 100.
+    if (exactLayer != kEnemyGaugeLayer ||
         mode < 0 || mode >= static_cast<int>(enemyGaugeFrames_.size()) ||
         enemy.hp < 0 || enemy.maxHp <= 0) {
         return;
@@ -20117,7 +20251,7 @@ bool StageRuntime::drawStage02Type1BExact(const StageEnemy& enemy, float x, floa
     if (!enemy.drawBodyThisFrame) {
         return true;
     }
-    if (exactLayer == 0x32) {
+    if (exactLayer == kEnemyGaugeLayer) {
         drawEnemyGaugeExact(enemy, 1, x, y, exactLayer);
         return true;
     }
@@ -20168,7 +20302,7 @@ bool StageRuntime::drawStage02Type1CExact(const StageEnemy& enemy, float x, floa
     if (!enemy.drawBodyThisFrame) {
         return true;
     }
-    if (exactLayer == 0x32) {
+    if (exactLayer == kEnemyGaugeLayer) {
         drawEnemyGaugeExact(enemy, 1, x, y, exactLayer);
         return true;
     }
@@ -20213,7 +20347,7 @@ bool StageRuntime::drawStage02Type1DOr1EExact(const StageEnemy& enemy, float x,
     if (!enemy.drawBodyThisFrame) {
         return true;
     }
-    if (exactLayer == 0x32) {
+    if (exactLayer == kEnemyGaugeLayer) {
         drawEnemyGaugeExact(enemy, 2, x, y, exactLayer);
         return true;
     }
@@ -20310,7 +20444,7 @@ bool StageRuntime::drawStage02Type19Exact(const StageEnemy& enemy, float x, floa
     if (!enemy.drawBodyThisFrame) {
         return true;
     }
-    if (exactLayer == 0x32) {
+    if (exactLayer == kEnemyGaugeLayer) {
         drawEnemyGaugeExact(enemy, 2, x, y, exactLayer);
         return true;
     }
@@ -20361,7 +20495,7 @@ bool StageRuntime::drawStage02Type1AExact(const StageEnemy& enemy, float x, floa
     if (!enemy.drawBodyThisFrame) {
         return true;
     }
-    if (exactLayer == 0x32) {
+    if (exactLayer == kEnemyGaugeLayer) {
         drawEnemyGaugeExact(enemy, 2, x, y, exactLayer);
         return true;
     }
@@ -21065,7 +21199,7 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
             drawOriginalMode7Node(centerBody, x, y + 70.0f, 0, pulse, pulse, false);
         }
 
-        if (exactLayer == 0x32 && enemy.drawHp >= 0 && enemy.maxHp > 0) {
+        if (exactLayer == kEnemyGaugeLayer && enemy.drawHp >= 0 && enemy.maxHp > 0) {
             const double ratio = static_cast<double>(enemy.drawHp) / static_cast<double>(enemy.maxHp);
             const int gauge = enemyGaugeFrames_.empty() ? -1 : enemyGaugeFrames_[0];
             int red = 0;
@@ -21144,7 +21278,7 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
             drawOriginalMode7Node(centerBody, x, y, 0, 1.0, 1.0, entryFromLeft);
         }
 
-        if (exactLayer == 0x32 && enemy.drawHp >= 0 && enemy.maxHp > 0) {
+        if (exactLayer == kEnemyGaugeLayer && enemy.drawHp >= 0 && enemy.maxHp > 0) {
             const double ratio = static_cast<double>(enemy.drawHp) / static_cast<double>(enemy.maxHp);
             const int gauge = enemyGaugeFrames_.empty() ? -1 : enemyGaugeFrames_[0];
             int red = 0;
@@ -21211,7 +21345,7 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
             drawMedium(63, x, y + rearWave, 0, false);
         }
 
-        if (exactLayer == 0x32 && enemy.drawHp >= 0 && enemy.maxHp > 0) {
+        if (exactLayer == kEnemyGaugeLayer && enemy.drawHp >= 0 && enemy.maxHp > 0) {
             const double ratio = static_cast<double>(enemy.drawHp) / static_cast<double>(enemy.maxHp);
             const int gauge = enemyGaugeFrames_.size() > 1 ? enemyGaugeFrames_[1] : -1;
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, 192);
@@ -21278,6 +21412,12 @@ bool StageRuntime::drawStage04EnemyExact(const StageEnemy& enemy, float x, float
                 return true;
             }
 
+            if (exactLayer == kEnemyGaugeLayer) {
+                StageEnemy gaugeSnapshot = enemy;
+                gaugeSnapshot.hp = enemy.drawHp;
+                drawEnemyGaugeExact(gaugeSnapshot, 1, x, y, exactLayer);
+                return true;
+            }
             if (exactLayer != 0x1d) {
                 return true;
             }
@@ -21474,7 +21614,7 @@ bool StageRuntime::drawStage01Type0EExact(const StageEnemy& enemy, float x, floa
     if (!enemy.drawBodyThisFrame) {
         return true;
     }
-    if (exactLayer == 0x32) {
+    if (exactLayer == kEnemyGaugeLayer) {
         StageEnemy gaugeSnapshot = enemy;
         gaugeSnapshot.hp = enemy.drawHp;
         drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 120.0f, exactLayer);
@@ -21560,7 +21700,7 @@ bool StageRuntime::drawStage01Type0FExact(const StageEnemy& enemy, float x, floa
     if (!enemy.drawBodyThisFrame) {
         return true;
     }
-    if (exactLayer == 0x32) {
+    if (exactLayer == kEnemyGaugeLayer) {
         StageEnemy gaugeSnapshot = enemy;
         gaugeSnapshot.hp = enemy.drawHp;
         drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 120.0f, exactLayer);
@@ -21634,7 +21774,7 @@ bool StageRuntime::drawStage01Type10Or11Exact(const StageEnemy& enemy, float x,
         if (!enemy.drawBodyThisFrame) {
             return true;
         }
-        if (exactLayer == 0x32) {
+        if (exactLayer == kEnemyGaugeLayer) {
             if (enemy.targetable) {
                 StageEnemy gaugeSnapshot = enemy;
                 gaugeSnapshot.hp = enemy.drawHp;
@@ -21756,7 +21896,7 @@ bool StageRuntime::drawStage01MarkerExact(const StageEnemy& enemy, float x,
         return true;
     }
 
-    if (exactLayer == 0x32) {
+    if (exactLayer == kEnemyGaugeLayer) {
         StageEnemy gaugeSnapshot = enemy;
         gaugeSnapshot.hp = enemy.drawHp;
         drawEnemyGaugeExact(gaugeSnapshot, 1, x, y - 80.0f, exactLayer);
@@ -21826,7 +21966,7 @@ bool StageRuntime::drawType0AExact(const StageEnemy& enemy, float x, float y,
         return false;
     }
 
-    if (exactLayer == 0x32) {
+    if (exactLayer == kEnemyGaugeLayer) {
         if (enemy.targetable) {
             StageEnemy gaugeSnapshot = enemy;
             gaugeSnapshot.hp = enemy.drawHp;
@@ -21912,7 +22052,7 @@ bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x,
 
     switch (enemy.spawnType) {
     case 0x0b: {
-        if (exactLayer == 0x32) {
+        if (exactLayer == kEnemyGaugeLayer) {
             StageEnemy gaugeSnapshot = enemy;
             gaugeSnapshot.hp = enemy.drawHp;
             drawEnemyGaugeExact(gaugeSnapshot, 2, x, y - 50.0f, exactLayer);
@@ -21940,7 +22080,7 @@ bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x,
         return true;
     }
     case 0x0c: {
-        if (exactLayer == 0x32) {
+        if (exactLayer == kEnemyGaugeLayer) {
             StageEnemy gaugeSnapshot = enemy;
             gaugeSnapshot.hp = enemy.drawHp;
             drawEnemyGaugeExact(gaugeSnapshot, 2, x, y - 50.0f, exactLayer);
@@ -21971,7 +22111,7 @@ bool StageRuntime::drawStage01SmallEnemyExact(const StageEnemy& enemy, float x,
         return true;
     }
     case 0x0d: {
-        if (exactLayer == 0x32) {
+        if (exactLayer == kEnemyGaugeLayer) {
             StageEnemy gaugeSnapshot = enemy;
             gaugeSnapshot.hp = enemy.drawHp;
             drawEnemyGaugeExact(gaugeSnapshot, 2, x, y - 50.0f, exactLayer);
