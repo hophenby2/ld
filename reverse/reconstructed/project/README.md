@@ -53,6 +53,14 @@ For DXA mode, run from a directory where `media.dxa` is visible using the same l
 
 - Stage Select now uses the recovered 15-node world map, per-stage RGB tint table, 30-frame camera interpolation, signed stage/difficulty layer timing, exact node transforms and horizontal culling, original menu/preview offsets, difficulty/Counter animations, fixed-angle arrows, and the special route stage-10 presentation. Detailed per-stage result/stat rows remain documented as deferred rather than provisional UI.
 
+## Gameplay behavior pseudocode
+
+The reconstructed enemy movement, firing, and enemy-projectile state machines are
+summarized in human-readable pseudocode under
+[`docs/enemy-projectile-pseudocode.md`](docs/enemy-projectile-pseudocode.md). The
+index links separate Stage 1-4, Stage 5-7, Stage 8-10, and shared projectile
+documents, with explicit `spawnType` and `projectileId` coverage tables.
+
 ## Legal boundary
 
 Keep reconstructed code and commercial assets local. Do not redistribute the original executable, assets, rebuilt archives, or proprietary reconstructed logic.
