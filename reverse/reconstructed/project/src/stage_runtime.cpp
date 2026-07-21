@@ -21,7 +21,7 @@ constexpr float kTau = kPi * 2.0f;
 constexpr int kFixedAngleFullCircle = 0x10000;
 constexpr int kStageEntityCap = 0x200;
 constexpr int kProjectileCap = 0x800;
-constexpr int kRewardItemCap = 0x200;
+constexpr int kRewardItemCap = 0x2000;
 constexpr int kPlayerSideObjectCap = 0x100;
 constexpr int kStageEffectCap = 0x1000;
 constexpr std::size_t kReplayStageSnapshotOffset = 0x0098;
@@ -51,6 +51,35 @@ void normalizeSystemConfig(std::array<int, 7>& values) {
     values[4] = values[4] != 0 ? 1 : 0;
     values[5] = values[5] != 0 ? 1 : 0;
     values[6] = std::clamp(values[6], 0, 3);
+}
+
+void drawTileWipeIn(const std::vector<int>& effectMediumFrames, int phase) {
+    // FUN_1400d4310 starts with a complete 12x6 checkerboard and retracts
+    // each tile upward over twelve frames, staggered by column and row.
+    for (int column = 0; column < 12; ++column) {
+        for (int row = 0; row < 6; ++row) {
+            const int onset = column + row * 3;
+            const double progress = std::clamp(
+                static_cast<double>(phase - onset) / 12.0, 0.0, 1.0);
+            const double scaleX = std::cos(progress * kPi * 0.5);
+            if (scaleX <= 0.0) {
+                continue;
+            }
+            const int frame = ((column + row) & 1) == 0 ? 1 : 2;
+            if (frame >= static_cast<int>(effectMediumFrames.size())) {
+                continue;
+            }
+            const int handle = effectMediumFrames[static_cast<std::size_t>(frame)];
+            if (handle == -1) {
+                continue;
+            }
+            const float x = static_cast<float>(column * 120);
+            const float y = static_cast<float>(row * 120 + 60) -
+                static_cast<float>((1.0 - scaleX) * 180.0);
+            DrawRotaGraph3F(x, y, 100.0f, 100.0f,
+                            scaleX, 1.0, 0.0, handle, TRUE);
+        }
+    }
 }
 constexpr std::array<double, 5> kProjectileId1Acceleration{{0.06, 0.07, 0.08, 0.10, 0.10}};
 constexpr std::array<double, 5> kProjectileRetargetAcceleration{{0.13, 0.15, 0.175, 0.20, 0.20}};
@@ -1160,6 +1189,7 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
     item1SoundHandle_ = resources.soundHandleById("SE_se_Item1");
     item2SoundHandle_ = resources.soundHandleById("SE_se_Item2");
     item3SoundHandle_ = resources.soundHandleById("SE_se_Item3");
+    dreamPowerSoundHandle_ = resources.soundHandleById("SE_se_DreamPower");
     extendSoundHandle_ = resources.soundHandleById("SE_se_Extend");
     blast1SoundHandle_ = resources.soundHandleById("SE_se_Blast1");
     enemyDown1SoundHandle_ = resources.soundHandleById("SE_se_EnemyDown1");
@@ -1214,6 +1244,14 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
     config_.controlModeEnabled = config_.controlModeEnabled != 0 ? 1 : 0;
     config_.helpMode = std::clamp(config_.helpMode, 0, 6);
     config_.helpAutoProgress = std::max(config_.helpAutoProgress, 0);
+    config_.practiceOptions[0] = std::clamp(config_.practiceOptions[0], 1, 10);
+    config_.practiceOptions[1] = std::clamp(config_.practiceOptions[1], 0, 4);
+    config_.practiceOptions[2] = config_.practiceOptions[2] != 0 ? 1 : 0;
+    config_.practiceOptions[3] = config_.practiceOptions[3] != 0 ? 1 : 0;
+    config_.practiceOptions[4] = std::max(config_.practiceOptions[4], 0);
+    config_.practiceOptions[5] = std::clamp(config_.practiceOptions[5], 0, 3);
+    config_.practiceOptions[6] = std::clamp(config_.practiceOptions[6], 0, 20);
+    config_.practiceOptions[7] = std::clamp(config_.practiceOptions[7], 0, 20);
     config_.specialMode = config_.specialMode != 0 ? 1 : 0;
     config_.specialStageFlag = config_.specialStageFlag != 0 ? 1 : 0;
     config_.dataWindowEnabled = config_.dataWindowEnabled != 0 ? 1 : 0;
@@ -1238,6 +1276,14 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
                                                    kSpecialGaugeReady);
     config_.initialBestScore = std::max<std::int64_t>(0, config_.initialBestScore);
     config_.initialBestTimeFrames = std::max(0, config_.initialBestTimeFrames);
+    if (config_.replayPlayback) {
+        config_.replayInputStartIndex = std::min(
+            config_.replayInputStartIndex, config_.replayData.inputRecords.size());
+    }
+    else {
+        config_.replayInputStartIndex = 0;
+        config_.replayData.clear();
+    }
     config_.continueRun = false;
     initialized_ = !playerFrames_.empty() && playerFrames_.front() != -1 &&
                    !itemFrames_.empty() && itemFrames_.front() != -1 &&
@@ -1262,6 +1308,14 @@ bool StageRuntime::setConfig(const StageRuntimeConfig& config) {
     next.controlModeEnabled = next.controlModeEnabled != 0 ? 1 : 0;
     next.helpMode = std::clamp(next.helpMode, 0, 6);
     next.helpAutoProgress = std::max(next.helpAutoProgress, 0);
+    next.practiceOptions[0] = std::clamp(next.practiceOptions[0], 1, 10);
+    next.practiceOptions[1] = std::clamp(next.practiceOptions[1], 0, 4);
+    next.practiceOptions[2] = next.practiceOptions[2] != 0 ? 1 : 0;
+    next.practiceOptions[3] = next.practiceOptions[3] != 0 ? 1 : 0;
+    next.practiceOptions[4] = std::max(next.practiceOptions[4], 0);
+    next.practiceOptions[5] = std::clamp(next.practiceOptions[5], 0, 3);
+    next.practiceOptions[6] = std::clamp(next.practiceOptions[6], 0, 20);
+    next.practiceOptions[7] = std::clamp(next.practiceOptions[7], 0, 20);
     next.specialMode = next.specialMode != 0 ? 1 : 0;
     next.specialStageFlag = next.specialStageFlag != 0 ? 1 : 0;
     next.dataWindowEnabled = next.dataWindowEnabled != 0 ? 1 : 0;
@@ -1283,6 +1337,14 @@ bool StageRuntime::setConfig(const StageRuntimeConfig& config) {
                                                 kSpecialGaugeReady);
     next.initialBestScore = std::max<std::int64_t>(0, next.initialBestScore);
     next.initialBestTimeFrames = std::max(0, next.initialBestTimeFrames);
+    if (next.replayPlayback) {
+        next.replayInputStartIndex = std::min(
+            next.replayInputStartIndex, next.replayData.inputRecords.size());
+    }
+    else {
+        next.replayInputStartIndex = 0;
+        next.replayData.clear();
+    }
     const bool changed = selectedStage_ != normalized || config_.routeMode != next.routeMode ||
                          config_.routeSubmode != next.routeSubmode ||
                          config_.setupGroup != next.setupGroup ||
@@ -1304,6 +1366,7 @@ bool StageRuntime::setConfig(const StageRuntimeConfig& config) {
                          config_.controlDevice != next.controlDevice ||
                          config_.controlModeEnabled != next.controlModeEnabled || config_.helpMode != next.helpMode ||
                          config_.helpAutoProgress != next.helpAutoProgress ||
+                         config_.practiceOptions != next.practiceOptions ||
                          config_.rawStartFrame != next.rawStartFrame ||
                          config_.firstDispatchFrame != next.firstDispatchFrame ||
                          config_.initialStock != next.initialStock ||
@@ -1312,6 +1375,7 @@ bool StageRuntime::setConfig(const StageRuntimeConfig& config) {
                          config_.initialBestScore != next.initialBestScore ||
                          config_.initialBestTimeFrames != next.initialBestTimeFrames ||
                          config_.replayPlayback != next.replayPlayback ||
+                         config_.replayInputStartIndex != next.replayInputStartIndex ||
                          next.continueRun;
     config_ = next;
     selectedStage_ = normalized;
@@ -1398,6 +1462,10 @@ void StageRuntime::reset() {
     }
     player_.optionX.fill(player_.x);
     player_.optionY.fill(player_.y);
+    if (config_.replayPlayback && config_.routeMode == 1 &&
+        selectedStage_ > 1 && selectedStage_ < 10) {
+        restoreReplayStageSnapshot();
+    }
     if (!continueRun) {
         replayRecording_.clear();
         replayCheckpointPending_ = false;
@@ -1499,6 +1567,7 @@ void StageRuntime::reset() {
     stage10TransitionStarted_ = false;
     stage10FinalBossSpawned_ = false;
     inputActions_.fill(false);
+    replayPlaybackIndex_ = config_.replayInputStartIndex;
     pauseFlowState_ = PauseFlowState::Gameplay;
     pauseCursor_ = 0;
     pauseTransitionTimer_ = 0;
@@ -1548,13 +1617,6 @@ void StageRuntime::reset() {
     if (gameOverBgmHandle_ != -1) {
         StopSoundMem(gameOverBgmHandle_);
     }
-    const int stageBgm = stageBgmHandles_[static_cast<std::size_t>(selectedStage_ - 1)];
-    // Fresh Stage 10 runs start this at frame 320. Practice/Trial entries beyond
-    // that boundary arrive with the track already selected by the context init.
-    if ((selectedStage_ != 10 || config_.rawStartFrame >= 320) && stageBgm != -1) {
-        ChangeVolumeSoundMem(static_cast<int>(config_.bgmVolume * 25.5), stageBgm);
-        PlaySoundMem(stageBgm, DX_PLAYTYPE_LOOP, TRUE);
-    }
 }
 
 void StageRuntime::update() {
@@ -1570,6 +1632,36 @@ void StageRuntime::update() {
         hudFrameRateSampleStart_ = frameRateNow;
     }
 
+    // State 0x14 starts or seeks the stage track exactly one tick after the
+    // selected Practice/Trial entry frame. Boss entries at or beyond the stage
+    // end deliberately skip this path; fresh Stage 10 starts its
+    // track later from the stage-specific frame-320 handoff.
+    const int stageEnd = kStageEndFrames[static_cast<std::size_t>(selectedStage_)];
+    if (frame_ == config_.rawStartFrame + 1 && frame_ < stageEnd &&
+        !(config_.replayPlayback && config_.routeMode == 1)) {
+        const int stageBgm =
+            stageBgmHandles_[static_cast<std::size_t>(selectedStage_ - 1)];
+        if (stageBgm != -1) {
+            ChangeVolumeSoundMem(static_cast<int>(config_.bgmVolume * 25.5),
+                                 stageBgm);
+            if (config_.rawStartFrame == 0) {
+                if (selectedStage_ != 10) {
+                    PlaySoundMem(stageBgm, DX_PLAYTYPE_LOOP, TRUE);
+                }
+            }
+            else {
+                // FUN_1401107d0 uses whole elapsed seconds and the source
+                // track's 44.1 kHz sample rate. Stage 10 begins at frame 300.
+                const int timelineOffset = selectedStage_ == 10 ? 300 : 0;
+                const int elapsedSeconds =
+                    std::max(0, config_.rawStartFrame - timelineOffset) / 60;
+                SetCurrentPositionSoundMem(
+                    static_cast<LONGLONG>(elapsedSeconds) * 44100LL, stageBgm);
+                PlaySoundMem(stageBgm, DX_PLAYTYPE_LOOP, FALSE);
+            }
+        }
+    }
+
     const bool replayRecordsThisTick =
         pauseFlowState_ == PauseFlowState::Gameplay && !stageComplete();
     pollInput();
@@ -1578,6 +1670,18 @@ void StageRuntime::update() {
     }
     if (updatePauseFlow()) {
         return;
+    }
+    if (config_.replayPlayback) {
+        if (!replayInputAvailable()) {
+            pendingExitRequest_ = GameplayExitRequest::AbortGameplay;
+            return;
+        }
+        advanceReplayInputFrame();
+    }
+
+    const int startWipePhase = frame_ - config_.rawStartFrame;
+    if (startWipePhase >= 0 && startWipePhase < 28) {
+        playPauseWipeSound(startWipePhase);
     }
 
     updateLayoutGuideToggle();
@@ -1697,6 +1801,26 @@ void StageRuntime::update() {
     }
     backgroundStage09BossDefeatFrames_ = stage09BossDefeatFrames_;
     spawnBackgroundEffects();
+
+    if (frame_ == config_.rawStartFrame + 1) {
+        const int style = std::clamp(config_.optionSlots[3], 0, 3);
+        if (player_.tokenStock > 0 && style != 3 &&
+            effectMediumFrames_.size() > 13) {
+            spawnStageEffect(0x14, effectMediumFrames_[13], 200, 0x27,
+                             player_.x, player_.y, 0,
+                             0.0, 1.0, 1.0, 0,
+                             0xff, 0xff, 0xff, 0xff);
+        }
+        if (player_.specialGauge >= kSpecialGaugeReady &&
+            effectSmallFrames_.size() > 8) {
+            // The initial-ready path creates only the persistent orbit. The
+            // separate banner belongs to a gauge transition during play.
+            spawnStageEffect(0x15, effectSmallFrames_[8], 100, 0x4a,
+                             player_.x, player_.y, 0,
+                             0.0, 1.0, 1.0, 0,
+                             0xff, 0xff, 0xff, 0xc0);
+        }
+    }
 
     for (int dispatch = 0; dispatch < stageDispatchCount; ++dispatch) {
         spawnDueEvents();
@@ -1916,6 +2040,44 @@ int StageRuntime::enemyProjectilesAlive() const {
 
 void StageRuntime::pollInput() {
     const int padState = GetJoypadInputState(DX_INPUT_PAD1);
+    if (config_.replayPlayback && pauseFlowState_ == PauseFlowState::Gameplay) {
+        inputActions_.fill(false);
+        if (replayInputAvailable()) {
+            const std::uint16_t mask =
+                config_.replayData.inputRecords[replayPlaybackIndex_].inputMask;
+            // FUN_1400bca30 restores movement and gameplay buttons, but leaves
+            // the menu-only Confirm/Cancel actions (bits 4/5) live.
+            for (std::size_t action = 0; action < 10; ++action) {
+                if (action == static_cast<std::size_t>(InputAction::Confirm) ||
+                    action == static_cast<std::size_t>(InputAction::Cancel)) {
+                    continue;
+                }
+                inputActions_[action] = (mask & (1U << action)) != 0;
+            }
+        }
+
+        constexpr std::array<InputAction, 3> kLiveReplayActions{{
+            InputAction::Confirm, InputAction::Cancel, InputAction::Pause,
+        }};
+        for (const InputAction action : kLiveReplayActions) {
+            const auto index = static_cast<std::size_t>(action);
+            const int key = config_.keyboardBindings[index];
+            const bool keyboardDown =
+                key > 0 && key < 0x100 && CheckHitKey(key) != 0;
+            const int binding = config_.controllerBindings[index];
+            const bool controllerDown =
+                padState != -1 && binding != 0 && (padState & binding) != 0;
+            inputActions_[index] = keyboardDown || controllerDown;
+            if (keyboardDown) {
+                config_.controlDevice = 5;
+            }
+            if (controllerDown) {
+                config_.controlDevice = controlDeviceForPadType(GetJoypadType(DX_INPUT_PAD1));
+            }
+        }
+        return;
+    }
+
     bool keyboardUsed = false;
     bool controllerUsed = false;
     for (std::size_t action = 0; action < inputActions_.size(); ++action) {
@@ -1938,6 +2100,16 @@ void StageRuntime::pollInput() {
 bool StageRuntime::actionDown(InputAction action) const {
     const auto index = static_cast<std::size_t>(action);
     return index < inputActions_.size() && inputActions_[index];
+}
+
+bool StageRuntime::replayInputAvailable() const {
+    return replayPlaybackIndex_ < config_.replayData.inputRecords.size();
+}
+
+void StageRuntime::advanceReplayInputFrame() {
+    if (replayInputAvailable()) {
+        ++replayPlaybackIndex_;
+    }
 }
 
 void StageRuntime::initializeReplayStageDefaults() {
@@ -2006,13 +2178,84 @@ void StageRuntime::initializeReplayRecording() {
     writeReplayI32(header, 0x0050, 6);
     writeReplayI32(header, 0x0068, config_.controlModeEnabled);
     writeReplayI32(header, 0x006c, config_.specialMode);
-    // FUN_1401121f0 resolves Auto (0) at recording start, while explicit
-    // levels 1..5 and the Off sentinel (6) are stored unchanged.
-    writeReplayI32(header, 0x0070,
-                   config_.helpMode == 0 ? effectiveHelpLevel() : config_.helpMode);
-    writeReplayI64(header, 0x0074, 1);
+    // FUN_1401121f0 resolves Auto only for Normal and Trial. Practice keeps
+    // zero and serializes the eight raw menu options used by FUN_1401105c0.
+    const int replayHelpLevel = config_.helpMode != 0
+                                    ? config_.helpMode
+                                    : (config_.routeMode == 0 || config_.routeMode == 1
+                                           ? effectiveHelpLevel()
+                                           : 0);
+    writeReplayI32(header, 0x0070, replayHelpLevel);
+    if (config_.routeMode == 2) {
+        for (std::size_t index = 0; index < config_.practiceOptions.size(); ++index) {
+            writeReplayI32(header, 0x0074 + index * sizeof(std::int32_t),
+                           config_.practiceOptions[index]);
+        }
+    }
+    else {
+        writeReplayI32(header, 0x0074, 1);
+    }
     initializeReplayStageDefaults();
     replayCheckpointPending_ = config_.routeMode == 1 && selectedStage_ != 10;
+}
+
+void StageRuntime::restoreReplayStageSnapshot() {
+    const auto& header = config_.replayData.header;
+    const std::size_t base = kReplayStageSnapshotOffset +
+        static_cast<std::size_t>(selectedStage_ - 1) * kReplayStageSnapshotStride;
+    if (base + kReplayStageSnapshotStride > header.size() ||
+        readReplayI32(header, base + 0x1c) == 0) {
+        return;
+    }
+
+    config_.setupGroup = std::clamp(readReplayI32(header, base + 0x08), 0, 2);
+    for (std::size_t index = 0; index < config_.optionSlots.size(); ++index) {
+        const int maximum = index == 3 ? 3 : 1;
+        config_.optionSlots[index] = std::clamp(
+            readReplayI32(header, base + 0x0c + index * sizeof(std::int32_t)),
+            0, maximum);
+    }
+
+    player_.x = readReplayF32(header, base + 0x20);
+    player_.y = readReplayF32(header, base + 0x24);
+    player_.sharedOptionTargetX = readReplayF32(header, base + 0x28);
+    player_.sharedOptionTargetY = readReplayF32(header, base + 0x2c);
+    player_.movementAngle16 = readReplayU16(header, base + 0x30);
+    player_.lives = std::clamp(readReplayI32(header, base + 0x40), 0,
+                               kLifeStockCap);
+    player_.playerStateTimer = readReplayI32(header, base + 0x44);
+    player_.bombLock = readReplayI32(header, base + 0x48);
+    for (std::size_t index = 0; index < player_.optionX.size(); ++index) {
+        player_.optionX[index] = readReplayF32(header, base + 0x4c + index * 8);
+        player_.optionY[index] = readReplayF32(header, base + 0x50 + index * 8);
+        player_.optionAngle16[index] =
+            readReplayU16(header, base + 0x6c + index * sizeof(std::uint16_t));
+        player_.optionTargetEntityIds[index] =
+            readReplayI32(header, base + 0x74 + index * sizeof(std::int32_t));
+    }
+    player_.optionFormationAngle16 = readReplayU16(header, base + 0x84);
+    player_.shotTimer = readReplayI32(header, base + 0x88);
+    player_.focused = readReplayI32(header, base + 0x8c) != 0;
+    player_.focusTransition = readReplayI32(header, base + 0x90);
+    player_.lateralAnimation = readReplayI32(header, base + 0x94);
+    player_.focusHoldTimer = readReplayI32(header, base + 0x98);
+    player_.invulnerableFrames = std::max(0, readReplayI32(header, base + 0x9c));
+    player_.shotVariant = readReplayI32(header, base + 0xa0);
+    player_.extendIndex = std::max(0, readReplayI32(header, base + 0xa8));
+    player_.tokenStock = std::clamp(readReplayI32(header, base + 0xac), 0, 3);
+    player_.stockProgress = std::clamp(
+        readReplayI32(header, base + 0xb0), 0,
+        stockThresholdForCurrentConfig() * 3);
+    player_.specialGauge = readReplayI32(header, base + 0xb4);
+    hudSpecialGaugeFlashTimer_ = std::max(0, readReplayI32(header, base + 0xb8));
+    player_.score = std::max<std::int64_t>(0, readReplayI64(header, base + 0xc0));
+    player_.scoreItemBaseValue = static_cast<int>(std::clamp<std::int64_t>(
+        readReplayI64(header, base + 0xc8), 0,
+        std::numeric_limits<int>::max()));
+    timeWindowElapsedFrames_ = std::max(0, readReplayI32(header, base + 0xd0));
+    player_.beingShotCount = std::max(0, readReplayI32(header, base + 0xdc));
+    player_.graze = std::max(0, readReplayI32(header, base + 0xe0));
+    config_.counterMode = readReplayI32(header, base + 0xe8) != 0 ? 1 : 0;
 }
 
 void StageRuntime::captureReplayStageCheckpoint() {
@@ -2121,8 +2364,9 @@ ReplayData StageRuntime::finalizedReplayData() {
     writeReplayI64(replay.header, 0x0060,
                    config_.specialStageFlag == 1 ? timeWindowElapsedFrames_ : 0);
     int routeCompletion = 0;
-    if (stageComplete() && config_.routeMode == 1) {
-        if (selectedStage_ == 8 || selectedStage_ == 10) {
+    if (stageComplete() && (config_.routeMode == 0 || config_.routeMode == 1)) {
+        if (selectedStage_ == 8 ||
+            (selectedStage_ == 10 && config_.routeMode == 1)) {
             routeCompletion = 1;
         }
         else if (selectedStage_ == 9) {
@@ -6634,6 +6878,29 @@ void StageRuntime::updateStageEffects() {
             effect.drawScaleY = effect.scaleX;
             effect.drawAlpha = age > 0x1f ? 0x2ff - age * 0x10 : 0xff;
             effect.drawQueuedThisFrame = true;
+            break;
+        }
+        case 0x14: {
+            // FUN_140070e40's Mental-stock aura contracts from 6x to 1x and
+            // fades from transparent to alpha 192 over sixty frames. It then
+            // follows the player until the stock reaches zero.
+            const double entrance = std::sin(
+                static_cast<double>(std::min(age, 60)) *
+                static_cast<double>(kPi) / 120.0);
+            const double scale = age > 60 ? 1.0 : 6.0 - entrance * 5.0;
+            effect.drawX = player_.x;
+            effect.drawY = player_.y;
+            effect.drawAngle16 = normalizeAngle16(
+                -player_.drawAnimationClock * 0x400);
+            effect.drawScaleX = scale;
+            effect.drawScaleY = scale;
+            effect.drawAlpha = age > 60
+                ? 0xc0
+                : static_cast<int>(entrance * 192.0);
+            effect.drawQueuedThisFrame = true;
+            if (player_.tokenStock == 0) {
+                effect.active = false;
+            }
             break;
         }
         case 0x15: {
@@ -15071,6 +15338,11 @@ int StageRuntime::effectiveHelpLevel() const {
     if (config_.helpMode != 0) {
         return 0;
     }
+    // FUN_1401121f0 resolves Auto only for Main/Trial. Practice retains the
+    // zero sentinel instead of looking up an attempt-based assistance level.
+    if (config_.routeMode == 2) {
+        return 0;
+    }
     if (config_.helpAutoProgress < 3) {
         return 0;
     }
@@ -15123,7 +15395,37 @@ void StageRuntime::processStockProgressAfterGain(int progressGain) {
     player_.stockProgress = std::min(cap, player_.stockProgress + std::max(0, progressGain));
     if (player_.tokenStock < 3 &&
         player_.stockProgress >= (player_.tokenStock + 1) * threshold) {
+        playPlayerSound(dreamPowerSoundHandle_);
+
+        const int bannerHandle = stateFrames_.size() > 20 ? stateFrames_[20] : -1;
+        const std::uint32_t random = stageScriptRandFromFrame(frame_);
+        const std::uint16_t bannerAngle = normalizeAngle16(
+            static_cast<int>(random % 0x2ee1u) - 0x5770);
+        spawnStageEffect(0x17, bannerHandle, 200, 0x4b,
+                         player_.x, player_.y - 120.0f, bannerAngle,
+                         1.0, 1.0, 1.0, 0x78,
+                         0xff, 0xff, 0xff, 0x80);
+
         ++player_.tokenStock;
+        const int style = std::clamp(config_.optionSlots[3], 0, 3);
+        if (player_.tokenStock == 1 && style != 3 &&
+            effectMediumFrames_.size() > 13) {
+            spawnStageEffect(0x14, effectMediumFrames_[13], 200, 0x27,
+                             player_.x, player_.y, 0,
+                             1.0, 1.0, 1.0, 0,
+                             0xff, 0xff, 0xff, 0xff);
+        }
+
+        const int group = std::clamp(config_.setupGroup, 0, 2);
+        const int portraitIndex = 2 + group * 10;
+        const int portraitHandle =
+            portraitIndex < static_cast<int>(playerFrameFrames_.size())
+                ? playerFrameFrames_[static_cast<std::size_t>(portraitIndex)]
+                : -1;
+        spawnStageEffect(0x16, portraitHandle, 0, 0x6f,
+                         0.0f, 0.0f, 0,
+                         0.0, 1.0, 1.0, 0x78,
+                         0xff, 0xff, 0xff, 0xff);
     }
 }
 
@@ -15156,10 +15458,32 @@ void StageRuntime::collectRewardItem(const RewardItem& item) {
             player_.stockProgress += stockThresholdForCurrentConfig();
         }
         playPlayerSound(item3SoundHandle_);
+        {
+            const int group = std::clamp(config_.setupGroup, 0, 2);
+            const int portraitIndex = 2 + group * 10;
+            const int portraitHandle =
+                portraitIndex < static_cast<int>(playerFrameFrames_.size())
+                    ? playerFrameFrames_[static_cast<std::size_t>(portraitIndex)]
+                    : -1;
+            spawnStageEffect(0x16, portraitHandle, 0, 0x6f,
+                             0.0f, 0.0f, 0,
+                             0.0, 1.0, 1.0, 0x78,
+                             0xff, 0xff, 0xff, 0xff);
+        }
         break;
     case 7:
         if (player_.lives < kLifeStockCap) {
             ++player_.lives;
+        }
+        {
+            const int bannerHandle = stateFrames_.size() > 19 ? stateFrames_[19] : -1;
+            const std::uint32_t random = stageScriptRandFromFrame(frame_);
+            const std::uint16_t bannerAngle = normalizeAngle16(
+                static_cast<int>(random % 0x2ee1u) - 0x5770);
+            spawnStageEffect(0x17, bannerHandle, 200, 0x4b,
+                             player_.x, player_.y - 120.0f, bannerAngle,
+                             1.0, 1.0, 1.0, 0x78,
+                             0xff, 0xff, 0xff, 0x80);
             playPlayerSound(extendSoundHandle_);
         }
         break;
@@ -15652,13 +15976,13 @@ bool StageRuntime::settlePendingPlayerHit() {
                      0.0, 1.0, 1.0, 0x50,
                      0xff, 0xff, 0xff, 0xff);
 
-    // FUN_140106be0 emits one Mental/Bomb item on the first two misses and
-    // two on later non-terminal misses.  State 0x15 (the route -1 shortcut)
+    // FUN_140106be0 emits one Mental/Bomb item after the first two deaths and
+    // two after later non-terminal deaths. State 0x15 (the route -1 shortcut)
     // and the terminal Game Over branch skip these drops.  DAT_140e477e4 is
     // incremented only after the old count has selected the drop quantity.
-    const int completedMisses = player_.beingShotCount;
+    const int completedDeaths = player_.beingShotCount;
     if (player_.lives != 0 && config_.routeMode != -1) {
-        const int dropCount = completedMisses > 1 ? 2 : 1;
+        const int dropCount = completedDeaths > 1 ? 2 : 1;
         for (int i = 0; i < dropCount; ++i) {
             const std::uint32_t random = stageScriptRandFromFrame(frame_ + i * 10);
             const std::uint16_t angle = normalizeAngle16(
@@ -21867,7 +22191,7 @@ void StageRuntime::drawStageEffects(bool foreground, int exactLayer) const {
         }
         const bool additive = effect.type == 0x05 || effect.type == 0x07 ||
                               effect.type == 0x0d ||
-                              effect.type == 0x13 ||
+                              effect.type == 0x13 || effect.type == 0x14 ||
                               effect.type == 0x22 ||
                               effect.type == 0x31 || effect.type == 0x33 ||
                               effect.type == 0x3b || effect.type == 0x3c ||
@@ -22016,6 +22340,12 @@ void StageRuntime::drawRewardItems(bool specialLayer) const {
 }
 
 void StageRuntime::drawOverlay() const {
+    // update() advances frame_ after queuing the original frame's draw state.
+    // Subtract one so the visible wipe covers phases 0..59 rather than 1..59.
+    const int startWipePhase = frame_ - config_.rawStartFrame - 1;
+    if (startWipePhase >= 0 && startWipePhase < 60) {
+        drawTileWipeIn(effectMediumFrames_, startWipePhase);
+    }
     if (showLayoutGuides_) {
         drawLayoutGuides();
         drawDebugOverlay();

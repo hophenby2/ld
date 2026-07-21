@@ -5,6 +5,7 @@
 #include "save_config.h"
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -66,6 +67,7 @@ public:
         int controlModeEnabled = 1;
         int helpMode = 6;
         int helpAutoProgress = 0;
+        std::array<int, 8> practiceOptions{{1, 2, 0, 0, 0, 0, 0, 0}};
         int rawStartFrame = 0;
         int firstDispatchFrame = 0;
         int initialStock = -1;
@@ -75,6 +77,8 @@ public:
         int initialBestTimeFrames = 0;
         bool continueRun = false;
         bool replayPlayback = false;
+        std::size_t replayInputStartIndex = 0;
+        ReplayData replayData;
     };
 
     struct GameplaySettings {
@@ -208,6 +212,8 @@ private:
     void ensureRankingGraphs(ResourceManager& resources) const;
     void ensureResultGraphs(ResourceManager& resources) const;
     void scanReplaySlots(const ResourceManager& resources);
+    bool loadReplayForPlayback(const ResourceManager& resources);
+    bool applyLoadedReplaySettings();
     bool savePendingReplay(const ResourceManager& resources);
     void playSound(ResourceManager& resources, const char* id) const;
     void ensureTitleBgm(ResourceManager& resources);
@@ -294,6 +300,8 @@ private:
     std::array<ReplaySlot, 24> replaySlots_{};
     int replaySlotIndex_ = 0;
     int replayStageChoice_ = 1;
+    ReplayData loadedReplay_;
+    std::size_t loadedReplayInputStartIndex_ = 0;
     ReplayData pendingReplay_;
     std::array<char, 4> replayTag_{{'A', 'A', 'A', '\0'}};
     int rankingCursor_ = 0;

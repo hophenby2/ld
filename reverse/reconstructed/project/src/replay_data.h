@@ -56,6 +56,26 @@ inline std::int32_t readReplayI32(
     return static_cast<std::int32_t>(readReplayU32(bytes, offset));
 }
 
+inline std::int64_t readReplayI64(
+    const std::array<std::uint8_t, kReplayHeaderSize>& bytes,
+    std::size_t offset) {
+    if (offset + sizeof(std::uint64_t) > bytes.size()) {
+        return 0;
+    }
+    std::uint64_t value = 0;
+    for (std::size_t index = 0; index < sizeof(value); ++index) {
+        value |= static_cast<std::uint64_t>(bytes[offset + index]) <<
+                 (index * 8U);
+    }
+    return std::bit_cast<std::int64_t>(value);
+}
+
+inline float readReplayF32(
+    const std::array<std::uint8_t, kReplayHeaderSize>& bytes,
+    std::size_t offset) {
+    return std::bit_cast<float>(readReplayU32(bytes, offset));
+}
+
 inline void writeReplayU16(
     std::array<std::uint8_t, kReplayHeaderSize>& bytes,
     std::size_t offset, std::uint16_t value) {

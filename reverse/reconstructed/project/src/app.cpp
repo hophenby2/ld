@@ -309,6 +309,7 @@ int App::runSmokeTestLoop() {
                 config.controlModeEnabled = request.controlModeEnabled;
                 config.helpMode = request.helpMode;
                 config.helpAutoProgress = request.helpAutoProgress;
+                config.practiceOptions = request.practiceOptions;
                 config.rawStartFrame = request.rawStartFrame;
                 config.firstDispatchFrame = request.firstDispatchFrame;
                 config.initialStock = request.initialStock;
@@ -318,6 +319,8 @@ int App::runSmokeTestLoop() {
                 config.initialBestTimeFrames = request.initialBestTimeFrames;
                 config.continueRun = request.continueRun;
                 config.replayPlayback = request.replayPlayback;
+                config.replayInputStartIndex = request.replayInputStartIndex;
+                config.replayData = std::move(request.replayData);
                 config.textDatabase = &textDatabase_;
                 if (!stageRuntime_.initialized()) {
                     stageRuntime_.initialize(*resources_, config);

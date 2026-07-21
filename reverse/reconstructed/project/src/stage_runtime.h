@@ -53,6 +53,7 @@ public:
         int controlModeEnabled = 1;
         int helpMode = 6;
         int helpAutoProgress = 0;
+        std::array<int, 8> practiceOptions{{1, 2, 0, 0, 0, 0, 0, 0}};
         int rawStartFrame = 0;
         int firstDispatchFrame = 0;
         int initialStock = -1;
@@ -62,6 +63,8 @@ public:
         int initialBestTimeFrames = 0;
         bool continueRun = false;
         bool replayPlayback = false;
+        std::size_t replayInputStartIndex = 0;
+        ReplayData replayData;
         const TextDatabase* textDatabase = nullptr;
     };
 
@@ -328,8 +331,11 @@ private:
     static const StageSpawnEvent* eventsForStage(int stage, std::size_t& count);
     void pollInput();
     bool actionDown(InputAction action) const;
+    bool replayInputAvailable() const;
+    void advanceReplayInputFrame();
     void initializeReplayRecording();
     void initializeReplayStageDefaults();
+    void restoreReplayStageSnapshot();
     void recordReplayInputFrame();
     void captureReplayStageCheckpoint();
     void spawnDueEvents();
@@ -810,6 +816,7 @@ private:
     int item1SoundHandle_ = -1;
     int item2SoundHandle_ = -1;
     int item3SoundHandle_ = -1;
+    int dreamPowerSoundHandle_ = -1;
     int extendSoundHandle_ = -1;
     int blast1SoundHandle_ = -1;
     int enemyDown1SoundHandle_ = -1;
@@ -901,6 +908,7 @@ private:
     std::vector<StageEffect> stageEffects_;
     std::array<bool, 11> inputActions_{};
     ReplayData replayRecording_;
+    std::size_t replayPlaybackIndex_ = 0;
     bool replayCheckpointPending_ = false;
     int hudSpecialGaugeFlashTimer_ = 0;
     std::chrono::steady_clock::time_point hudFrameRateSampleStart_{};

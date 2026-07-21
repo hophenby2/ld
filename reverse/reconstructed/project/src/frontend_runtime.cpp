@@ -48,6 +48,7 @@ constexpr int kEnemyEncyclopediaInputEnableFrame = 0x3c;
 constexpr const char* kPracticeMenuPath = "media\\system\\PracticeMenu.png";
 constexpr const char* kConfigNumberPath = "media\\system\\ConfigNumber.png";
 constexpr const char* kEffectMediumPath = "media\\effect\\Effect_m.png";
+constexpr const char* kPlayerStatePath = "media\\player\\State.png";
 constexpr const char* kGalleryFramePath = "media\\gallery\\GalleryFrame.png";
 constexpr const char* kAchievementPath = "media\\gallery\\Achievement.png";
 constexpr const char* kNoticeFramePath = "media\\gallery\\NoticeFrame.png";
@@ -61,6 +62,13 @@ constexpr const char* kRankingNoticePath = "media\\system\\RankingNotice.png";
 constexpr const char* kResultMenuPath = "media\\player\\Result.png";
 constexpr const char* kStageClearPath = "media\\player\\StageClear.png";
 constexpr const char* kNumLargePath = "media\\system\\Num_l.png";
+
+constexpr std::array<const char*, 4> kCommandPromptPaths{{
+    "media\\system\\KerPromot.png",
+    "media\\system\\KerPromot_eng.png",
+    "media\\system\\KerPromot_ch1.png",
+    "media\\system\\KerPromot_ch2.png",
+}};
 
 constexpr std::array<int, 11> kDefaultKeyBindings{{
     KEY_INPUT_UP, KEY_INPUT_DOWN, KEY_INPUT_RIGHT, KEY_INPUT_LEFT,
@@ -389,6 +397,17 @@ void drawPathFrameScaledAlpha(const ResourceManager& resources, const char* path
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 }
 
+void drawPathFrameTopLeftAlpha(const ResourceManager& resources, const char* path,
+                               int frame, int x, int y, int alpha) {
+    const int handle = resources.graphFrame(path, frame);
+    if (handle == -1) {
+        return;
+    }
+    SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+    DrawGraph(x, y, handle, TRUE);
+    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+}
+
 void drawPathFrameBrightness(const ResourceManager& resources, const char* path, int frame,
                              float cx, float cy, int brightness, int alpha = 255) {
     const int handle = resources.graphFrame(path, frame);
@@ -414,6 +433,13 @@ void drawConfigNumber(const ResourceManager& resources, float rightX, float y, i
         value /= 10;
         x -= 25.0f;
     } while (value > 0);
+}
+
+void drawConfigNumberBrightness(const ResourceManager& resources, float rightX, float y,
+                                int value, bool percent, int brightness, int alpha) {
+    SetDrawBright(brightness, brightness, brightness);
+    drawConfigNumber(resources, rightX, y, value, percent, alpha);
+    SetDrawBright(255, 255, 255);
 }
 
 const char* localizedPath(const std::array<const char*, 4>& paths, int language) {
@@ -665,6 +691,56 @@ int controllerPromptFrame(int controlDevice, int binding) {
     return -1;
 }
 
+void drawPracticeStatus(const ResourceManager& resources,
+                        const std::array<int, 4>& optionSlots, int feverMode) {
+    drawPathFrameScaledAlpha(resources, kPlayerStatePath, 7,
+                             -25.0f, 695.0f, 1.0, 0xff);
+    for (int index = 0; index < 4; ++index) {
+        const int frame = 22 + optionSlots[static_cast<std::size_t>(index)];
+        drawPathFrameScaledAlpha(resources, kPlayerStatePath, frame,
+                                 static_cast<float>(75 + index * 20),
+                                 695.0f, 1.0, 0xff);
+    }
+    drawPathFrameScaledAlpha(resources, kPlayerStatePath,
+                             feverMode == 0 ? 26 : 27,
+                             245.0f, 695.0f, 1.0, 0xff);
+}
+
+void drawPracticePrompts(const ResourceManager& resources, int language,
+                         int controlDevice,
+                         const std::array<int, 11>& keyboardBindings,
+                         const std::array<int, 11>& controllerBindings) {
+    const char* commandPath = localizedPath(kCommandPromptPaths, language);
+    int directionFrame = -1;
+    int confirmFrame = -1;
+    int cancelFrame = -1;
+    const char* inputPath = kControllerPromptPath;
+    if (controlDevice == 5) {
+        inputPath = kKeyboardPromptPath;
+        directionFrame = 100;
+        confirmFrame = keyboardPromptFrame(keyboardBindings[4]);
+        cancelFrame = keyboardPromptFrame(keyboardBindings[5]);
+    }
+    else {
+        directionFrame = std::clamp(controlDevice, 0, 4) * 15;
+        if (controlDevice == 0) {
+            confirmFrame = 1;
+            cancelFrame = 2;
+        }
+        else {
+            confirmFrame = controllerPromptFrame(controlDevice, controllerBindings[4]);
+            cancelFrame = controllerPromptFrame(controlDevice, controllerBindings[5]);
+        }
+    }
+
+    drawPathFrameTopLeftAlpha(resources, inputPath, directionFrame, 870, 5, 0xff);
+    drawPathFrameTopLeftAlpha(resources, commandPath, 0, 915, 5, 0xff);
+    drawPathFrameTopLeftAlpha(resources, inputPath, confirmFrame, 1010, 5, 0xff);
+    drawPathFrameTopLeftAlpha(resources, commandPath, 2, 1050, 5, 0xff);
+    drawPathFrameTopLeftAlpha(resources, inputPath, cancelFrame, 1150, 5, 0xff);
+    drawPathFrameTopLeftAlpha(resources, commandPath, 4, 1190, 5, 0xff);
+}
+
 int controllerButtonNumber(int binding) {
     unsigned int mask = 0x10;
     for (int index = 0; index < 28; ++index) {
@@ -872,7 +948,7 @@ void FrontendRuntime::draw(const ResourceManager& resources) const {
 }
 
 FrontendRuntime::GameplayRequest FrontendRuntime::consumeGameplayRequest() {
-    auto request = gameplayRequest_;
+    auto request = std::move(gameplayRequest_);
     gameplayRequest_ = {};
     return request;
 }
@@ -1246,6 +1322,7 @@ void FrontendRuntime::queueGameplayRequest(bool continueRun, bool manualTrialCon
     gameplayRequest_.controlDevice = controlDevice_;
     gameplayRequest_.controlModeEnabled = controlModeEnabled_;
     gameplayRequest_.helpMode = helpMode_;
+    gameplayRequest_.practiceOptions = practiceOptions_;
     gameplayRequest_.rawStartFrame = rawStartFrame;
     gameplayRequest_.firstDispatchFrame = firstDispatchFrame;
     gameplayRequest_.continueRun = continueRun;
@@ -1608,17 +1685,23 @@ void FrontendRuntime::updateAlternateSetup(ResourceManager& resources, const Inp
         return;
     }
 
-    if (input.upRepeat) {
+    bool directionConsumed = false;
+    if (input.upRepeat && downHeldFrames_ == 0) {
         moveCursor(resources, -1, kPracticeRows);
         selectionDirtyTimer_ = 1;
+        directionConsumed = true;
     }
-    if (input.downRepeat) {
+    if (input.downRepeat && upHeldFrames_ == 0) {
         moveCursor(resources, 1, kPracticeRows);
         selectionDirtyTimer_ = 1;
+        directionConsumed = true;
     }
 
-    if ((input.leftRepeat || input.rightRepeat) && cursor_ < 8) {
-        const int delta = input.rightRepeat ? 1 : -1;
+    const bool leftCommand = input.leftRepeat && rightHeldFrames_ == 0;
+    const bool rightCommand = input.rightRepeat && leftHeldFrames_ == 0;
+    if ((leftCommand || rightCommand) && cursor_ < 8) {
+        directionConsumed = true;
+        const int delta = rightCommand ? 1 : -1;
         int minimum = 0;
         int maximum = 0;
         bool available = true;
@@ -1626,6 +1709,8 @@ void FrontendRuntime::updateAlternateSetup(ResourceManager& resources, const Inp
         case 0: {
             const int normalMaximum = std::max(1, maxUnlockedStageByRoute_[0]);
             const int current = practiceOptions_[0];
+            const int currentPhase = practiceOptions_[4];
+            const bool wasBoss = currentPhase == practicePhaseMax(current);
             int next = current;
             if (delta > 0) {
                 if (current < normalMaximum) {
@@ -1646,8 +1731,10 @@ void FrontendRuntime::updateAlternateSetup(ResourceManager& resources, const Inp
             }
             if (available) {
                 practiceOptions_[0] = next;
-                practiceOptions_[1] = std::min(practiceOptions_[1], maxDifficultyForStage(maxUnlockedDifficultyByStage_, next));
-                practiceOptions_[4] = std::min(practiceOptions_[4], practicePhaseMax(next));
+                const int nextPhaseMaximum = practicePhaseMax(next);
+                practiceOptions_[4] = delta > 0 && wasBoss
+                    ? nextPhaseMaximum
+                    : std::min(currentPhase, nextPhaseMaximum);
                 selectionDirtyTimer_ = 1;
                 playSound(resources, "SE_se_Select");
             }
@@ -1684,6 +1771,13 @@ void FrontendRuntime::updateAlternateSetup(ResourceManager& resources, const Inp
         else {
             playSound(resources, "SE_se_Error");
         }
+    }
+
+    // DAT_140e467fc consumes Confirm/Cancel for the whole directional-input
+    // frame, while still allowing the vertical and horizontal branches above
+    // to run together for diagonal input.
+    if (directionConsumed) {
+        return;
     }
 
     if (input.cancel) {
@@ -1991,9 +2085,12 @@ void FrontendRuntime::updateReplayStageSelect(ResourceManager& resources, const 
         return;
     }
     if (input.confirm) {
-        // State 0x0f loads recorded input and hands it to 0x14. StageRuntime does
-        // not yet expose that input stream, so launching normal play would be false.
-        playSound(resources, "SE_se_Error");
+        if (!loadReplayForPlayback(resources)) {
+            playSound(resources, "SE_se_Error");
+            return;
+        }
+        playSound(resources, "SE_se_Enter");
+        beginConfirmTransition(MainState::Gameplay);
     }
 }
 
@@ -2175,15 +2272,6 @@ void FrontendRuntime::updateReplaySave(ResourceManager& resources, const InputSn
             return;
         }
         replaySlotIndex_ = cursor_;
-        replayTag_ = {{'A', 'A', 'A', '\0'}};
-        const auto& slot = replaySlots_[static_cast<std::size_t>(replaySlotIndex_)];
-        if (slot.valid) {
-            for (std::size_t index = 0; index < 3; ++index) {
-                if (kReplayTagCharacters.find(slot.tag[index]) != std::string_view::npos) {
-                    replayTag_[index] = slot.tag[index];
-                }
-            }
-        }
         playSound(resources, "SE_se_Enter");
         beginConfirmTransition(MainState::ReplayNameEntry);
     }
@@ -2230,6 +2318,20 @@ void FrontendRuntime::updateReplayNameEntry(ResourceManager& resources,
         return;
     }
     if (cursor_ < 3) {
+        if (cursor_ == 2 && replayTag_[0] == 'A' && replayTag_[1] == 'A' &&
+            replayTag_[2] == 'A') {
+            // State 0x25 substitutes the character-specific defaults only
+            // when all three saved indices are still zero.
+            constexpr std::array<std::array<int, 3>, 3> kDefaultTagIndices{{
+                {{0, 11, 2}}, {{24, 20, 17}}, {{20, 9, 10}},
+            }};
+            const auto& defaults =
+                kDefaultTagIndices[static_cast<std::size_t>(std::clamp(setupGroup_, 0, 2))];
+            for (std::size_t index = 0; index < defaults.size(); ++index) {
+                replayTag_[index] =
+                    kReplayTagCharacters[static_cast<std::size_t>(defaults[index])];
+            }
+        }
         ++cursor_;
         playSound(resources, "SE_se_Enter");
         return;
@@ -2734,7 +2836,24 @@ void FrontendRuntime::updateTransition(ResourceManager& resources) {
     }
     if (target == MainState::Gameplay) {
         const bool manualTrialContinue = source == MainState::TrialContinue;
-        queueGameplayRequest(manualTrialContinue, manualTrialContinue);
+        if (source == MainState::ReplayStageSelect) {
+            if (!applyLoadedReplaySettings()) {
+                loadedReplay_.clear();
+                returnToTitle(resources);
+                return;
+            }
+            queueGameplayRequest(false, false, true);
+            if (routeMode_ == 1 && selectedStage_ > 1 && selectedStage_ < 10) {
+                // FUN_140118290 restores the stage snapshot after context init,
+                // whose frame counter is then advanced once before dispatch.
+                gameplayRequest_.firstDispatchFrame = gameplayRequest_.rawStartFrame + 1;
+            }
+            gameplayRequest_.replayInputStartIndex = loadedReplayInputStartIndex_;
+            gameplayRequest_.replayData = std::move(loadedReplay_);
+        }
+        else {
+            queueGameplayRequest(manualTrialContinue, manualTrialContinue);
+        }
     }
 }
 
@@ -3021,81 +3140,93 @@ void FrontendRuntime::drawStageSelect(const ResourceManager& resources) const {
 }
 
 void FrontendRuntime::drawAlternateSetup(const ResourceManager& resources) const {
-    const int titleBack = resources.graphHandleById("GFX_system_TitleBack");
-    if (titleBack != -1) {
-        DrawGraph(0, 0, titleBack, TRUE);
-    }
-    const int menuTitle = resources.graphFrameById("GFX_system_MenuTitle", 2);
-    if (menuTitle != -1) {
-        DrawGraph(0, 0, menuTitle, TRUE);
-    }
+    drawFrontendBackdrop(resources, 2, language_);
 
-    drawFrameScaledAlpha(resources, "GFX_system_Stand", setupGroup_ * 10, 900.0f, 480.0f, 1.0, 0x80);
+    const float standY = 480.0f +
+        6.0f * std::sin(static_cast<float>(frame_) * kPi / 90.0f);
+    drawFrameScaledAlpha(resources, "GFX_system_Stand", setupGroup_ * 10,
+                         900.0f, standY, 1.0, 0x80);
 
     const int practiceStage = practiceOptions_[0];
     const int maximumDifficulty = maxDifficultyForStage(maxUnlockedDifficultyByStage_, practiceStage);
     const bool validDifficulty = practiceStage == 10 || practiceOptions_[1] <= maximumDifficulty;
     for (int i = 0; i < kPracticeRows; ++i) {
-        bool available = true;
-        if (i == 1) available = validDifficulty;
-        if (i == 2) available = counterUnlocked_;
-        if (i == 3) available = maxUnlockedStageByRoute_[1] >= 14;
-        if (i == 8) available = validDifficulty;
-        int alpha = i == cursor_ ? 0xff : 0x60;
-        if (!available) alpha = std::min(alpha, 0x80);
-        if (i == cursor_ && transitionTimer_ != 0 && wrapIndex(transitionTimer_ + 10000, 4) >= 2) {
-            alpha = std::min(alpha, 0x60);
+        int labelBrightness = 0xff;
+        int valueBrightness = 0xff;
+        if (i == 1 && !validDifficulty) valueBrightness = 0x80;
+        if (i == 2 && !counterUnlocked_) labelBrightness = valueBrightness = 0x80;
+        if (i == 3 && maxUnlockedStageByRoute_[1] < 14) {
+            labelBrightness = valueBrightness = 0x80;
         }
-        drawPathFrameScaledAlpha(resources, kPracticeMenuPath, i, 420.0f,
-                                 static_cast<float>(i * 0x2d + 0x82), 1.0, alpha);
+        if (i == 8 && !validDifficulty) labelBrightness = 0x80;
+        int alpha = i == cursor_ ? 0xff : 0x60;
+        if (i == cursor_ && transitionTimer_ > 0 && transitionTimer_ % 4 > 1) {
+            alpha = 0x60;
+        }
+        drawPathFrameBrightness(resources, kPracticeMenuPath, i, 420.0f,
+                                static_cast<float>(i * 0x2d + 0x82),
+                                labelBrightness, alpha);
 
         const float y = static_cast<float>(i * 0x2d + 0x82);
         switch (i) {
         case 0:
             if (practiceStage > 9) {
-                drawPathFrameScaledAlpha(resources, kPracticeMenuPath, 17, 575.0f, y, 1.0, alpha);
+                drawPathFrameBrightness(resources, kPracticeMenuPath, 17,
+                                        680.0f, y, valueBrightness, alpha);
             }
             else {
-                drawConfigNumber(resources, 575.0f, y, practiceStage, false, alpha);
+                drawConfigNumberBrightness(resources, 575.0f, y, practiceStage,
+                                           false, valueBrightness, alpha);
             }
             break;
         case 1:
-            drawPathFrameScaledAlpha(resources, kPracticeMenuPath,
-                                     practiceStage > 9 ? 17 : 12 + practiceOptions_[1],
-                                     680.0f, y, 1.0, available ? alpha : 0x80);
+            drawPathFrameBrightness(resources, kPracticeMenuPath,
+                                    practiceStage > 9 ? 17 : 12 + practiceOptions_[1],
+                                    680.0f, y, valueBrightness, alpha);
             break;
         case 2:
         case 3:
+            SetDrawBright(valueBrightness, valueBrightness, valueBrightness);
             drawFrameScaledAlpha(resources, "GFX_system_ConfigMenu2",
                                  practiceOptions_[static_cast<std::size_t>(i)] == 1 ? 0 : 1,
                                  680.0f, y, 1.0, alpha);
+            SetDrawBright(255, 255, 255);
             break;
         case 4: {
             const int maximumPhase = practicePhaseMax(practiceStage);
             const int phase = practiceOptions_[4];
-            drawPathFrameScaledAlpha(resources, kPracticeMenuPath, phase < maximumPhase ? 10 : 11,
-                                     680.0f, y, 1.0, alpha);
+            drawPathFrameBrightness(resources, kPracticeMenuPath,
+                                    phase < maximumPhase ? 10 : 11,
+                                    680.0f, y, valueBrightness, alpha);
             if (phase < maximumPhase) {
-                drawConfigNumber(resources, 760.0f, y, phase + 1, false, alpha);
+                drawConfigNumberBrightness(resources, 680.0f, y, phase + 1,
+                                           false, valueBrightness, alpha);
             }
             break;
         }
         case 5:
             if (practiceOptions_[5] > 2) {
-                drawPathFrameScaledAlpha(resources, kPracticeMenuPath, 18, 575.0f, y, 1.0, alpha);
+                drawPathFrameBrightness(resources, kPracticeMenuPath, 18,
+                                        680.0f, y, valueBrightness, alpha);
             }
             else {
-                drawConfigNumber(resources, 575.0f, y, practiceOptions_[5], false, alpha);
+                drawConfigNumberBrightness(resources, 575.0f, y,
+                                           practiceOptions_[5], false,
+                                           valueBrightness, alpha);
             }
             break;
         case 6:
         case 7: {
             const int value = practiceOptions_[static_cast<std::size_t>(i)];
             if (value > 19) {
-                drawPathFrameScaledAlpha(resources, kPracticeMenuPath, 18, 680.0f, y, 1.0, alpha);
+                drawPathFrameBrightness(resources, kPracticeMenuPath, 18,
+                                        680.0f, y, valueBrightness, alpha);
             }
             else {
-                drawConfigNumber(resources, 680.0f, y, value * 5, true, alpha);
+                drawConfigNumberBrightness(resources, 600.0f, y, value * 5,
+                                           false, valueBrightness, alpha);
+                drawPathFrameBrightness(resources, kConfigNumberPath, 10,
+                                        640.0f, y, valueBrightness, alpha);
             }
             break;
         }
@@ -3103,6 +3234,11 @@ void FrontendRuntime::drawAlternateSetup(const ResourceManager& resources) const
             break;
         }
     }
+
+    // FUN_1400c48f0(0x50) and FUN_1400d9b60(1, 0x70, 0xff).
+    drawPracticeStatus(resources, optionSlots_, feverMode_);
+    drawPracticePrompts(resources, language_, controlDevice_,
+                        keyBindings_, controllerBindings_);
 }
 
 void FrontendRuntime::drawGallery(const ResourceManager& resources) const {
@@ -3728,8 +3864,8 @@ void FrontendRuntime::drawTransitionOverlay(const ResourceManager& resources) co
 }
 
 void FrontendRuntime::loadMissingFrontendGraphs(ResourceManager& resources) {
-    // These three tables are loaded by 0x1400ced90 in the original executable,
-    // but were omitted from the reconstruction's small default frontend set.
+    // These tables are loaded by 0x1400ced90 in the original executable, but
+    // were omitted from the reconstruction's small default frontend set.
     if (resources.graphFrame(kPracticeMenuPath, 0) == -1) {
         resources.loadDivGraph(kPracticeMenuPath, 0x14, 1, 0x14, 0xf0, 0x28);
     }
@@ -3744,6 +3880,14 @@ void FrontendRuntime::loadMissingFrontendGraphs(ResourceManager& resources) {
     }
     if (resources.graphFrame(kControllerPromptPath, 0) == -1) {
         resources.loadDivGraph(kControllerPromptPath, 0x4b, 0x0f, 5, 40, 40);
+    }
+    if (resources.graphFrame(kPlayerStatePath, 0) == -1) {
+        resources.loadDivGraph(kPlayerStatePath, 0x20, 1, 0x20, 200, 40);
+    }
+    for (const char* path : kCommandPromptPaths) {
+        if (resources.graphFrame(path, 0) == -1) {
+            resources.loadDivGraph(path, 0x0e, 1, 0x0e, 140, 40);
+        }
     }
 }
 
@@ -3886,14 +4030,37 @@ bool FrontendRuntime::savePendingReplay(const ResourceManager& resources) {
         return false;
     }
 
-    if (MoveFileExW(temporaryPath.c_str(), outputPath.c_str(),
-                    MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == FALSE) {
+    bool installed = MoveFileExW(
+                         temporaryPath.c_str(), outputPath.c_str(),
+                         MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != FALSE;
+    if (!installed) {
+        // Some UNC redirectors (including host-shared VM folders) reject
+        // WRITE_THROUGH even though an ordinary replace is supported.
+        installed = MoveFileExW(temporaryPath.c_str(), outputPath.c_str(),
+                                MOVEFILE_REPLACE_EXISTING) != FALSE;
+    }
+    if (!installed) {
+        error.clear();
+        installed = std::filesystem::copy_file(
+            temporaryPath, outputPath,
+            std::filesystem::copy_options::overwrite_existing, error);
+        if (installed) {
+            std::filesystem::remove(temporaryPath, error);
+        }
+    }
+    if (!installed) {
         std::filesystem::remove(temporaryPath, error);
         return false;
     }
 
     scanReplaySlots(resources);
-    return replaySlots_[static_cast<std::size_t>(replaySlotIndex_)].valid;
+    if (!replaySlots_[static_cast<std::size_t>(replaySlotIndex_)].valid) {
+        return false;
+    }
+    // State 0x25 persists the three name indices immediately after writing
+    // and rescanning the replay file.
+    saveFrontendState(resources);
+    return true;
 }
 
 void FrontendRuntime::scanReplaySlots(const ResourceManager& resources) {
@@ -3949,6 +4116,142 @@ void FrontendRuntime::scanReplaySlots(const ResourceManager& resources) {
         slot.maximumStage = std::clamp(readI32(0x44), 1, 10);
         slot.score = readI64(0x58);
     }
+}
+
+bool FrontendRuntime::loadReplayForPlayback(const ResourceManager& resources) {
+    loadedReplay_.clear();
+    loadedReplayInputStartIndex_ = 0;
+
+    const int slotIndex = std::clamp(replaySlotIndex_, 0, kReplaySlotCount - 1);
+    const auto path = replaySlotPath(resources, slotIndex);
+    std::ifstream input(path, std::ios::binary);
+    if (!input) {
+        return false;
+    }
+
+    ReplayData replay;
+    input.read(reinterpret_cast<char*>(replay.header.data()),
+               static_cast<std::streamsize>(replay.header.size()));
+    if (input.gcount() != static_cast<std::streamsize>(replay.header.size()) ||
+        readReplayI32(replay.header, 0x0000) != kReplayFormatVersion) {
+        return false;
+    }
+
+    const int recordCount = readReplayI32(replay.header, 0x0004);
+    if (recordCount <= 0) {
+        return false;
+    }
+    std::error_code error;
+    const auto fileSize = std::filesystem::file_size(path, error);
+    const auto expectedSize = static_cast<std::uintmax_t>(kReplayHeaderSize) +
+        static_cast<std::uintmax_t>(recordCount) * 8U;
+    if (error || fileSize != expectedSize) {
+        return false;
+    }
+
+    replay.inputRecords.reserve(static_cast<std::size_t>(recordCount));
+    for (int index = 0; index < recordCount; ++index) {
+        std::array<std::uint8_t, 8> bytes{};
+        input.read(reinterpret_cast<char*>(bytes.data()),
+                   static_cast<std::streamsize>(bytes.size()));
+        if (!input) {
+            return false;
+        }
+        const std::uint32_t frame = static_cast<std::uint32_t>(bytes[0]) |
+            (static_cast<std::uint32_t>(bytes[1]) << 8U) |
+            (static_cast<std::uint32_t>(bytes[2]) << 16U) |
+            (static_cast<std::uint32_t>(bytes[3]) << 24U);
+        const std::uint16_t inputMask = static_cast<std::uint16_t>(bytes[4]) |
+            static_cast<std::uint16_t>(bytes[5] << 8U);
+        if (frame != static_cast<std::uint32_t>(index)) {
+            return false;
+        }
+        replay.inputRecords.push_back({frame, inputMask});
+    }
+    replay.recordable = true;
+    loadedReplay_ = std::move(replay);
+    return true;
+}
+
+bool FrontendRuntime::applyLoadedReplaySettings() {
+    if (!loadedReplay_.recordable || loadedReplay_.inputRecords.empty() ||
+        readReplayI32(loadedReplay_.header, 0x0000) != kReplayFormatVersion) {
+        return false;
+    }
+
+    const auto& header = loadedReplay_.header;
+    const int loadedRouteMode = readReplayI32(header, 0x0018);
+    if (loadedRouteMode < 0 || loadedRouteMode > 2) {
+        return false;
+    }
+
+    routeMode_ = loadedRouteMode;
+    selectedDifficulty_ = std::clamp(readReplayI32(header, 0x0020), 0, 4);
+    counterMode_ = readReplayI32(header, 0x0024) != 0 ? 1 : 0;
+    setupGroup_ = std::clamp(readReplayI32(header, 0x002c), 0, 2);
+    for (std::size_t index = 0; index < optionSlots_.size(); ++index) {
+        const int maximum = index == 3 ? 3 : 1;
+        optionSlots_[index] = std::clamp(
+            readReplayI32(header, 0x0030 + index * sizeof(std::int32_t)), 0, maximum);
+    }
+    setupOptionsByGroup_[static_cast<std::size_t>(setupGroup_)] = optionSlots_;
+    controlModeEnabled_ = readReplayI32(header, 0x0068) != 0 ? 1 : 0;
+    feverMode_ = readReplayI32(header, 0x006c) != 0 ? 1 : 0;
+    helpMode_ = std::clamp(readReplayI32(header, 0x0070), 0, 6);
+
+    const int checkpoint = std::clamp(readReplayI32(header, 0x0040), 1, 10);
+    if (routeMode_ == 2) {
+        for (std::size_t index = 0; index < practiceOptions_.size(); ++index) {
+            practiceOptions_[index] =
+                readReplayI32(header, 0x0074 + index * sizeof(std::int32_t));
+        }
+        practiceOptions_[0] = std::clamp(practiceOptions_[0], 1, 10);
+        practiceOptions_[1] = std::clamp(practiceOptions_[1], 0, 4);
+        practiceOptions_[2] = practiceOptions_[2] != 0 ? 1 : 0;
+        practiceOptions_[3] = practiceOptions_[3] != 0 ? 1 : 0;
+        practiceOptions_[4] = std::clamp(
+            practiceOptions_[4], 0, practicePhaseMax(practiceOptions_[0]));
+        practiceOptions_[5] = std::clamp(practiceOptions_[5], 0, 3);
+        practiceOptions_[6] = std::clamp(practiceOptions_[6], 0, 20);
+        practiceOptions_[7] = std::clamp(practiceOptions_[7], 0, 20);
+        selectedStage_ = practiceOptions_[0];
+        selectedDifficulty_ = practiceOptions_[1];
+        counterMode_ = practiceOptions_[2];
+    }
+    else if (routeMode_ == 1) {
+        if (checkpoint == 10) {
+            selectedStage_ = 10;
+            savedStageByRoute_[1] = 10;
+        }
+        else {
+            selectedStage_ = std::clamp(replayStageChoice_, 1, 9);
+            savedStageByRoute_[1] =
+                std::clamp(readReplayI32(header, 0x001c), 0, 3) + 11;
+        }
+    }
+    else {
+        selectedStage_ = checkpoint;
+    }
+
+    loadedReplayInputStartIndex_ = 0;
+    if (routeMode_ == 1 && selectedStage_ > 1 && selectedStage_ < 10) {
+        constexpr std::size_t kStageSnapshotOffset = 0x0098;
+        constexpr std::size_t kStageSnapshotStride = 0x00f0;
+        const std::size_t base = kStageSnapshotOffset +
+            static_cast<std::size_t>(selectedStage_ - 1) * kStageSnapshotStride;
+        const int cumulativeCount = readReplayI32(header, base);
+        if (cumulativeCount <= 0 ||
+            static_cast<std::size_t>(cumulativeCount) > loadedReplay_.inputRecords.size()) {
+            return false;
+        }
+        // FUN_140118290 writes cumulative input count here, then restores the
+        // replay frame cursor as count-1 so the first new-stage record is used.
+        loadedReplayInputStartIndex_ =
+            static_cast<std::size_t>(cumulativeCount - 1);
+    }
+
+    refreshOptionSlots();
+    return true;
 }
 
 void FrontendRuntime::refreshEnemyEncyclopediaAvailability() {
@@ -4060,6 +4363,13 @@ void FrontendRuntime::loadSaveBackedState(const SaveConfigState& saveConfigState
     dataWindowEnabled_ = readI32(0x26a8) != 0 ? 1 : 0;
     shortcutUnlocked_ = readI32(0x26ac) != 0;
     controlDevice_ = std::clamp(readI32(0x26bc), 0, 5);
+    for (std::size_t index = 0; index < 3; ++index) {
+        const int tagIndex = std::clamp(
+            readI32(0x2720 + index * sizeof(std::int32_t)), 0,
+            static_cast<int>(kReplayTagCharacters.size()) - 1);
+        replayTag_[index] =
+            kReplayTagCharacters[static_cast<std::size_t>(tagIndex)];
+    }
     for (int action = 0; action < 11; ++action) {
         const int key = readI32(0x26c0 + static_cast<std::size_t>(action) * 4);
         keyBindings_[static_cast<std::size_t>(action)] =
@@ -4144,6 +4454,12 @@ void FrontendRuntime::saveFrontendState(const ResourceManager& resources) const 
     writeI32(0x26a8, dataWindowEnabled_);
     writeI32(0x26ac, shortcutUnlocked_ ? 1 : 0);
     writeI32(0x26bc, controlDevice_);
+    for (std::size_t index = 0; index < 3; ++index) {
+        const auto position = kReplayTagCharacters.find(replayTag_[index]);
+        writeI32(0x2720 + index * sizeof(std::int32_t),
+                 position == std::string_view::npos ? 0
+                                                    : static_cast<int>(position));
+    }
     for (int action = 0; action < 11; ++action) {
         writeI32(0x26c0 + static_cast<std::size_t>(action) * 4,
                  keyBindings_[static_cast<std::size_t>(action)]);
