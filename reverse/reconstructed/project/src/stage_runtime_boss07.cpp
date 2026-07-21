@@ -225,22 +225,33 @@ void StageRuntime::updateStage07Boss(StageEnemy& enemy) {
             lateStageBossPhaseMode_ = 2;
             break;
         case 4: {
-            const bool firstLost = firstHp < secondHp;
-            StageEnemy* lost = firstLost ? first : second;
-            if (lost != nullptr) {
-                spawnStage07BossNode(
-                    enemy, firstLost ? 0x81 : 0x82,
-                    firstLost ? 0 : 1, lost->x - enemy.x,
-                    lost->y - enemy.y, 0x4000, 0.0, 80, 99999999);
-                emitBreakFeedback(*lost);
-                spawnPostDeathCounterEntity(*lost, 140.0);
-                spawnEnemyDeathEffects(*lost, 1);
+            // State 0x0c means that the right head was already destroyed and
+            // the left head owns the rest of this shared phase; 0x0d is the
+            // mirrored case. FUN_14002b680 latches that choice as soon as the
+            // first head drops below zero, rather than choosing by the two HP
+            // values again when the shared gauge finally reaches zero.
+            const bool leftSurvived = combatState == 0x0c ||
+                (combatState == 0x0b && firstHp >= secondHp);
+            if (combatState == 0x0b) {
+                StageEnemy* lost = leftSurvived ? second : first;
+                if (lost != nullptr) {
+                    spawnStage07BossNode(
+                        enemy, leftSurvived ? 0x82 : 0x81,
+                        leftSurvived ? 1 : 0, lost->x - enemy.x,
+                        lost->y - enemy.y, 0x4000, 0.0, 80, 99999999);
+                }
+            }
+            StageEnemy* survivor = leftSurvived ? first : second;
+            if (survivor != nullptr) {
+                emitBreakFeedback(*survivor);
+                spawnPostDeathCounterEntity(*survivor, 140.0);
+                spawnEnemyDeathEffects(*survivor, 1);
             }
             else {
                 emitBreakFeedback(enemy);
                 spawnPostDeathCounterEntity(enemy, 140.0);
             }
-            enemy.helperState = firstLost ? 40 : 20;
+            enemy.helperState = leftSurvived ? 0x14 : 0x28;
             lateStageBossPhaseMode_ = 2;
             break;
         }
@@ -412,8 +423,31 @@ void StageRuntime::updateStage07Boss(StageEnemy& enemy) {
         enemy.targetable = false;
         StageEnemy* first = findHead(0);
         StageEnemy* second = findHead(1);
-        enemy.hp = std::max(0, first != nullptr ? first->hp : 0) +
-                   std::max(0, second != nullptr ? second->hp : 0);
+        const int firstHp = first != nullptr ? first->hp : 0;
+        const int secondHp = second != nullptr ? second->hp : 0;
+        if (enemy.helperState == 0x0b) {
+            StageEnemy* lost = nullptr;
+            int detachedType = 0;
+            if (firstHp < 0) {
+                enemy.helperState = 0x0d;
+                lost = first;
+                detachedType = 0x81;
+            }
+            else if (secondHp < 0) {
+                enemy.helperState = 0x0c;
+                lost = second;
+                detachedType = 0x82;
+            }
+            if (lost != nullptr) {
+                spawnStage07BossNode(
+                    enemy, detachedType, detachedType == 0x81 ? 0 : 1,
+                    lost->x - enemy.x, lost->y - enemy.y,
+                    0x4000, 0.0, 80, 99999999);
+                spawnPlayerSideObject(0x19, lost->x, lost->y,
+                                      0.0, 0, 0, 80.0f);
+            }
+        }
+        enemy.hp = std::max(0, firstHp) + std::max(0, secondHp);
         break;
     }
     case 0x14:
@@ -442,7 +476,7 @@ void StageRuntime::updateStage07Boss(StageEnemy& enemy) {
         StageEnemy* second = findHead(1);
         const int firstHp = first != nullptr ? first->hp : 0;
         const int secondHp = second != nullptr ? second->hp : 0;
-        enemy.hp = std::max(0, std::min(firstHp, secondHp));
+        enemy.hp = std::min(enemy.hp, std::min(firstHp, secondHp));
         break;
     }
     case 70:
@@ -549,28 +583,32 @@ void StageRuntime::updateStage07BossNode(StageEnemy& enemy) {
     }
 
     if (isStage07HeadType(enemy.spawnType)) {
-        const int previousState = enemy.helperState;
         const int state = root->helperState;
         const int timer = root->helperTimer;
-        const bool phaseEntry = previousState != state || timer <= 1;
         enemy.helperState = state;
         enemy.helperTimer = timer;
 
+        const bool phaseEntry = timer == 1 &&
+            (state == 1 || state == 0x0b || state == 0x15 ||
+             state == 0x1f || state == 0x29 || state == 0x33 ||
+             state == 0x3d);
         if (phaseEntry) {
             int hitPoints = root->hp;
-            if (state >= 0x0b && state <= 0x0d) {
+            if (state == 0x0b) {
                 hitPoints = std::max(1, root->hp / 2);
             }
-            if (isStage07CombatState(state)) {
-                enemy.hp = hitPoints;
-                enemy.maxHp = hitPoints;
-                enemy.sourceHitPoints = hitPoints;
-            }
+            enemy.hp = hitPoints;
+            enemy.maxHp = hitPoints;
+            enemy.sourceHitPoints = hitPoints;
         }
 
         if (state == 1 && !phaseEntry) {
             const int damage = std::max(0, enemy.sourceHitPoints - enemy.hp);
             if (damage > 0) root->hp = std::max(0, root->hp - damage);
+            enemy.hp = std::min(enemy.hp, root->hp);
+            enemy.sourceHitPoints = enemy.hp;
+        }
+        else if (state == 0x3d && !phaseEntry) {
             enemy.hp = std::min(enemy.hp, root->hp);
             enemy.sourceHitPoints = enemy.hp;
         }
@@ -589,13 +627,21 @@ void StageRuntime::updateStage07BossNode(StageEnemy& enemy) {
             if (timer >= 220) enemy.active = false;
         }
 
-        const int side = leftHead ? -1 : 1;
         const bool transitionState = state == 0x14 || state == 0x1e ||
             state == 0x28 || state == 0x32 || state == 0x3b || state == 0x3c;
         const bool attached = state <= 1 || (state == 10 && timer < 100);
         if (attached) {
             enemy.x = root->x + enemy.originX;
             enemy.y = root->y + enemy.originY;
+        }
+        else if ((state == 0x0c || state == 0x0d) && !headEnabled) {
+            enemy.x = 0.0f;
+            enemy.y = 30000.0f;
+        }
+        else if ((state == 0x15 || state == 0x1f ||
+                  state == 0x29 || state == 0x33) &&
+                 !headEnabled) {
+            enemy.y = 10000.0f;
         }
         else if (!transitionState) {
             if (frame_ % 50 == 0) {
@@ -2078,7 +2124,10 @@ bool StageRuntime::drawStage07BossNode(const StageEnemy& enemy, float x,
     int graph = -1;
     bool reverse = false;
     double scale = 1.0;
-    std::uint16_t drawAngle = enemy.sourceAngle16;
+    // The constructor heading is used by the apparatus/projectile logic.
+    // FUN_14002d2f0, FUN_140036410, and FUN_140033070 queue these bodies with
+    // a literal zero angle; reusing that heading here turns them sideways.
+    std::uint16_t drawAngle = 0;
     const int timer = enemy.drawHelperTimer;
     if (enemy.spawnType == 0x81 || enemy.spawnType == 0x82) {
         graph = frameHandle07(bossFrames_,

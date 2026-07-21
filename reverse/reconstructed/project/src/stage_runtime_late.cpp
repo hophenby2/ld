@@ -7445,12 +7445,16 @@ bool StageRuntime::drawLateStageBoss(const StageEnemy& enemy, float x,
                     drewBody = true;
                 }
             };
-            if (exactLayer == 0x1e) {
+            // FUN_14002b680 queues the deck and its lower fixtures before the
+            // twins on layer 0x19. Only the foreground truss is on 0x1e.
+            if (exactLayer == 0x19) {
                 drawLarge(45, x, y + 20.0f);
                 if (lateBossFrameRand(std::max(0, frame_ - 1)) % 5u != 0u) {
                     drawLarge(51, x, y);
                 }
                 drawLarge(49, x, y);
+            }
+            else if (exactLayer == 0x1e) {
                 drawLarge(50, x, y);
             }
         }

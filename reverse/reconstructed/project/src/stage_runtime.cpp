@@ -1568,8 +1568,32 @@ void StageRuntime::update() {
         std::remove_if(enemyProjectiles_.begin(), enemyProjectiles_.end(),
                        [](const StageProjectile& projectile) { return !projectile.active; }),
         enemyProjectiles_.end());
-    enemies_.erase(std::remove_if(enemies_.begin(), enemies_.end(), [](const StageEnemy& enemy) {
-                       return !enemy.active || offscreen(enemy.x, enemy.y, 4096.0f);
+    enemies_.erase(std::remove_if(enemies_.begin(), enemies_.end(), [this](const StageEnemy& enemy) {
+                       // FUN_14002d2f0 parks the non-participating Stage 7 head
+                       // at y=30000 and brings it back for the final joint phase.
+                       // Its original linked-list lifetime is controlled by the
+                       // helper's active flag, not by its temporary position.
+                       const bool persistentStage07Head =
+                           enemy.parentSpawnType == 0x13e &&
+                           (enemy.spawnType == 0x83 || enemy.spawnType == 0x84);
+                       // The original Stage 6/8 schedules also enqueue later
+                       // formation rows several screens above the playfield.
+                       // Keep only those proven deep-entry rows until their
+                       // exact helpers have advanced them into the normal range.
+                       const bool stage06DeepEntry = selectedStage_ == 6 &&
+                           (enemy.spawnType == 0x5a || enemy.spawnType == 0x5d ||
+                            enemy.spawnType == 0x5e || enemy.spawnType == 0x5f);
+                       const bool stage08DeepEntry = selectedStage_ == 8 &&
+                           (enemy.spawnType == 0x1d || enemy.spawnType == 0x1f ||
+                            enemy.spawnType == 0x5a || enemy.spawnType == 0x5d ||
+                            enemy.spawnType == 0x5f || enemy.spawnType == 0x97 ||
+                            enemy.spawnType == 0x9a);
+                       const bool deferredDeepEntry =
+                           enemy.sourceY < -4096 && enemy.y < -4096.0f &&
+                           (stage06DeepEntry || stage08DeepEntry);
+                       return !enemy.active ||
+                              (!persistentStage07Head && !deferredDeepEntry &&
+                               offscreen(enemy.x, enemy.y, 4096.0f));
                    }), enemies_.end());
     playerSideObjects_.erase(
         std::remove_if(playerSideObjects_.begin(), playerSideObjects_.end(),
