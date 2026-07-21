@@ -12,8 +12,13 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <filesystem>
 #include <fstream>
+#include <limits>
 #include <string>
+#include <string_view>
+#include <system_error>
+#include <utility>
 #include <vector>
 
 namespace reconstructed {
@@ -31,6 +36,8 @@ constexpr int kConfigMenuRows = 9;
 constexpr int kKeyConfigRows = 13;
 constexpr int kManualPageCount = 11;
 constexpr int kReplaySlotCount = 24;
+constexpr std::string_view kReplayTagCharacters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.&- ";
 constexpr float kPi = 3.14159265358979323846f;
 constexpr int kTitleInputEnableFrame = 0x40;
 constexpr int kTitleAttractStartFrame = 0xe10;
@@ -442,7 +449,7 @@ void drawFrontendBackdrop(const ResourceManager& resources, int menuTitleFrame, 
     }
 }
 
-std::string replayTimestampText(int timestamp) {
+std::string replayTimestampText(std::int64_t timestamp) {
     if (timestamp <= 0) {
         return "----/--/-- --:--";
     }
@@ -456,6 +463,12 @@ std::string replayTimestampText(int timestamp) {
         return "----/--/-- --:--";
     }
     return text;
+}
+
+std::filesystem::path replaySlotPath(const ResourceManager& resources, int index) {
+    char filename[32]{};
+    std::snprintf(filename, sizeof(filename), "LD_replay%02d.dat", index + 1);
+    return resources.assetRoot() / "replay" / filename;
 }
 
 float galleryCellX(int index) {
@@ -728,6 +741,8 @@ void FrontendRuntime::initialize(ResourceManager& resources, const SaveConfigSta
     replaySlots_.fill(ReplaySlot{});
     replaySlotIndex_ = 0;
     replayStageChoice_ = 1;
+    pendingReplay_.clear();
+    replayTag_ = {{'A', 'A', 'A', '\0'}};
     rankingCursor_ = 0;
     rankingValue_ = 0;
     resultScore_ = 0;
@@ -800,6 +815,7 @@ void FrontendRuntime::update(ResourceManager& resources) {
     case MainState::TrialContinue: updateTrialContinue(resources, input); break;
     case MainState::ReplayPrompt: updateReplayPrompt(resources, input); break;
     case MainState::ReplaySave: updateReplaySave(resources, input); break;
+    case MainState::ReplayNameEntry: updateReplayNameEntry(resources, input); break;
     }
 
     if (state_ == MainState::StageSelect) {
@@ -850,6 +866,7 @@ void FrontendRuntime::draw(const ResourceManager& resources) const {
     case MainState::TrialContinue: drawTrialContinue(resources); break;
     case MainState::ReplayPrompt: drawReplayPrompt(resources); break;
     case MainState::ReplaySave: drawReplaySave(resources); break;
+    case MainState::ReplayNameEntry: drawReplayNameEntry(resources); break;
     }
     drawTransitionOverlay(resources);
 }
@@ -858,6 +875,23 @@ FrontendRuntime::GameplayRequest FrontendRuntime::consumeGameplayRequest() {
     auto request = gameplayRequest_;
     gameplayRequest_ = {};
     return request;
+}
+
+void FrontendRuntime::captureReplay(ReplayData replay) {
+    if (!replay.recordable || replay.inputRecords.empty() ||
+        readReplayI32(replay.header, 0x0000) != kReplayFormatVersion ||
+        replay.inputRecords.size() >
+            static_cast<std::size_t>(std::numeric_limits<std::int32_t>::max())) {
+        pendingReplay_.clear();
+        return;
+    }
+    writeReplayI32(replay.header, 0x0004,
+                   static_cast<std::int32_t>(replay.inputRecords.size()));
+    pendingReplay_ = std::move(replay);
+}
+
+void FrontendRuntime::discardReplay() {
+    pendingReplay_.clear();
 }
 
 void FrontendRuntime::completeGameplay(ResourceManager& resources, std::int64_t score,
@@ -905,6 +939,7 @@ void FrontendRuntime::completeGameplay(ResourceManager& resources, std::int64_t 
 
 void FrontendRuntime::returnToTitle(ResourceManager& resources) {
     gameplayRequest_ = {};
+    pendingReplay_.clear();
     stopAllBgm(resources);
     setState(MainState::TitleMenu, 0);
     resetInputCounters();
@@ -918,6 +953,7 @@ void FrontendRuntime::abortGameplay(ResourceManager& resources) {
     }
 
     gameplayRequest_ = {};
+    pendingReplay_.clear();
     stopAllBgm(resources);
 
     // The original gameplay-abort tail restores state 0x04 for Normal/Trial
@@ -937,6 +973,7 @@ void FrontendRuntime::skipTutorial(ResourceManager& resources) {
     shortcutUnlocked_ = true;
     routeMode_ = 0;
     gameplayRequest_ = {};
+    pendingReplay_.clear();
     stopAllBgm(resources);
 
     if (firstCompletion) {
@@ -1105,8 +1142,11 @@ FrontendRuntime::TransitionSpec FrontendRuntime::currentTransitionSpec() const {
     case MainState::ReplayStageSelect:
         return {0x20, 0x20};
     case MainState::ResultSubmit:
-    case MainState::ReplayPrompt:
         return {0x3c, 0x14};
+    case MainState::ReplayPrompt:
+        return pendingState_ == MainState::ReplaySave
+                   ? TransitionSpec{0x10, 0x40000000}
+                   : TransitionSpec{0x3c, 0x14};
     case MainState::Ranking:
         return pendingState_ == MainState::RankingNotice
             ? TransitionSpec{10, 10}
@@ -1120,7 +1160,12 @@ FrontendRuntime::TransitionSpec FrontendRuntime::currentTransitionSpec() const {
     case MainState::TrialContinue:
         return {100, 0x3c};
     case MainState::ReplaySave:
-        return {0x28, 10};
+        return transitionDirection_ > 0 &&
+                       pendingState_ == MainState::ReplayNameEntry
+                   ? TransitionSpec{0x10, 0x40000000}
+                   : TransitionSpec{0x28, 10};
+    case MainState::ReplayNameEntry:
+        return {0x20, 10};
     }
     return {0x3c, 0x14};
 }
@@ -1147,6 +1192,9 @@ void FrontendRuntime::queueGameplayRequest(bool continueRun, bool manualTrialCon
     if (selectedStage_ == 10) {
         selectedDifficulty_ = 2;
     }
+    if (!continueRun) {
+        pendingReplay_.clear();
+    }
 
     resultRouteCompletion_ = 0;
     refreshOptionSlots();
@@ -1171,6 +1219,9 @@ void FrontendRuntime::queueGameplayRequest(bool continueRun, bool manualTrialCon
     gameplayRequest_.requested = true;
     gameplayRequest_.stage = selectedStage_;
     gameplayRequest_.routeMode = routeMode_;
+    gameplayRequest_.routeSubmode = routeMode_ == 1 && trialMapStage >= 11
+                                        ? std::clamp(trialMapStage - 11, 0, 3)
+                                        : 0;
     gameplayRequest_.setupGroup = setupGroup_;
     gameplayRequest_.playerOption = playerOption_;
     gameplayRequest_.subOption = subOption_;
@@ -1320,6 +1371,9 @@ void FrontendRuntime::setState(MainState state, int cursor) {
     else if (state == MainState::ReplaySave) {
         cursor_ = std::clamp(cursor_, 0, kReplaySlotCount - 1);
         replaySlotIndex_ = cursor_;
+    }
+    else if (state == MainState::ReplayNameEntry) {
+        cursor_ = std::clamp(cursor_, 0, 3);
     }
 }
 
@@ -2067,6 +2121,7 @@ void FrontendRuntime::updateReplayPrompt(ResourceManager& resources, const Input
         routeMode_ == 2 ? MainState::AlternateSetup : MainState::StageSelect;
     if (input.cancel) {
         cursor_ = 1;
+        pendingReplay_.clear();
         playSound(resources, "SE_se_Cancel");
         beginConfirmTransition(returnState);
         return;
@@ -2075,13 +2130,19 @@ void FrontendRuntime::updateReplayPrompt(ResourceManager& resources, const Input
         return;
     }
 
-    playSound(resources, "SE_se_Enter");
     if (cursor_ == 0) {
+        if (!pendingReplay_.recordable || pendingReplay_.inputRecords.empty()) {
+            playSound(resources, "SE_se_Error");
+            return;
+        }
+        playSound(resources, "SE_se_Enter");
         replaySlotIndex_ = 0;
         scanReplaySlots(resources);
         beginConfirmTransition(MainState::ReplaySave);
     }
     else {
+        playSound(resources, "SE_se_Enter");
+        pendingReplay_.clear();
         beginConfirmTransition(returnState);
     }
 }
@@ -2101,6 +2162,7 @@ void FrontendRuntime::updateReplaySave(ResourceManager& resources, const InputSn
         return;
     }
     if (input.cancel) {
+        pendingReplay_.clear();
         playSound(resources, "SE_se_Cancel");
         beginCancelTransition(routeMode_ == 2
             ? MainState::AlternateSetup
@@ -2108,10 +2170,78 @@ void FrontendRuntime::updateReplaySave(ResourceManager& resources, const InputSn
         return;
     }
     if (input.confirm) {
-        // State 0x25 needs the captured input stream and replay payload. Refuse
-        // to create a corrupt LD_replayXX.dat until StageRuntime records it.
-        playSound(resources, "SE_se_Error");
+        if (!pendingReplay_.recordable || pendingReplay_.inputRecords.empty()) {
+            playSound(resources, "SE_se_Error");
+            return;
+        }
+        replaySlotIndex_ = cursor_;
+        replayTag_ = {{'A', 'A', 'A', '\0'}};
+        const auto& slot = replaySlots_[static_cast<std::size_t>(replaySlotIndex_)];
+        if (slot.valid) {
+            for (std::size_t index = 0; index < 3; ++index) {
+                if (kReplayTagCharacters.find(slot.tag[index]) != std::string_view::npos) {
+                    replayTag_[index] = slot.tag[index];
+                }
+            }
+        }
+        playSound(resources, "SE_se_Enter");
+        beginConfirmTransition(MainState::ReplayNameEntry);
     }
+}
+
+void FrontendRuntime::updateReplayNameEntry(ResourceManager& resources,
+                                            const InputSnapshot& input) {
+    if (input.leftRepeat && cursor_ > 0) {
+        --cursor_;
+        playSound(resources, "SE_se_Select");
+        return;
+    }
+    if (input.rightRepeat && cursor_ < 3) {
+        ++cursor_;
+        playSound(resources, "SE_se_Select");
+        return;
+    }
+    if (cursor_ < 3 && (input.upRepeat || input.downRepeat)) {
+        const auto current = kReplayTagCharacters.find(
+            replayTag_[static_cast<std::size_t>(cursor_)]);
+        const int position = current == std::string_view::npos
+                                 ? 0
+                                 : static_cast<int>(current);
+        const int delta = input.upRepeat ? 1 : -1;
+        replayTag_[static_cast<std::size_t>(cursor_)] =
+            kReplayTagCharacters[static_cast<std::size_t>(
+                wrapIndex(position + delta,
+                          static_cast<int>(kReplayTagCharacters.size())))];
+        playSound(resources, "SE_se_Select");
+        return;
+    }
+    if (input.cancel) {
+        playSound(resources, "SE_se_Cancel");
+        if (cursor_ > 0) {
+            --cursor_;
+        }
+        else {
+            setState(MainState::ReplaySave, replaySlotIndex_);
+            frame_ = 0x21;
+        }
+        return;
+    }
+    if (!input.confirm) {
+        return;
+    }
+    if (cursor_ < 3) {
+        ++cursor_;
+        playSound(resources, "SE_se_Enter");
+        return;
+    }
+    if (!savePendingReplay(resources)) {
+        playSound(resources, "SE_se_Error");
+        return;
+    }
+
+    playSound(resources, "SE_se_Enter");
+    setState(MainState::ReplaySave, replaySlotIndex_);
+    frame_ = 0x20;
 }
 
 void FrontendRuntime::updateRanking(ResourceManager& resources, const InputSnapshot& input) {
@@ -2562,6 +2692,9 @@ void FrontendRuntime::updateTransition(ResourceManager& resources) {
     else if (target == MainState::ReplayList) {
         targetCursor = std::clamp(replaySlotIndex_, 0, kReplaySlotCount - 1);
     }
+    else if (target == MainState::ReplaySave) {
+        targetCursor = std::clamp(replaySlotIndex_, 0, kReplaySlotCount - 1);
+    }
     else if (target == MainState::Ranking) {
         targetCursor = rankingCursor_;
     }
@@ -2580,7 +2713,8 @@ void FrontendRuntime::updateTransition(ResourceManager& resources) {
         }
     }
     else if (target == MainState::AlternateSetup &&
-             (source == MainState::ReplayPrompt || source == MainState::ReplaySave)) {
+             (source == MainState::ReplayPrompt || source == MainState::ReplaySave ||
+              source == MainState::ReplayNameEntry)) {
         targetCursor = 8;
     }
     setState(target, targetCursor);
@@ -2593,7 +2727,8 @@ void FrontendRuntime::updateTransition(ResourceManager& resources) {
         frame_ = 0x3d;
     }
     if ((target == MainState::StageSelect || target == MainState::AlternateSetup) &&
-        (source == MainState::ReplayPrompt || source == MainState::ReplaySave)) {
+        (source == MainState::ReplayPrompt || source == MainState::ReplaySave ||
+         source == MainState::ReplayNameEntry)) {
         stopResultBgm(resources);
         ensureTitleBgm(resources);
     }
@@ -3350,6 +3485,26 @@ void FrontendRuntime::drawReplaySave(const ResourceManager& resources) const {
     drawReplayList(resources);
 }
 
+void FrontendRuntime::drawReplayNameEntry(const ResourceManager& resources) const {
+    drawFrontendBackdrop(resources, 4, language_);
+    DrawFormatString(500, 220, GetColor(210, 220, 245),
+                     "REPLAY %02d", replaySlotIndex_ + 1);
+    DrawString(500, 285, "NAME", GetColor(160, 170, 200));
+    for (int index = 0; index < 3; ++index) {
+        const bool selected = cursor_ == index;
+        const int color = selected ? GetColor(255, 255, 255)
+                                   : GetColor(128, 128, 144);
+        DrawFormatString(520 + index * 80, 360, color, "%c",
+                         replayTag_[static_cast<std::size_t>(index)]);
+        if (selected) {
+            DrawString(516 + index * 80, 390, "_", color);
+        }
+    }
+    DrawString(500, 470, "SAVE",
+               cursor_ == 3 ? GetColor(255, 255, 255)
+                            : GetColor(128, 128, 144));
+}
+
 void FrontendRuntime::drawRanking(const ResourceManager& resources) const {
     drawFrontendBackdrop(resources, 11, language_);
     constexpr std::array<int, 5> categoryFrames{{2, 14, 16, 18, 9}};
@@ -3673,12 +3828,79 @@ void FrontendRuntime::ensureResultGraphs(ResourceManager& resources) const {
     }
 }
 
+bool FrontendRuntime::savePendingReplay(const ResourceManager& resources) {
+    if (!pendingReplay_.recordable || pendingReplay_.inputRecords.empty() ||
+        pendingReplay_.inputRecords.size() >
+            static_cast<std::size_t>(std::numeric_limits<std::int32_t>::max())) {
+        return false;
+    }
+    for (std::size_t index = 0; index < pendingReplay_.inputRecords.size(); ++index) {
+        if (pendingReplay_.inputRecords[index].frame != index) {
+            return false;
+        }
+    }
+
+    auto header = pendingReplay_.header;
+    writeReplayI32(header, 0x0000, kReplayFormatVersion);
+    writeReplayI32(header, 0x0004,
+                   static_cast<std::int32_t>(pendingReplay_.inputRecords.size()));
+    for (std::size_t index = 0; index < 3; ++index) {
+        header[0x0008 + index] = static_cast<std::uint8_t>(replayTag_[index]);
+    }
+    header[0x000b] = 0;
+
+    const std::filesystem::path outputPath = replaySlotPath(resources, replaySlotIndex_);
+    std::error_code error;
+    if (!outputPath.parent_path().empty()) {
+        std::filesystem::create_directories(outputPath.parent_path(), error);
+        if (error) {
+            return false;
+        }
+    }
+
+    auto temporaryPath = outputPath;
+    temporaryPath += ".tmp";
+    std::ofstream output(temporaryPath, std::ios::binary | std::ios::trunc);
+    if (!output) {
+        return false;
+    }
+    output.write(reinterpret_cast<const char*>(header.data()),
+                 static_cast<std::streamsize>(header.size()));
+    for (const auto& input : pendingReplay_.inputRecords) {
+        const std::array<std::uint8_t, 8> bytes{{
+            static_cast<std::uint8_t>(input.frame),
+            static_cast<std::uint8_t>(input.frame >> 8U),
+            static_cast<std::uint8_t>(input.frame >> 16U),
+            static_cast<std::uint8_t>(input.frame >> 24U),
+            static_cast<std::uint8_t>(input.inputMask),
+            static_cast<std::uint8_t>(input.inputMask >> 8U),
+            0,
+            0,
+        }};
+        output.write(reinterpret_cast<const char*>(bytes.data()),
+                     static_cast<std::streamsize>(bytes.size()));
+    }
+    output.close();
+    if (!output) {
+        std::filesystem::remove(temporaryPath, error);
+        return false;
+    }
+
+    if (MoveFileExW(temporaryPath.c_str(), outputPath.c_str(),
+                    MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == FALSE) {
+        std::filesystem::remove(temporaryPath, error);
+        return false;
+    }
+
+    scanReplaySlots(resources);
+    return replaySlots_[static_cast<std::size_t>(replaySlotIndex_)].valid;
+}
+
 void FrontendRuntime::scanReplaySlots(const ResourceManager& resources) {
     replaySlots_.fill(ReplaySlot{});
     for (int index = 0; index < kReplaySlotCount; ++index) {
-        char logicalPath[64]{};
-        std::snprintf(logicalPath, sizeof(logicalPath), "replay\\LD_replay%02d.dat", index + 1);
-        std::ifstream input(resources.resolvePath(logicalPath), std::ios::binary);
+        const auto path = replaySlotPath(resources, index);
+        std::ifstream input(path, std::ios::binary);
         if (!input) {
             continue;
         }
@@ -3701,6 +3923,17 @@ void FrontendRuntime::scanReplaySlots(const ResourceManager& resources) {
         if (readI32(0) != 200) {
             continue;
         }
+        const int inputRecordCount = readI32(0x0004);
+        if (inputRecordCount < 0) {
+            continue;
+        }
+        std::error_code error;
+        const auto fileSize = std::filesystem::file_size(path, error);
+        const auto expectedSize = static_cast<std::uintmax_t>(kReplayHeaderSize) +
+                                  static_cast<std::uintmax_t>(inputRecordCount) * 8U;
+        if (error || fileSize != expectedSize) {
+            continue;
+        }
 
         auto& slot = replaySlots_[static_cast<std::size_t>(index)];
         slot.valid = true;
@@ -3709,7 +3942,7 @@ void FrontendRuntime::scanReplaySlots(const ResourceManager& resources) {
             slot.tag[static_cast<std::size_t>(character)] = value >= 0x20 && value <= 0x7e ? value : '-';
         }
         slot.tag[3] = '\0';
-        slot.timestamp = readI32(0x10);
+        slot.timestamp = readI64(0x10);
         slot.mode = readI32(0x18);
         slot.submode = readI32(0x1c);
         slot.checkpoint = readI32(0x40);

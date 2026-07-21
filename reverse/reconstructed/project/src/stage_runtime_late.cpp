@@ -7485,7 +7485,7 @@ bool StageRuntime::drawLateStageBoss(const StageEnemy& enemy, float x,
             bodyIntentionallyHidden = true;
             const int sourceFrame = std::max(0, frame_ - 1);
             const int effect = frameHandle(effectLargeFrames_, 15);
-            if (effect != -1 && exactLayer == 0x20) {
+            if (effect != -1 && exactLayer == 0x17) {
                 const double pulse = 1.0 +
                     std::sin(sourceFrame * kTau / 5.0) * 0.1;
                 SetDrawBlendMode(DX_BLENDMODE_ADD, 0xe1);
@@ -7499,7 +7499,8 @@ bool StageRuntime::drawLateStageBoss(const StageEnemy& enemy, float x,
                 const float segmentY = y +
                     static_cast<float>((segmentStart - segment) * 444 - 110);
                 const int base = frameHandle(enemyLargeFrames_, 0x1d);
-                if (base != -1 && exactLayer == 0x21) {
+                const int baseLayer = 0x18 + segment * 3;
+                if (base != -1 && exactLayer == baseLayer) {
                     drawOriginalMode7Node(base, x, segmentY, 0,
                                           1.0, 1.0, false);
                     drewBody = true;
@@ -7519,12 +7520,13 @@ bool StageRuntime::drawLateStageBoss(const StageEnemy& enemy, float x,
 
                 const int overlay = frameHandle(
                     enemyLargeFrames_, 0x1e + segment);
-                if (overlay != -1 && exactLayer == 0x23) {
+                const int overlayLayer = 0x1a + segment * 3;
+                if (overlay != -1 && exactLayer == overlayLayer) {
                     drawOriginalMode7Node(overlay, x, segmentY, 0,
                                           1.0, 1.0, false);
                     drewBody = true;
                 }
-                if (segment == 3 && exactLayer == 0x23) {
+                if (segment == 3 && exactLayer == 0x24) {
                     const int cap = frameHandle(enemyLargeFrames_, 0x22);
                     if (cap != -1) {
                         drawOriginalMode7Node(cap, x, segmentY - 385.0f, 0,
@@ -7580,22 +7582,23 @@ bool StageRuntime::drawLateStageBoss(const StageEnemy& enemy, float x,
                           normalizeAngle16(-spin), true);
                 drawLarge(37, x, y, enemy.secondaryAngle16);
                 drawLarge(39, x, y, enemy.targetAngle16);
-                drawLarge(38, x, y, enemy.targetAngle16);
             }
-
-            const int mediumFrame = (state < 3 &&
-                                     (state != 2 || timer < 101))
-                                        ? 102
-                                        : 103;
-            const int medium = frameHandle(enemyMediumFrames_, mediumFrame);
-            if (medium != -1 && exactLayer == 0x1e) {
-                const double radians = fixedAngleRadians(enemy.targetAngle16);
-                drawOriginalMode7Node(
-                    medium,
-                    x + static_cast<float>(std::cos(radians) * 75.0),
-                    y + static_cast<float>(std::sin(radians) * 75.0),
-                    enemy.targetAngle16, 1.0, 1.0, false);
-                drewBody = true;
+            if (exactLayer == 0x20) {
+                drawLarge(38, x, y, enemy.targetAngle16);
+                const int mediumFrame = (state < 3 &&
+                                         (state != 2 || timer < 101))
+                                            ? 102
+                                            : 103;
+                const int medium = frameHandle(enemyMediumFrames_, mediumFrame);
+                if (medium != -1) {
+                    const double radians = fixedAngleRadians(enemy.targetAngle16);
+                    drawOriginalMode7Node(
+                        medium,
+                        x + static_cast<float>(std::cos(radians) * 75.0),
+                        y + static_cast<float>(std::sin(radians) * 75.0),
+                        enemy.targetAngle16, 1.0, 1.0, false);
+                    drewBody = true;
+                }
             }
         }
         else {

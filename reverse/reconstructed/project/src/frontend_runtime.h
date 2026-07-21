@@ -1,5 +1,6 @@
 #pragma once
 
+#include "replay_data.h"
 #include "resource_manager.h"
 #include "save_config.h"
 
@@ -34,12 +35,14 @@ public:
         TrialContinue = 0x22,
         ReplayPrompt = 0x23,
         ReplaySave = 0x24,
+        ReplayNameEntry = 0x25,
     };
 
     struct GameplayRequest {
         bool requested = false;
         int stage = 1;
         int routeMode = 0;
+        int routeSubmode = 0;
         int setupGroup = 0;
         int playerOption = 0;
         int subOption = 0;
@@ -97,6 +100,8 @@ public:
     void skipTutorial(ResourceManager& resources);
     void finishGameOver(ResourceManager& resources, bool replayPrompt,
                         std::int64_t score, int elapsedFrames);
+    void captureReplay(ReplayData replay);
+    void discardReplay();
     void applyGameplaySettings(ResourceManager& resources,
                                const GameplaySettings& settings);
 
@@ -127,7 +132,7 @@ private:
     struct ReplaySlot {
         bool valid = false;
         std::array<char, 4> tag{{'-', '-', '-', '\0'}};
-        int timestamp = 0;
+        std::int64_t timestamp = 0;
         int mode = 0;
         int submode = 0;
         int checkpoint = 1;
@@ -164,6 +169,7 @@ private:
     void updateTrialContinue(ResourceManager& resources, const InputSnapshot& input);
     void updateReplayPrompt(ResourceManager& resources, const InputSnapshot& input);
     void updateReplaySave(ResourceManager& resources, const InputSnapshot& input);
+    void updateReplayNameEntry(ResourceManager& resources, const InputSnapshot& input);
     void updateTransition(ResourceManager& resources);
 
     void drawTitleMenu(const ResourceManager& resources) const;
@@ -187,6 +193,7 @@ private:
     void drawTrialContinue(const ResourceManager& resources) const;
     void drawReplayPrompt(const ResourceManager& resources) const;
     void drawReplaySave(const ResourceManager& resources) const;
+    void drawReplayNameEntry(const ResourceManager& resources) const;
     void drawTransitionOverlay(const ResourceManager& resources) const;
 
     void loadSaveBackedState(const SaveConfigState& saveConfigState);
@@ -201,6 +208,7 @@ private:
     void ensureRankingGraphs(ResourceManager& resources) const;
     void ensureResultGraphs(ResourceManager& resources) const;
     void scanReplaySlots(const ResourceManager& resources);
+    bool savePendingReplay(const ResourceManager& resources);
     void playSound(ResourceManager& resources, const char* id) const;
     void ensureTitleBgm(ResourceManager& resources);
     void restartTitleBgm(ResourceManager& resources);
@@ -286,6 +294,8 @@ private:
     std::array<ReplaySlot, 24> replaySlots_{};
     int replaySlotIndex_ = 0;
     int replayStageChoice_ = 1;
+    ReplayData pendingReplay_;
+    std::array<char, 4> replayTag_{{'A', 'A', 'A', '\0'}};
     int rankingCursor_ = 0;
     int rankingValue_ = 0;
     std::int64_t resultScore_ = 0;

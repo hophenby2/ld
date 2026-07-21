@@ -1,5 +1,6 @@
 #pragma once
 
+#include "replay_data.h"
 #include "resource_manager.h"
 #include "text_database.h"
 
@@ -24,6 +25,7 @@ public:
     struct StageRuntimeConfig {
         int stage = 1;
         int routeMode = 0;
+        int routeSubmode = 0;
         int setupGroup = 0;
         int playerOption = 0;
         int subOption = 0;
@@ -100,8 +102,10 @@ public:
     int selectedStage() const { return selectedStage_; }
     int routeMode() const { return config_.routeMode; }
     int specialStageFlag() const { return config_.specialStageFlag; }
+    bool replayPlayback() const { return config_.replayPlayback; }
     int frame() const { return frame_; }
     std::int64_t score() const { return player_.score; }
+    ReplayData finalizedReplayData();
     int enemiesAlive() const;
     int enemyProjectilesAlive() const;
     bool stageComplete() const {
@@ -324,6 +328,10 @@ private:
     static const StageSpawnEvent* eventsForStage(int stage, std::size_t& count);
     void pollInput();
     bool actionDown(InputAction action) const;
+    void initializeReplayRecording();
+    void initializeReplayStageDefaults();
+    void recordReplayInputFrame();
+    void captureReplayStageCheckpoint();
     void spawnDueEvents();
     void spawnStage01OriginalSchedule();
     void spawnStage02OriginalSchedule();
@@ -892,6 +900,8 @@ private:
     std::vector<RewardItem> rewardItems_;
     std::vector<StageEffect> stageEffects_;
     std::array<bool, 11> inputActions_{};
+    ReplayData replayRecording_;
+    bool replayCheckpointPending_ = false;
     int hudSpecialGaugeFlashTimer_ = 0;
     std::chrono::steady_clock::time_point hudFrameRateSampleStart_{};
     int hudFrameRateSampleTicks_ = 0;

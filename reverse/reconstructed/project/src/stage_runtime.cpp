@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <ctime>
 #include <initializer_list>
 #include <limits>
 #include <string>
@@ -23,6 +24,8 @@ constexpr int kProjectileCap = 0x800;
 constexpr int kRewardItemCap = 0x200;
 constexpr int kPlayerSideObjectCap = 0x100;
 constexpr int kStageEffectCap = 0x1000;
+constexpr std::size_t kReplayStageSnapshotOffset = 0x0098;
+constexpr std::size_t kReplayStageSnapshotStride = 0x00f0;
 constexpr int kSpecialGaugeReady = 50000;
 constexpr int kSpecialGaugeForcedFull = 9999999;
 constexpr int kFeverActiveFrames = 600;
@@ -1206,6 +1209,7 @@ bool StageRuntime::initialize(ResourceManager& resources, const StageRuntimeConf
     config_ = config;
     selectedStage_ = (config.stage >= 1 && config.stage <= 10) ? config.stage : 1;
     config_.stage = selectedStage_;
+    config_.routeSubmode = std::clamp(config_.routeSubmode, 0, 3);
     config_.controlDevice = std::clamp(config_.controlDevice, 0, 5);
     config_.controlModeEnabled = config_.controlModeEnabled != 0 ? 1 : 0;
     config_.helpMode = std::clamp(config_.helpMode, 0, 6);
@@ -1254,6 +1258,7 @@ bool StageRuntime::setConfig(const StageRuntimeConfig& config) {
     const int normalized = (next.stage >= 1 && next.stage <= 10) ? next.stage : 1;
     next.stage = normalized;
     next.controlDevice = std::clamp(next.controlDevice, 0, 5);
+    next.routeSubmode = std::clamp(next.routeSubmode, 0, 3);
     next.controlModeEnabled = next.controlModeEnabled != 0 ? 1 : 0;
     next.helpMode = std::clamp(next.helpMode, 0, 6);
     next.helpAutoProgress = std::max(next.helpAutoProgress, 0);
@@ -1279,6 +1284,7 @@ bool StageRuntime::setConfig(const StageRuntimeConfig& config) {
     next.initialBestScore = std::max<std::int64_t>(0, next.initialBestScore);
     next.initialBestTimeFrames = std::max(0, next.initialBestTimeFrames);
     const bool changed = selectedStage_ != normalized || config_.routeMode != next.routeMode ||
+                         config_.routeSubmode != next.routeSubmode ||
                          config_.setupGroup != next.setupGroup ||
                          config_.playerOption != next.playerOption || config_.subOption != next.subOption ||
                          config_.loadoutId != next.loadoutId || config_.difficulty != next.difficulty ||
@@ -1392,6 +1398,19 @@ void StageRuntime::reset() {
     }
     player_.optionX.fill(player_.x);
     player_.optionY.fill(player_.y);
+    if (!continueRun) {
+        replayRecording_.clear();
+        replayCheckpointPending_ = false;
+        if (!config_.replayPlayback) {
+            initializeReplayRecording();
+        }
+    }
+    else if (replayRecording_.recordable && config_.routeMode == 1 &&
+             selectedStage_ != 10) {
+        // The original stores this checkpoint after appending the first input
+        // node and dispatching the new stage's first frame.
+        replayCheckpointPending_ = true;
+    }
     hudFrameRateSampleStart_ = std::chrono::steady_clock::now();
     hudFrameRateSampleTicks_ = 0;
     hudMeasuredFrameRate_ = 60;
@@ -1551,7 +1570,12 @@ void StageRuntime::update() {
         hudFrameRateSampleStart_ = frameRateNow;
     }
 
+    const bool replayRecordsThisTick =
+        pauseFlowState_ == PauseFlowState::Gameplay && !stageComplete();
     pollInput();
+    if (replayRecordsThisTick) {
+        recordReplayInputFrame();
+    }
     if (updatePauseFlow()) {
         return;
     }
@@ -1679,6 +1703,11 @@ void StageRuntime::update() {
         if (dispatch + 1 < stageDispatchCount) {
             ++frame_;
         }
+    }
+    if (replayCheckpointPending_) {
+        // State 0x14 appends this tick's input first, runs the stage dispatcher,
+        // then snapshots the new stage before FUN_140106be0 updates the player.
+        captureReplayStageCheckpoint();
     }
     updatePlayer();
     const bool hasGaugeFlashClockSource =
@@ -1909,6 +1938,199 @@ void StageRuntime::pollInput() {
 bool StageRuntime::actionDown(InputAction action) const {
     const auto index = static_cast<std::size_t>(action);
     return index < inputActions_.size() && inputActions_[index];
+}
+
+void StageRuntime::initializeReplayStageDefaults() {
+    auto& header = replayRecording_.header;
+    for (int stage = 1; stage <= 10; ++stage) {
+        const std::size_t base = kReplayStageSnapshotOffset +
+                                 static_cast<std::size_t>(stage - 1) *
+                                     kReplayStageSnapshotStride;
+
+        // FUN_1401121f0 initializes ten 0xf0-byte checkpoint records with the
+        // same neutral player state. Fields not represented by StageRuntime
+        // remain zero, as they do in the original initializer.
+        writeReplayI32(header, base + 0x1c, 1);
+        writeReplayF32(header, base + 0x20, 360.0f);
+        writeReplayF32(header, base + 0x24, 600.0f);
+        writeReplayF32(header, base + 0x28, 360.0f);
+        writeReplayF32(header, base + 0x2c, 600.0f);
+        writeReplayU16(header, base + 0x30, 0xc000);
+        writeReplayI32(header, base + 0x40, 2);
+        writeReplayF32(header, base + 0x4c, 360.0f);
+        writeReplayF32(header, base + 0x50, 600.0f);
+        writeReplayF32(header, base + 0x54, 360.0f);
+        writeReplayF32(header, base + 0x58, 600.0f);
+        writeReplayF32(header, base + 0x5c, 360.0f);
+        writeReplayF32(header, base + 0x60, 600.0f);
+        writeReplayF32(header, base + 0x64, 360.0f);
+        writeReplayF32(header, base + 0x68, 600.0f);
+        writeReplayU16(header, base + 0x6c, 0xc000);
+        writeReplayU16(header, base + 0x6e, 0xc000);
+        writeReplayU16(header, base + 0x70, 0xc000);
+        writeReplayU16(header, base + 0x72, 0xc000);
+        writeReplayU16(header, base + 0x84, 0xc000);
+        writeReplayI64(header, base + 0x90, 0x20);
+        writeReplayI32(header, base + 0x9c, 0x3c);
+    }
+}
+
+void StageRuntime::initializeReplayRecording() {
+    replayRecording_.clear();
+    replayRecording_.recordable = true;
+    replayRecording_.inputRecords.reserve(40000);
+
+    auto& header = replayRecording_.header;
+    writeReplayI32(header, 0x0000, kReplayFormatVersion);
+    header[0x0008] = ' ';
+    header[0x0009] = ' ';
+    header[0x000a] = ' ';
+
+    const std::time_t now = std::time(nullptr);
+    const auto timestamp = std::max<std::int64_t>(0, static_cast<std::int64_t>(now));
+    writeReplayI64(header, 0x0010, timestamp);
+    writeReplayI32(header, 0x0018, config_.routeMode);
+    writeReplayI32(header, 0x001c, config_.routeSubmode);
+    writeReplayI32(header, 0x0020, config_.difficulty);
+    writeReplayI32(header, 0x0024, config_.counterMode);
+    writeReplayI32(header, 0x0028, config_.specialStageFlag);
+    writeReplayI32(header, 0x002c, config_.setupGroup);
+    for (std::size_t index = 0; index < config_.optionSlots.size(); ++index) {
+        writeReplayI32(header, 0x0030 + index * sizeof(std::int32_t),
+                       config_.optionSlots[index]);
+    }
+    writeReplayI32(header, 0x0040, selectedStage_);
+    writeReplayI32(header, 0x0044, 1);
+    writeReplayI32(header, 0x0048, 2);
+    writeReplayI32(header, 0x004c, 4);
+    writeReplayI32(header, 0x0050, 6);
+    writeReplayI32(header, 0x0068, config_.controlModeEnabled);
+    writeReplayI32(header, 0x006c, config_.specialMode);
+    // FUN_1401121f0 resolves Auto (0) at recording start, while explicit
+    // levels 1..5 and the Off sentinel (6) are stored unchanged.
+    writeReplayI32(header, 0x0070,
+                   config_.helpMode == 0 ? effectiveHelpLevel() : config_.helpMode);
+    writeReplayI64(header, 0x0074, 1);
+    initializeReplayStageDefaults();
+    replayCheckpointPending_ = config_.routeMode == 1 && selectedStage_ != 10;
+}
+
+void StageRuntime::captureReplayStageCheckpoint() {
+    if (!replayRecording_.recordable || selectedStage_ < 1 || selectedStage_ > 10) {
+        replayCheckpointPending_ = false;
+        return;
+    }
+
+    auto& header = replayRecording_.header;
+    const std::size_t base = kReplayStageSnapshotOffset +
+                             static_cast<std::size_t>(selectedStage_ - 1) *
+                                 kReplayStageSnapshotStride;
+    writeReplayI32(header, base + 0x00,
+                   static_cast<std::int32_t>(replayRecording_.inputRecords.size()));
+    writeReplayI32(header, base + 0x08, config_.setupGroup);
+    for (std::size_t index = 0; index < config_.optionSlots.size(); ++index) {
+        writeReplayI32(header, base + 0x0c + index * sizeof(std::int32_t),
+                       config_.optionSlots[index]);
+    }
+    writeReplayI32(header, base + 0x1c, 1);
+    writeReplayF32(header, base + 0x20, player_.x);
+    writeReplayF32(header, base + 0x24, player_.y);
+    writeReplayF32(header, base + 0x28, player_.sharedOptionTargetX);
+    writeReplayF32(header, base + 0x2c, player_.sharedOptionTargetY);
+    writeReplayU16(header, base + 0x30, player_.movementAngle16);
+    writeReplayI32(header, base + 0x40, player_.lives);
+    writeReplayI32(header, base + 0x44, player_.playerStateTimer);
+    writeReplayI32(header, base + 0x48, player_.bombLock);
+    for (std::size_t index = 0; index < player_.optionX.size(); ++index) {
+        writeReplayF32(header, base + 0x4c + index * 8, player_.optionX[index]);
+        writeReplayF32(header, base + 0x50 + index * 8, player_.optionY[index]);
+        writeReplayU16(header, base + 0x6c + index * sizeof(std::uint16_t),
+                       player_.optionAngle16[index]);
+        writeReplayI32(header, base + 0x74 + index * sizeof(std::int32_t),
+                       player_.optionTargetEntityIds[index]);
+    }
+    writeReplayU16(header, base + 0x84, player_.optionFormationAngle16);
+    writeReplayI32(header, base + 0x88, player_.shotTimer);
+    writeReplayI32(header, base + 0x8c, player_.focused ? 1 : 0);
+    writeReplayI32(header, base + 0x90, player_.focusTransition);
+    writeReplayI32(header, base + 0x94, player_.lateralAnimation);
+    writeReplayI32(header, base + 0x98, player_.focusHoldTimer);
+    writeReplayI32(header, base + 0x9c, player_.invulnerableFrames);
+    writeReplayI32(header, base + 0xa0, player_.shotVariant);
+    writeReplayI32(header, base + 0xa8, player_.extendIndex);
+    writeReplayI32(header, base + 0xac, player_.tokenStock);
+    writeReplayI32(header, base + 0xb0, player_.stockProgress);
+    writeReplayI32(header, base + 0xb4, player_.specialGauge);
+    writeReplayI32(header, base + 0xb8, hudSpecialGaugeFlashTimer_);
+    writeReplayI64(header, base + 0xc0, player_.score);
+    writeReplayI64(header, base + 0xc8, player_.scoreItemBaseValue);
+    writeReplayI32(header, base + 0xd0, timeWindowElapsedFrames_);
+    writeReplayI32(header, base + 0xdc, player_.beingShotCount);
+    writeReplayI32(header, base + 0xe0, player_.graze);
+    writeReplayI32(header, base + 0xe8, config_.counterMode);
+    replayCheckpointPending_ = false;
+}
+
+void StageRuntime::recordReplayInputFrame() {
+    if (!replayRecording_.recordable || config_.replayPlayback ||
+        replayRecording_.inputRecords.size() >=
+            static_cast<std::size_t>(std::numeric_limits<std::int32_t>::max())) {
+        return;
+    }
+
+    std::uint16_t inputMask = 0;
+    // The on-disk mask contains the first ten original actions. Pause is the
+    // eleventh runtime action and was never serialized by FUN_1400bca30.
+    for (std::size_t action = 0; action < 10; ++action) {
+        if (inputActions_[action]) {
+            inputMask = static_cast<std::uint16_t>(inputMask | (1U << action));
+        }
+    }
+    replayRecording_.inputRecords.push_back({
+        static_cast<std::uint32_t>(replayRecording_.inputRecords.size()), inputMask,
+    });
+    writeReplayI32(replayRecording_.header, 0x0004,
+                   static_cast<std::int32_t>(replayRecording_.inputRecords.size()));
+}
+
+ReplayData StageRuntime::finalizedReplayData() {
+    if (replayRecording_.recordable && !config_.replayPlayback && stageComplete() &&
+        selectedStage_ >= 1 && selectedStage_ <= 9) {
+        // FUN_1400c6e10 stores cumulative boundaries at the current stage
+        // index; element zero remains the run's zero baseline.
+        writeReplayI64(replayRecording_.header,
+                       0x09f8 + static_cast<std::size_t>(selectedStage_) * 8,
+                       player_.score);
+        if (config_.specialStageFlag == 1) {
+            writeReplayI64(replayRecording_.header,
+                           0x0a48 + static_cast<std::size_t>(selectedStage_) * 8,
+                           timeWindowElapsedFrames_);
+        }
+    }
+    ReplayData replay = replayRecording_;
+    if (!replay.recordable || config_.replayPlayback) {
+        replay.clear();
+        return replay;
+    }
+    writeReplayI32(replay.header, 0x0004,
+                   static_cast<std::int32_t>(std::min<std::size_t>(
+                       replay.inputRecords.size(),
+                       static_cast<std::size_t>(std::numeric_limits<std::int32_t>::max()))));
+    writeReplayI32(replay.header, 0x0044, selectedStage_);
+    writeReplayI64(replay.header, 0x0058, player_.score);
+    writeReplayI64(replay.header, 0x0060,
+                   config_.specialStageFlag == 1 ? timeWindowElapsedFrames_ : 0);
+    int routeCompletion = 0;
+    if (stageComplete() && config_.routeMode == 1) {
+        if (selectedStage_ == 8 || selectedStage_ == 10) {
+            routeCompletion = 1;
+        }
+        else if (selectedStage_ == 9) {
+            routeCompletion = 2;
+        }
+    }
+    writeReplayI32(replay.header, 0x0064, routeCompletion);
+    return replay;
 }
 
 void StageRuntime::spawnDueEvents() {
@@ -15429,6 +15651,23 @@ bool StageRuntime::settlePendingPlayerHit() {
                      0.0f, 0.0f, 0,
                      0.0, 1.0, 1.0, 0x50,
                      0xff, 0xff, 0xff, 0xff);
+
+    // FUN_140106be0 emits one Mental/Bomb item on the first two misses and
+    // two on later non-terminal misses.  State 0x15 (the route -1 shortcut)
+    // and the terminal Game Over branch skip these drops.  DAT_140e477e4 is
+    // incremented only after the old count has selected the drop quantity.
+    const int completedMisses = player_.beingShotCount;
+    if (player_.lives != 0 && config_.routeMode != -1) {
+        const int dropCount = completedMisses > 1 ? 2 : 1;
+        for (int i = 0; i < dropCount; ++i) {
+            const std::uint32_t random = stageScriptRandFromFrame(frame_ + i * 10);
+            const std::uint16_t angle = normalizeAngle16(
+                static_cast<int>(random % 0x4001u) - 0x6000);
+            spawnRewardItem(6, player_.x, player_.y, angle, 3.5f, 30);
+        }
+    }
+    ++player_.beingShotCount;
+
     if (player_.lives == 0) {
         beginGameOver();
         return true;
@@ -16531,7 +16770,6 @@ void StageRuntime::handleEnemyProjectilePlayerHitAndGraze() {
         }
     }
     if (playerHit && player_.invulnerableFrames == 0) {
-        ++player_.beingShotCount;
         player_.playerStateTimer = 280;
         player_.invulnerableFrames = 300;
         playPlayerSound(missSoundHandle_, 0x19);

@@ -285,6 +285,7 @@ int App::runSmokeTestLoop() {
                 StageRuntime::StageRuntimeConfig config;
                 config.stage = request.stage;
                 config.routeMode = request.routeMode;
+                config.routeSubmode = request.routeSubmode;
                 config.setupGroup = request.setupGroup;
                 config.playerOption = request.playerOption;
                 config.subOption = request.subOption;
@@ -368,6 +369,7 @@ int App::runSmokeTestLoop() {
         }
         ScreenFlip();
         if (gameplayExitAfterDraw == StageRuntime::GameplayExitRequest::Retry) {
+            frontendRuntime_.discardReplay();
             stageRuntime_.reset();
         }
         else if (gameplayExitAfterDraw == StageRuntime::GameplayExitRequest::SkipTutorial &&
@@ -382,20 +384,27 @@ int App::runSmokeTestLoop() {
         }
         else if (gameplayExitAfterDraw == StageRuntime::GameplayExitRequest::GameOver &&
                  resources_) {
-            const bool replayPrompt = stageRuntime_.routeMode() < 0 ||
-                                      stageRuntime_.routeMode() == 2 ||
-                                      (stageRuntime_.routeMode() == 1 &&
-                                       stageRuntime_.specialStageFlag() == 0);
+            const bool replayPrompt = !stageRuntime_.replayPlayback() &&
+                                      stageRuntime_.routeMode() >= 0;
+            if (replayPrompt) {
+                frontendRuntime_.captureReplay(stageRuntime_.finalizedReplayData());
+            }
             frontendRuntime_.finishGameOver(
                 *resources_, replayPrompt,
                 stageRuntime_.score(), stageRuntime_.frame());
             diagnosticsPage_ = 0;
         }
         else if (completeGameplayAfterDraw && resources_) {
-            frontendRuntime_.completeGameplay(
-                *resources_,
-                stageRuntime_.score(),
-                stageRuntime_.frame());
+            if (stageRuntime_.replayPlayback()) {
+                frontendRuntime_.abortGameplay(*resources_);
+            }
+            else {
+                frontendRuntime_.captureReplay(stageRuntime_.finalizedReplayData());
+                frontendRuntime_.completeGameplay(
+                    *resources_,
+                    stageRuntime_.score(),
+                    stageRuntime_.frame());
+            }
             diagnosticsPage_ = 0;
         }
         ++displayFrame_;

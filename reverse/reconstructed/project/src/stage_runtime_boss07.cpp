@@ -624,7 +624,8 @@ void StageRuntime::updateStage07BossNode(StageEnemy& enemy) {
         enemy.drawBodyThisFrame = headEnabled || !isStage07CombatState(state);
         if (state == 70) {
             enemy.targetable = false;
-            if (timer >= 220) enemy.active = false;
+            const int exitTimer = leftHead ? 220 : 240;
+            if (timer >= exitTimer) enemy.active = false;
         }
 
         const bool transitionState = state == 0x14 || state == 0x1e ||
@@ -1943,7 +1944,17 @@ bool StageRuntime::drawStage07BossNode(const StageEnemy& enemy, float x,
     else if (enemy.spawnType == 0x93 || enemy.spawnType == 0x94) {
         bodyLayer = enemy.parentSpawnType == 0x84 ? 0x23 : 0x22;
     }
-    if (exactLayer != bodyLayer) return true;
+    const bool pairedHead = enemy.spawnType == 0x83 ||
+                            enemy.spawnType == 0x84;
+    if (pairedHead) {
+        if (exactLayer != 0x18 && exactLayer != 0x19 &&
+            exactLayer != 0x1a) {
+            return true;
+        }
+    }
+    else if (exactLayer != bodyLayer) {
+        return true;
+    }
 
     const auto drawFrame = [this](const std::vector<int>& frames, int index,
                                   float drawX, float drawY,
@@ -1964,6 +1975,99 @@ bool StageRuntime::drawStage07BossNode(const StageEnemy& enemy, float x,
                             128, enemy.spawnType == 0x83 ? 96 : 255),
                    TRUE);
     };
+
+    if (pairedHead) {
+        const bool right = enemy.spawnType == 0x84;
+        const int state = enemy.drawHelperState;
+        const int timer = enemy.drawHelperTimer;
+        const int exitTimer = right ? 240 : 220;
+        const bool drawAssembly =
+            (state >= 10 && state < 70) ||
+            (state == 70 && timer < exitTimer);
+
+        const int swing = static_cast<int>(
+            std::sin(static_cast<double>(frame_) * kTau / 164.0) *
+            (right ? -1200.0 : 1200.0));
+
+        if (drawAssembly) {
+            if (exactLayer == 0x19) {
+                drawFrame(enemyMediumFrames_, right ? 144 : 143,
+                          x, y + 101.0f);
+                drawFrame(enemyMediumFrames_, right ? 142 : 141,
+                          x, y + 90.0f);
+
+                const int glow = frameHandle07(enemySmallFrames_, 81);
+                if (glow != -1) {
+                    if (right) SetDrawBright(0, 0xff, 0xff);
+                    else SetDrawBright(0xff, 0, 0xff);
+                    SetDrawBlendMode(DX_BLENDMODE_ADD, 0x60);
+                    drawOriginalMode7Node(
+                        glow, x, y + 1.0f,
+                        normalizeStage07Angle(0x4000 + swing),
+                        2.2, 1.6, false);
+                    SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+                    SetDrawBright(0xff, 0xff, 0xff);
+                }
+            }
+
+            if (exactLayer == 0x1a) {
+                drawFrame(enemySmallFrames_, right ? 116 : 115,
+                          x, y + 1.0f,
+                          normalizeStage07Angle(swing));
+            }
+
+            const int ringFrame = right ? 114 : 113;
+            for (int i = 0; i < 13; ++i) {
+                const auto ringAngle = normalizeStage07Angle(
+                    frame_ * 0x14d + i * 0x13b1);
+                const int ringLayer = ringAngle < 0x8000 ? 0x19 : 0x18;
+                if (exactLayer != ringLayer) continue;
+                drawFrame(
+                    enemySmallFrames_, ringFrame,
+                    x + stage07PolarX(ringAngle, 24.0),
+                    y + 138.0f + stage07PolarY(ringAngle, 75.0));
+            }
+        }
+
+        if (exactLayer != 0x19 ||
+            (state == 70 && timer >= exitTimer)) {
+            return true;
+        }
+
+        int graph = -1;
+        if (!right) {
+            static constexpr std::array<int, 16> kFrames{{
+                80, 81, 82, 83, 84, 85, 87, 86,
+                87, 86, 85, 84, 83, 82, 80, 81,
+            }};
+            int frame = kFrames[
+                static_cast<std::size_t>((frame_ / 5) % 16)];
+            if (state == 10 && timer < 210) {
+                frame = 88 + (timer / 5) % 2;
+            }
+            graph = frameHandle07(bossFrames_, frame);
+        }
+        else {
+            static constexpr std::array<int, 16> kFrames{{
+                96, 95, 94, 93, 92, 90, 91, 90,
+                91, 92, 93, 94, 95, 97, 96, 97,
+            }};
+            int frame = kFrames[
+                static_cast<std::size_t>((frame_ / 5) % 16)];
+            if (state == 10 && timer < 210) {
+                frame = 98 + (timer / 5) % 2;
+            }
+            graph = frameHandle07(bossFrames_, frame);
+        }
+        if (graph != -1) {
+            drawOriginalMode7Node(graph, x, y, 0,
+                                  1.0, 1.0, false);
+        }
+        else {
+            fallback(x, y);
+        }
+        return true;
+    }
 
     if (enemy.spawnType == 0x80) {
         const float anchorX = x + enemy.markerDrawX - enemy.x;
@@ -2133,24 +2237,6 @@ bool StageRuntime::drawStage07BossNode(const StageEnemy& enemy, float x,
         graph = frameHandle07(bossFrames_,
                               (enemy.spawnType == 0x81 ? 88 : 98) +
                                   (timer / 5) % 2);
-    }
-    else if (enemy.spawnType == 0x83) {
-        static constexpr std::array<int, 16> kFrames{{
-            80, 81, 82, 83, 84, 85, 87, 86,
-            87, 86, 85, 84, 83, 82, 80, 81,
-        }};
-        int frame = kFrames[static_cast<std::size_t>((frame_ / 5) % 16)];
-        if (enemy.drawHelperState == 10) frame = 88 + (timer / 5) % 2;
-        graph = frameHandle07(bossFrames_, frame);
-    }
-    else if (enemy.spawnType == 0x84) {
-        static constexpr std::array<int, 16> kFrames{{
-            96, 95, 94, 93, 92, 90, 91, 90,
-            91, 92, 93, 94, 95, 97, 96, 97,
-        }};
-        int frame = kFrames[static_cast<std::size_t>((frame_ / 5) % 16)];
-        if (enemy.drawHelperState == 10) frame = 98 + (timer / 5) % 2;
-        graph = frameHandle07(bossFrames_, frame);
     }
     else if (enemy.spawnType == 0x87) {
         graph = frameHandle07(enemyMediumFrames_,
