@@ -1995,14 +1995,35 @@ void StageRuntime::updateStage10FinalBossNode(StageEnemy& enemy) {
                                           0.0f, 3.0 + i * 0.4, 1,
                                           27 + i * 2, 0x10000, 0);
                 }
+                const double stateScale = state == 21
+                    ? 1.1 + std::sin(timer * kPi / 140.0) * 0.5
+                    : 1.6;
+                const double radiusWave = std::sin(timer * kPi / 70.0);
+                const double verticalRadius =
+                    (1.0 - radiusWave * 0.5) * stateScale * 120.0;
+                const double horizontalRadius =
+                    (0.5 + radiusWave) * stateScale * 120.0;
                 for (int i = 0; i < 128; ++i) {
-                    const std::uint32_t random = lateBossFrameRand(
-                        enemy.entityId + state * 9999 + i * 99);
+                    const std::uint32_t positionRandom =
+                        lateBossFrameRand(state + i * 99);
+                    const auto orbitAngle = normalizeAngle16(
+                        static_cast<int>(positionRandom % 0x6401u) - 0x7200);
+                    const double orbitRadians = fixedAngleRadians(orbitAngle);
+                    const float shotX = enemy.x + static_cast<float>(
+                        std::cos(orbitRadians) * horizontalRadius);
+                    const float shotY = enemy.y + static_cast<float>(
+                        std::sin(orbitRadians) * verticalRadius);
+                    const std::uint32_t angleRandom =
+                        lateBossFrameRand(state * 0x2c + i * 9999);
+                    const auto shotAngle = normalizeAngle16(
+                        static_cast<int>(angleRandom % 0x6401u) - 0x7200);
+                    const std::uint32_t speedRandom =
+                        lateBossFrameRand(state + i * 999);
+                    const double speed =
+                        5.0 + static_cast<double>(speedRandom % 1301u) / 100.0;
                     spawnProjectileNode(
-                        0x0c, 0, enemy.x, enemy.y,
-                        normalizeAngle16(static_cast<int>(random & 0xffffu)),
-                        0.0f, 5.0 + static_cast<double>((random >> 16) % 301u) / 100.0,
-                        1, 0);
+                        0x0c, 0, shotX, shotY, shotAngle,
+                        0.0f, speed, 1, 0);
                 }
                 fired = true;
             }
@@ -2051,25 +2072,83 @@ void StageRuntime::updateStage10FinalBossNode(StageEnemy& enemy) {
                 enemy.x += static_cast<float>(std::cos(radians) * enemy.sourceSpeed);
                 enemy.y += static_cast<float>(std::sin(radians) * enemy.sourceSpeed);
                 enemy.sourceSpeed += 0.05;
-                const std::uint32_t random = lateBossFrameRand(
-                    enemy.entityId + state * 0x22b + timer * 0x58);
-                const float burstX = enemy.x +
-                    static_cast<float>(static_cast<int>(random % 111u) - 55);
-                const float burstY = enemy.y +
-                    static_cast<float>(static_cast<int>((random >> 8) % 111u) - 55);
-                if (burstX >= 0.0f && burstX <= 720.0f &&
-                    burstY >= 0.0f && burstY <= 900.0f) {
+                const std::uint32_t radiusRandom =
+                    lateBossFrameRand(timer * 0x58 + state);
+                const double burstRadius =
+                    static_cast<double>(radiusRandom % 0x6fu);
+                const std::uint32_t orbitRandom =
+                    lateBossFrameRand(timer * 0x378 + state);
+                const auto burstOrbit = normalizeAngle16(
+                    static_cast<int>(orbitRandom % 0x10001u));
+                const double burstOrbitRadians =
+                    fixedAngleRadians(burstOrbit);
+                const float burstX = enemy.x + static_cast<float>(
+                    std::cos(burstOrbitRadians) * burstRadius);
+                const float burstY = enemy.y + static_cast<float>(
+                    std::sin(burstOrbitRadians) * burstRadius);
+                const float horizontalOrigin = player_.x / 6.0f;
+                if (burstX >= horizontalOrigin + 20.0f &&
+                    burstX <= horizontalOrigin + 580.0f &&
+                    burstY >= 20.0f && burstY <= 700.0f) {
+                    const std::uint32_t headingRandom =
+                        lateBossFrameRand(timer * 0x22b + state);
+                    const auto burstHeading = normalizeAngle16(
+                        static_cast<int>(enemy.sourceAngle16) + 0x65f6 +
+                        static_cast<int>(headingRandom % 0x1ca5u));
+                    const std::uint32_t speedRandom =
+                        lateBossFrameRand(timer * 0x15b3 + state);
+                    const double burstSpeed =
+                        1.0 + static_cast<double>(speedRandom % 151u) / 100.0;
                     spawnProjectileNode(2, 0x12, burstX, burstY,
-                                        normalizeAngle16(static_cast<int>(random >> 16)),
-                                        0.0f, 2.5, 1, 0);
-                    const auto curve = normalizeAngle16(
-                        static_cast<int>(enemy.sourceAngle16) + timer * 0x9c4);
-                    spawnProjectileNode(0x0d, 3, enemy.x, enemy.y, curve,
-                                        0.0f, 4.0, 1, 0);
-                    spawnProjectileNode(0x0d, 3, enemy.x, enemy.y,
-                                        normalizeAngle16(0x8000 - curve),
-                                        0.0f, 4.0, 1, 0);
+                                        burstHeading, 0.0f, burstSpeed, 1, 0);
                     fired = true;
+                }
+                if (timer < 0x8c) {
+                    const auto projectEllipse = [&enemy](
+                        std::uint16_t orbitAngle, double verticalRadius,
+                        double horizontalRadius) {
+                        const double tilt = fixedAngleRadians(
+                            enemy.sourceAngle16);
+                        const double orbit = fixedAngleRadians(orbitAngle);
+                        const double tiltCos = std::cos(tilt);
+                        const double tiltSin = std::sin(tilt);
+                        const double orbitCos = std::cos(orbit);
+                        const double orbitSin = std::sin(orbit);
+                        return std::pair<float, float>{
+                            enemy.x + static_cast<float>(
+                                tiltCos * orbitCos * horizontalRadius -
+                                tiltSin * orbitSin * verticalRadius),
+                            enemy.y + static_cast<float>(
+                                tiltCos * orbitSin * verticalRadius +
+                                tiltSin * orbitCos * horizontalRadius),
+                        };
+                    };
+                    const auto insideFireArea = [this](float x, float y) {
+                        const float horizontalOrigin = player_.x / 6.0f;
+                        return x >= horizontalOrigin + 20.0f &&
+                               x <= horizontalOrigin + 580.0f &&
+                               y >= 20.0f && y <= 700.0f;
+                    };
+                    const auto orbitAngle = normalizeAngle16(timer * 0x9c4);
+                    const auto first = projectEllipse(orbitAngle, 132.0, 110.0);
+                    const auto secondOrbit = normalizeAngle16(
+                        static_cast<int>(orbitAngle) + 0x8000);
+                    const auto second = projectEllipse(secondOrbit, 100.0, 80.0);
+                    const auto firstHeading = normalizeAngle16(
+                        static_cast<int>(enemy.sourceAngle16) +
+                        static_cast<int>(orbitAngle));
+                    const auto secondHeading = normalizeAngle16(
+                        static_cast<int>(firstHeading) + 0x8000);
+                    if (insideFireArea(first.first, first.second)) {
+                        spawnProjectileNode(0x0d, 3, first.first, first.second,
+                                            firstHeading, 0.0f, 5.3, 1, 0);
+                        fired = true;
+                    }
+                    if (insideFireArea(second.first, second.second)) {
+                        spawnProjectileNode(0x0d, 3, second.first, second.second,
+                                            secondHeading, 0.0f, 5.3, 1, 0);
+                        fired = true;
+                    }
                 }
             }
             advance(0x8c);
@@ -5311,7 +5390,7 @@ void StageRuntime::updateStage06BossNode(StageEnemy& enemy) {
                         route * 0x4000 + 0x2000);
                 }
                 const int orbitDelta = static_cast<int>(std::sin(
-                    static_cast<double>(timer - 800) * kPi / 1000.0) *
+                    static_cast<double>(timer - 660) * kPi / 1000.0) *
                     kOrbitStep[static_cast<std::size_t>(difficulty)]);
                 enemy.targetAngle16 = normalizeAngle16(
                     static_cast<int>(enemy.targetAngle16) + orbitDelta);
@@ -5321,12 +5400,16 @@ void StageRuntime::updateStage06BossNode(StageEnemy& enemy) {
                 const double orbitRadians =
                     fixedAngleRadians(enemy.targetAngle16);
                 const double wobbleRadians = fixedAngleRadians(wobbleAngle);
+                const double wobbleCos = std::cos(wobbleRadians);
+                const double wobbleSin = std::sin(wobbleRadians);
+                const double orbitCos = std::cos(orbitRadians);
+                const double orbitSin = std::sin(orbitRadians);
                 targetX = parent->x + static_cast<float>(
-                    std::cos(orbitRadians) * 240.0 -
-                    std::sin(wobbleRadians) * 110.0);
+                    wobbleCos * orbitCos * 240.0 -
+                    wobbleSin * orbitSin * 110.0);
                 targetY = parent->y + static_cast<float>(
-                    std::sin(orbitRadians) * 240.0 +
-                    std::cos(wobbleRadians) * 110.0);
+                    wobbleCos * orbitSin * 110.0 +
+                    wobbleSin * orbitCos * 240.0);
                 enemy.secondaryAngle16 = aimFrom(parent->x, -720.0f);
             }
             if (!enteredAttackThisFrame) {
@@ -5511,7 +5594,7 @@ void StageRuntime::updateStage06BossNode(StageEnemy& enemy) {
             enemy.x = enemy.markerDrawX + static_cast<float>(
                 std::cos(radians) * radial);
             enemy.y = enemy.markerDrawY + static_cast<float>(
-                std::sin(radians) * radial) + vertical;
+                std::sin(radians) * vertical);
         }
         if (enemy.helperState == 0 && parent->helperTimer >= 160) {
             enemy.helperState = 1;
@@ -5544,7 +5627,7 @@ void StageRuntime::updateStage06BossNode(StageEnemy& enemy) {
             enemy.x = enemy.markerDrawX + static_cast<float>(
                 std::cos(orbitRadians) * 800.0);
             enemy.y = enemy.markerDrawY + static_cast<float>(
-                std::sin(orbitRadians) * 800.0) + 350.0f;
+                std::sin(orbitRadians) * 350.0);
 
             const double sourceRadians =
                 fixedAngleRadians(enemy.secondaryAngle16);

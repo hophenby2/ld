@@ -955,9 +955,9 @@ bool StageRuntime::drawStage10Enemy(const StageEnemy& enemy, float x,
                 if ((orbitAngle > 0x8000) != rear) continue;
                 const double radians = fixedAngleRadians(orbitAngle);
                 drawSmall(165,
-                          x + static_cast<float>(std::cos(radians) * 40.0),
+                          x + static_cast<float>(std::cos(radians) * 72.0),
                           y - 8.0f + static_cast<float>(
-                                           std::sin(radians) * 72.0));
+                                           std::sin(radians) * 40.0));
             }
         };
         drawOrbitHalf(true);

@@ -785,19 +785,28 @@ void StageRuntime::updateStage08BossNode(StageEnemy& enemy) {
         const int direction = enemy.spawnType == 0xb4 ? 1 : -1;
         const double radialPhase = std::clamp(timer, 0, 120) *
                                    kBoss08Pi / 240.0;
-        const float radiusY = static_cast<float>(
+        const float horizontalRadius = static_cast<float>(
             std::sin(radialPhase) * 150.0);
-        const float radiusX = radiusY * 0.5f;
+        const float verticalRadius = horizontalRadius * 0.5f;
         enemy.sourceAngle16 = boss08Angle(
             static_cast<int>(enemy.sourceAngle16) +
             direction * static_cast<int>(enemy.sourceSpeed));
         enemy.secondaryAngle16 = boss08Angle(
             static_cast<int>(enemy.secondaryAngle16) + direction * 0x4d);
+        const double tilt = boss08Radians(enemy.secondaryAngle16);
         const double orbit = boss08Radians(enemy.sourceAngle16);
+        const double tiltCos = std::cos(tilt);
+        const double tiltSin = std::sin(tilt);
+        const double orbitCos = std::cos(orbit);
+        const double orbitSin = std::sin(orbit);
         enemy.x = parent->x + enemy.originX +
-                  static_cast<float>(std::cos(orbit) * radiusX);
+                  static_cast<float>(
+                      tiltCos * orbitCos * horizontalRadius -
+                      tiltSin * orbitSin * verticalRadius);
         enemy.y = parent->y + enemy.originY +
-                  static_cast<float>(std::sin(orbit) * radiusY);
+                  static_cast<float>(
+                      tiltCos * orbitSin * verticalRadius +
+                      tiltSin * orbitCos * horizontalRadius);
         enemy.targetable = false;
         const int interval = std::array<int, 5>{{3, 2, 1, 1, 1}}[
             static_cast<std::size_t>(difficulty)];

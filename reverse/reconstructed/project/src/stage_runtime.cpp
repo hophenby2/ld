@@ -18899,6 +18899,7 @@ bool StageRuntime::drawStage02BossExact(const StageEnemy& enemy, float x, float 
 
     const int state = enemy.drawHelperState;
     const int timer = enemy.drawHelperTimer;
+    const int sourceFrame = std::max(0, frame_ - 1);
     if (state <= 3 || (state == 4 && timer < 130)) {
         const int baseLayer = state == 0 ? 0x0f : 0x1e;
         const float yShift = state > 2 || (state == 2 && timer > 100)
@@ -18917,16 +18918,17 @@ bool StageRuntime::drawStage02BossExact(const StageEnemy& enemy, float x, float 
                 return;
             }
             for (int i = 0; i < 13; ++i) {
-                const auto orbitAngle = normalizeAngle16(frame_ * 0xde + i * 0x13b1);
+                const auto orbitAngle = normalizeAngle16(
+                    sourceFrame * 0xde + i * 0x13b1);
                 const bool isBackHalf = orbitAngle > 0x8000;
                 if (isBackHalf != backHalf) {
                     continue;
                 }
                 const double radians = fixedAngleToRadiansDouble(orbitAngle);
                 drawNode(mediumOrbit,
-                         x - static_cast<float>(std::cos(radians) * 120.0),
+                         x + static_cast<float>(std::cos(radians) * 215.0),
                          y + yShift + 80.0f +
-                             static_cast<float>(std::sin(radians) * 215.0),
+                             static_cast<float>(std::sin(radians) * 120.0),
                          0, 1.0, 1.0);
             }
         };
@@ -18938,8 +18940,8 @@ bool StageRuntime::drawStage02BossExact(const StageEnemy& enemy, float x, float 
                 const double radians = fixedAngleToRadiansDouble(
                     normalizeAngle16(kDecorationAngles[static_cast<std::size_t>(i)]));
                 drawNode(mediumDecoration,
-                         x - static_cast<float>(std::cos(radians) * 90.0),
-                         y - 80.0f + static_cast<float>(std::sin(radians) * 140.0),
+                         x + static_cast<float>(std::cos(radians) * 140.0),
+                         y - 80.0f + static_cast<float>(std::sin(radians) * 90.0),
                          0, pulse, 1.0);
             }
         };
@@ -18947,7 +18949,7 @@ bool StageRuntime::drawStage02BossExact(const StageEnemy& enemy, float x, float 
         if (exactLayer == baseLayer) {
             for (int i = 0; i < 4; ++i) {
                 drawNode(largeRotor, x, y + yShift + 250.0f,
-                         normalizeAngle16(frame_ * 600 + i * 0x4000),
+                         normalizeAngle16(sourceFrame * 600 + i * 0x4000),
                          1.0, 1.0);
             }
             drawNode(largeMiddle, x, y + yShift + 160.0f, 0, 1.0, 1.0);

@@ -123,17 +123,18 @@ void StageRuntime::updateStage06Enemy(StageEnemy& enemy) {
         const int unfoldTimer = std::min(timer, 120);
         const int riseTimer = std::min(timer, 180);
         const float radiusX = static_cast<float>(static_cast<int>(
-            std::sin(unfoldTimer * kPi / 240.0) * 50.0));
-        const float radiusY = static_cast<float>(static_cast<int>(
             std::sin(unfoldTimer * kPi / 240.0) * 90.0));
+        const float radiusY = static_cast<float>(static_cast<int>(
+            std::sin(unfoldTimer * kPi / 240.0) * 50.0));
         const float rise = static_cast<float>(static_cast<int>(
             std::sin(riseTimer * kPi / 360.0) * -120.0));
         const int turn = static_cast<int>(
             std::sin(static_cast<double>(frame_) * kTau / 470.0) * 130.0);
         enemy.secondaryAngle16 = s06Angle(
-            static_cast<int>(enemy.secondaryAngle16) + turn);
+            static_cast<int>(enemy.secondaryAngle16) - turn);
         const double radians = s06Radians(enemy.secondaryAngle16);
-        enemy.x = parent->x + static_cast<float>(std::cos(radians) * radiusX);
+        enemy.x = enemy.originX +
+                  static_cast<float>(std::cos(radians) * radiusX);
         enemy.y = enemy.originY + rise +
                   static_cast<float>(std::sin(radians) * radiusY);
         enemy.drawBodyThisFrame = true;
@@ -408,7 +409,7 @@ void StageRuntime::emitStage06EnemyProjectiles(StageEnemy& enemy) {
             }
         }
         for (int source = 0; source < 3; ++source) {
-            const auto orbit = s06Angle(timer * 0x29a + source * 0x5555);
+            const auto orbit = s06Angle(frame_ * 0x29a + source * 0x5555);
             const double radians = s06Radians(orbit);
             const float x = enemy.x + static_cast<float>(std::cos(radians) * 36.0);
             const float y = enemy.y + 20.0f +
@@ -685,9 +686,10 @@ bool StageRuntime::drawStage06Enemy(const StageEnemy& enemy, float x,
 
     switch (enemy.spawnType) {
     case 0x57:
-    case 0x58:
+    case 0x58: {
+        const int sourceFrame = std::max(0, frame_ - 1);
         for (int i = 0; i < 3; ++i) {
-            const auto angle = s06Angle(timer * 0x29a + i * 0x5555);
+            const auto angle = s06Angle(sourceFrame * 0x29a + i * 0x5555);
             const double radians = s06Radians(angle);
             draw(enemyMediumFrames_, 85,
                  x + static_cast<float>(std::cos(radians) * 36.0),
@@ -695,6 +697,7 @@ bool StageRuntime::drawStage06Enemy(const StageEnemy& enemy, float x,
         }
         draw(enemyMediumFrames_, 84, x, y);
         break;
+    }
     case 0x59: {
         const double radians = s06Radians(enemy.sourceAngle16);
         draw(enemyMediumFrames_, 87,

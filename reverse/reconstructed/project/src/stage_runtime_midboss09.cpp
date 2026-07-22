@@ -851,9 +851,9 @@ bool StageRuntime::drawStage09Midboss(const StageEnemy& enemy, float x,
                     if (exactLayer == orbitLayer) {
                         drawOriginalMode7Node(
                             orbitGraph,
-                            x + static_cast<float>(std::cos(radians) * 125.0),
-                            y - 160.0f +
-                                static_cast<float>(std::sin(radians) * 85.0),
+                            x + static_cast<float>(std::cos(radians) * 215.0),
+                            y - 80.0f +
+                                static_cast<float>(std::sin(radians) * 120.0),
                             0, 1.0, 1.0, angle > 0x8000);
                     }
                 }

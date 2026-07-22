@@ -892,10 +892,12 @@ void StageRuntime::updateStage07BossNode(StageEnemy& enemy) {
         else if (state == 0x15) {
             const auto index = static_cast<std::size_t>(difficulty);
             if (timer % 0x35c == 10) {
+                const bool secondOrbit =
+                    static_cast<std::uint32_t>(timer - 100) < 0x385u;
                 spawnStage07BossNode(
-                    enemy, timer - 100 < 0x385 ? 0x90 : 0x8f,
+                    enemy, secondOrbit ? 0x90 : 0x8f,
                     timer / 0x35c, 0.0f, 0.0f,
-                    timer - 100 < 0x385 ? 0x8000 : 0,
+                    secondOrbit ? 0x8000 : 0,
                     1.0, 100, 99999999);
                 firedLoud = true;
             }
@@ -1000,10 +1002,12 @@ void StageRuntime::updateStage07BossNode(StageEnemy& enemy) {
         else if (state == 0x29) {
             const auto index = static_cast<std::size_t>(difficulty);
             if (timer % 0x35c == 10) {
+                const bool secondOrbit =
+                    static_cast<std::uint32_t>(timer - 100) < 0x385u;
                 spawnStage07BossNode(
-                    enemy, timer - 100 < 0x385 ? 0x92 : 0x91,
+                    enemy, secondOrbit ? 0x92 : 0x91,
                     timer / 0x35c, 0.0f, 0.0f,
-                    timer - 100 < 0x385 ? 0 : 0x8000,
+                    secondOrbit ? 0 : 0x8000,
                     1.0, 100, 99999999);
                 firedLoud = true;
             }
@@ -1722,12 +1726,55 @@ void StageRuntime::updateStage07BossNode(StageEnemy& enemy) {
         }
         enemy.targetable = false;
         const int timer = enemy.helperTimer;
-        const double orbitRadians = static_cast<double>(frame_) *
-                                    399.609756097561 * kPi / 32768.0;
-        enemy.x = parent->x +
-                  static_cast<float>(std::cos(orbitRadians) * 24.0);
-        enemy.y = parent->y - 120.0f +
-                  static_cast<float>(std::sin(orbitRadians) * 24.0);
+        const double centerPhase = static_cast<double>(frame_) *
+                                   399.609756097561 * kPi / 32768.0;
+        const double centerSwing =
+            (parent->spawnType == 0x83 ? 1200.0 : -1200.0) *
+            std::sin(centerPhase);
+        const auto centerAngle = normalizeStage07Angle(
+            0x4000 + static_cast<int>(centerSwing));
+        const float centerX =
+            parent->x + stage07PolarX(centerAngle, 24.0);
+        const float centerY =
+            parent->y - 120.0f + stage07PolarY(centerAngle, 24.0);
+
+        float verticalRadius = 0.0f;
+        float horizontalRadius = 0.0f;
+        if (timer >= 540) {
+            verticalRadius = 50.0f;
+            horizontalRadius = 200.0f;
+        }
+        else if (timer >= 0) {
+            const double radiusPhase = static_cast<double>(timer) *
+                                       30.34074074074074 * kPi / 32768.0;
+            const double radiusScale = std::sin(radiusPhase);
+            verticalRadius =
+                static_cast<float>(static_cast<int>(radiusScale * 50.0));
+            horizontalRadius =
+                static_cast<float>(static_cast<int>(radiusScale * 200.0));
+        }
+
+        const double tiltPhase = (static_cast<double>(timer) - 270.0) *
+                                 60.68148148148148 * kPi / 32768.0;
+        const double tiltAmplitude =
+            (enemy.spawnType == 0x8f || enemy.spawnType == 0x92)
+                ? -4000.0
+                : 4000.0;
+        const auto tiltAngle = normalizeStage07Angle(
+            static_cast<int>(std::sin(tiltPhase) * tiltAmplitude));
+        const double tiltRadians = stage07AngleRadians(tiltAngle);
+        const double orbitRadians =
+            stage07AngleRadians(enemy.sourceAngle16);
+        const double tiltCos = std::cos(tiltRadians);
+        const double tiltSin = std::sin(tiltRadians);
+        const double orbitCos = std::cos(orbitRadians);
+        const double orbitSin = std::sin(orbitRadians);
+        enemy.x = centerX + static_cast<float>(
+            tiltCos * orbitCos * horizontalRadius -
+            tiltSin * orbitSin * verticalRadius);
+        enemy.y = centerY + static_cast<float>(
+            tiltCos * orbitSin * verticalRadius +
+            tiltSin * orbitCos * horizontalRadius);
         const int spin = (enemy.spawnType == 0x8f ||
                           enemy.spawnType == 0x92)
                              ? -0x1e5
@@ -1946,11 +1993,16 @@ bool StageRuntime::drawStage07BossNode(const StageEnemy& enemy, float x,
     }
     const bool pairedHead = enemy.spawnType == 0x83 ||
                             enemy.spawnType == 0x84;
+    const bool detachedHead = enemy.spawnType == 0x81 ||
+                              enemy.spawnType == 0x82;
     if (pairedHead) {
         if (exactLayer != 0x18 && exactLayer != 0x19 &&
             exactLayer != 0x1a) {
             return true;
         }
+    }
+    else if (detachedHead) {
+        if (exactLayer != 0x18 && exactLayer != 0x19) return true;
     }
     else if (exactLayer != bodyLayer) {
         return true;
@@ -1975,6 +2027,23 @@ bool StageRuntime::drawStage07BossNode(const StageEnemy& enemy, float x,
                             128, enemy.spawnType == 0x83 ? 96 : 255),
                    TRUE);
     };
+    const int sourceFrame = std::max(0, frame_ - 1);
+
+    if (detachedHead) {
+        const int ringFrame = enemy.spawnType == 0x82 ? 114 : 113;
+        const float centerY = y + 90.0f + 48.0f;
+        for (int i = 0; i < 13; ++i) {
+            const auto ringAngle = normalizeStage07Angle(
+                sourceFrame * 0x14d + i * 0x13b1);
+            const int ringLayer = ringAngle < 0x8000 ? 0x19 : 0x18;
+            if (exactLayer != ringLayer) continue;
+            drawFrame(
+                enemySmallFrames_, ringFrame,
+                x + stage07PolarX(ringAngle, 75.0),
+                centerY + stage07PolarY(ringAngle, 24.0));
+        }
+        if (exactLayer == 0x18) return true;
+    }
 
     if (pairedHead) {
         const bool right = enemy.spawnType == 0x84;
@@ -1986,15 +2055,59 @@ bool StageRuntime::drawStage07BossNode(const StageEnemy& enemy, float x,
             (state == 70 && timer < exitTimer);
 
         const int swing = static_cast<int>(
-            std::sin(static_cast<double>(frame_) * kTau / 164.0) *
+            std::sin(static_cast<double>(sourceFrame) * kTau / 164.0) *
             (right ? -1200.0 : 1200.0));
+        const bool scaleThisHead =
+            (!right && (state == 0x14 || state == 0x1e || state == 0x3b)) ||
+            (right && (state == 0x28 || state == 0x32 || state == 0x3c));
+        const double assemblyScale = scaleThisHead
+            ? 1.0 - std::sin(static_cast<double>(timer) *
+                             182.0444444444445 * kPi / 32768.0) * 0.3
+            : 1.0;
+        const float assemblyScaleFloat =
+            static_cast<float>(assemblyScale);
+        float ringCenterOffsetY = 90.0f;
+        if (state == 10) {
+            if (timer < 170) {
+                ringCenterOffsetY = 720.0f;
+            }
+            else if (timer < 210) {
+                const double centerTransition =
+                    (static_cast<double>(timer) - 130.0) *
+                    409.6 * kPi / 32768.0;
+                ringCenterOffsetY = 90.0f + static_cast<float>(
+                    std::sin(centerTransition) * 630.0);
+            }
+        }
+        float assemblyBaseOffsetY = -120.0f;
+        if (state == 10) {
+            if (timer < 200) {
+                assemblyBaseOffsetY = -720.0f;
+            }
+            else if (timer < 240) {
+                const double baseTransition =
+                    (static_cast<double>(timer) - 160.0) *
+                    409.6 * kPi / 32768.0;
+                assemblyBaseOffsetY = static_cast<float>(
+                    std::sin(baseTransition) * -600.0) - 120.0f;
+            }
+        }
+        const float assemblyBaseY =
+            assemblyBaseOffsetY * assemblyScaleFloat + y;
+        const float ringCenterY =
+            ringCenterOffsetY * assemblyScaleFloat + y;
+        const auto glowAngle = normalizeStage07Angle(0x4000 + swing);
+        const float glowRadius = 114.0f * assemblyScaleFloat;
 
         if (drawAssembly) {
             if (exactLayer == 0x19) {
                 drawFrame(enemyMediumFrames_, right ? 144 : 143,
-                          x, y + 101.0f);
+                          x,
+                          assemblyBaseY + 100.0f * assemblyScaleFloat,
+                          0, assemblyScale, assemblyScale, false);
                 drawFrame(enemyMediumFrames_, right ? 142 : 141,
-                          x, y + 90.0f);
+                          x, ringCenterY,
+                          0, assemblyScale, assemblyScale, false);
 
                 const int glow = frameHandle07(enemySmallFrames_, 81);
                 if (glow != -1) {
@@ -2002,9 +2115,13 @@ bool StageRuntime::drawStage07BossNode(const StageEnemy& enemy, float x,
                     else SetDrawBright(0xff, 0, 0xff);
                     SetDrawBlendMode(DX_BLENDMODE_ADD, 0x60);
                     drawOriginalMode7Node(
-                        glow, x, y + 1.0f,
-                        normalizeStage07Angle(0x4000 + swing),
-                        2.2, 1.6, false);
+                        glow,
+                        x + stage07PolarX(glowAngle, glowRadius),
+                        assemblyBaseY +
+                            stage07PolarY(glowAngle, glowRadius),
+                        glowAngle,
+                        2.2 * assemblyScale,
+                        1.6 * assemblyScale, false);
                     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
                     SetDrawBright(0xff, 0xff, 0xff);
                 }
@@ -2012,20 +2129,28 @@ bool StageRuntime::drawStage07BossNode(const StageEnemy& enemy, float x,
 
             if (exactLayer == 0x1a) {
                 drawFrame(enemySmallFrames_, right ? 116 : 115,
-                          x, y + 1.0f,
-                          normalizeStage07Angle(swing));
+                          x, assemblyBaseY,
+                          normalizeStage07Angle(swing),
+                          assemblyScale, assemblyScale, false);
             }
 
             const int ringFrame = right ? 114 : 113;
+            const float horizontalRadius =
+                75.0f * assemblyScaleFloat;
+            const float verticalRadius =
+                24.0f * assemblyScaleFloat;
+            const float centerY = ringCenterY + 48.0f;
             for (int i = 0; i < 13; ++i) {
                 const auto ringAngle = normalizeStage07Angle(
-                    frame_ * 0x14d + i * 0x13b1);
+                    sourceFrame * 0x14d + i * 0x13b1);
                 const int ringLayer = ringAngle < 0x8000 ? 0x19 : 0x18;
                 if (exactLayer != ringLayer) continue;
                 drawFrame(
                     enemySmallFrames_, ringFrame,
-                    x + stage07PolarX(ringAngle, 24.0),
-                    y + 138.0f + stage07PolarY(ringAngle, 75.0));
+                    x + stage07PolarX(
+                            ringAngle, horizontalRadius),
+                    centerY + stage07PolarY(ringAngle, verticalRadius),
+                    0, assemblyScale, assemblyScale, false);
             }
         }
 
@@ -2041,7 +2166,7 @@ bool StageRuntime::drawStage07BossNode(const StageEnemy& enemy, float x,
                 87, 86, 85, 84, 83, 82, 80, 81,
             }};
             int frame = kFrames[
-                static_cast<std::size_t>((frame_ / 5) % 16)];
+                static_cast<std::size_t>((sourceFrame / 5) % 16)];
             if (state == 10 && timer < 210) {
                 frame = 88 + (timer / 5) % 2;
             }
@@ -2053,7 +2178,7 @@ bool StageRuntime::drawStage07BossNode(const StageEnemy& enemy, float x,
                 91, 92, 93, 94, 95, 97, 96, 97,
             }};
             int frame = kFrames[
-                static_cast<std::size_t>((frame_ / 5) % 16)];
+                static_cast<std::size_t>((sourceFrame / 5) % 16)];
             if (state == 10 && timer < 210) {
                 frame = 98 + (timer / 5) % 2;
             }
@@ -2061,7 +2186,7 @@ bool StageRuntime::drawStage07BossNode(const StageEnemy& enemy, float x,
         }
         if (graph != -1) {
             drawOriginalMode7Node(graph, x, y, 0,
-                                  1.0, 1.0, false);
+                                  assemblyScale, assemblyScale, false);
         }
         else {
             fallback(x, y);
